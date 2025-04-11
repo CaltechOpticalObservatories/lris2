@@ -1,0 +1,85 @@
+/* General Widget Styling */
+QWidget {
+    background-color: #2e2e2e;  /* Dark background color */
+    color: #f8f9fa;              /* Light text color */
+    font-family: 'Helvetica', 'Arial', sans-serif;  /* Helvetica font */
+    font-size: 14px;
+}
+
+/* Label Styling */
+QLabel {
+    font-size: 16px;
+    color: #f8f9fa;  /* Light text color for labels */
+}
+
+/* ComboBox Styling */
+QComboBox {
+    padding: 5px;
+    font-size: 14px;
+    background-color: #495057; /* Dark gray for background */
+    border: 1px solid #6c757d; /* Dark border */
+    border-radius: 5px;
+    color: #f8f9fa;  /* Light text color */
+}
+
+QComboBox::drop-down {
+    border: 1px solid #6c757d;
+    background-color: #495057;
+}
+
+/* Button Styling */
+QPushButton {
+    padding: 8px 16px;
+    font-size: 14px;
+    background-color: #007bff;  /* Blue background for buttons */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+QPushButton:hover {
+    background-color: #0056b3;  /* Darker blue on hover */
+}
+
+QPushButton:pressed {
+    background-color: #003366;  /* Even darker blue on press */
+}
+
+QPushButton.reset, QPushButton.shutdown, QPushButton.status, QPushButton.stop {
+    background-color: #28a745;  /* Green background for reset/shutdown buttons */
+}
+
+QPushButton.reset:hover, QPushButton.shutdown:hover, QPushButton.status:hover, QPushButton.stop:hover {
+    background-color: #218838;  /* Darker green on hover */
+}
+
+QPushButton.reset:pressed, QPushButton.shutdown:pressed, QPushButton.status:pressed, QPushButton.stop:pressed {
+    background-color: #1e7e34;  /* Even darker green on press */
+}
+
+/* Splitter Styling */
+QSplitter {
+    border: 1px solid #6c757d;  /* Dark border for splitter */
+}
+
+/* QGraphicsView Styling */
+QGraphicsView {
+    border: 2px solid #6c757d;  /* Dark border for the graphics view */
+    border-radius: 5px;
+}
+
+/* ComboBox and Calibrate Button Layout */
+QHBoxLayout {
+    margin-bottom: 10px;
+}
+
+/* General Text Input Field Styling */
+QLineEdit {
+    background-color: #495057;  /* Dark gray background */
+    color: #f8f9fa;  /* Light text color */
+    border: 1px solid #6c757d;
+    border-radius: 5px;
+    padding: 5px;
+}
