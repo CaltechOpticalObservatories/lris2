@@ -36,17 +36,20 @@ class MaskGenWidget(QWidget):
             QSizePolicy.Policy.MinimumExpanding,
             QSizePolicy.Policy.MinimumExpanding
         )
+
+        #---------------------------definitions-------------------------------
         import_target_list_button = QPushButton(text = "Import Target List")
         name_of_mask = QLineEdit()
         self.center_of_mask = QLineEdit("00 00 00.00 +00 00 00.00")
         self.slit_width = QLineEdit(".7")
         run_button = QPushButton(text="Run")
-        name_of_mask.setAlignment(Qt.AlignmentFlag.AlignTop)
-        import_target_list_button.setFixedSize(150,40)
-        run_button.setFixedSize(150,30)
+        
         #worry about the formatting of center_of_mask later
+        #--------------------connections---------------------------
+        import_target_list_button.clicked.connect(self.starlist_file_button_clicked)
+        run_button.clicked.connect(self.run_button)
 
-
+        #------------------------layout-----------------------------------
         group_box = QGroupBox()
         main_layout = QVBoxLayout()
         secondary_layout = QFormLayout() #above import targets
@@ -56,10 +59,9 @@ class MaskGenWidget(QWidget):
         group_layout = QVBoxLayout()
         group_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        import_target_list_button.clicked.connect(self.starlist_file_button_clicked)
-        run_button.clicked.connect(self.run_button)
-
-
+        name_of_mask.setAlignment(Qt.AlignmentFlag.AlignTop)
+        import_target_list_button.setFixedSize(150,40)
+        run_button.setFixedSize(150,30)
 
         secondary_layout.addRow("Mask Name:",name_of_mask)
         below_form_layout.addRow("Slit Width:",self.slit_width)
@@ -78,6 +80,7 @@ class MaskGenWidget(QWidget):
         main_layout.addWidget(group_box)
 
         self.setLayout(main_layout)
+        #--------------------------------------------------------------
     
     def sizeHint(self):
         return QSize(40,120)

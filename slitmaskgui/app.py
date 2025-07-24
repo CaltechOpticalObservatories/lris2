@@ -21,7 +21,7 @@ from slitmaskgui.menu_bar import MenuBar
 from slitmaskgui.interactive_slit_mask import interactiveSlitMask
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 import sys
 import random
 from PyQt6.QtWidgets import (
@@ -31,12 +31,16 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QWidget,
     QLabel,
-    QSizePolicy
+    QSizePolicy,
+    QSplitter,
+    QLayout,
+
 )
 
 # pos_dict = {1:(240,0,"none")}
 # for i in range(2,73):
 #     pos_dict[i]=(random.randint(100,400),i,"bob")
+
 
 
 class TempWidgets(QLabel):
@@ -53,27 +57,17 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("LRIS-2 Slit Configuration Tool")
         self.setGeometry(100,100,1000,700)
         self.setMenuBar(MenuBar()) #sets the menu bar
-
-        main_layout = QHBoxLayout()
-        layoutH1 = QHBoxLayout()
-        layoutV1 = QVBoxLayout() #left side
-        layoutV2 = QVBoxLayout() #right side
-
+        
+        #----------------------------definitions---------------------------
         mask_config_widget = MaskConfigurationsWidget()
-        mask_config_widget.setMaximumHeight(200)
         mask_gen_widget = MaskGenWidget()
-        sample_data = [[0,1,1,1],[1,0,1,1]]
-
-        target_display = TargetDisplayWidget(sample_data)
+        
+        target_display = TargetDisplayWidget()
         interactive_slit_mask = interactiveSlitMask()
-        #interactive_slit_mask.setFixedSize(520,550)
-
-        
-        
-
         slit_position_table = SlitDisplay()
         
-        
+
+        #---------------------------------connections-----------------------------
         slit_position_table.highlight_other.connect(interactive_slit_mask.select_corresponding_row)
         interactive_slit_mask.row_selected.connect(slit_position_table.select_corresponding)
 
@@ -81,30 +75,55 @@ class MainWindow(QMainWindow):
         mask_gen_widget.change_slit_image.connect(interactive_slit_mask.change_slit_and_star)
         mask_gen_widget.change_row_widget.connect(slit_position_table.change_data)
 
-        layoutV2.addWidget(mask_config_widget)#temp_widget1
-        layoutV2.addWidget(mask_gen_widget)
-        layoutV2.setSpacing(1)
+
+        #-----------------------------------layout-----------------------------
+        layoutH1 = QHBoxLayout() #Contains slit position table and interactive slit mask
+        splitterV1 = QSplitter()
+        main_splitter = QSplitter()
+        splitterV2 = QSplitter()
+        # line_color = "#aeb5ad"
+        # splitterV1.setStyleSheet(f"QSplitter::handle {{background-color: {line_color};}}")
+        # splitterV2.setStyleSheet(f"QSplitter::handle {{background-color: {line_color};}}")
+        # main_splitter.setStyleSheet(f"QSplitter::handle {{background-color: {line_color};}}")
+
+        interactive_slit_mask.setContentsMargins(0,0,0,0)
+        slit_position_table.setContentsMargins(0,0,0,0)
+        mask_config_widget.setMaximumHeight(200)
+
+        splitterV2.addWidget(mask_config_widget)
+        splitterV2.addWidget(mask_gen_widget)
+        splitterV2.setOrientation(Qt.Orientation.Vertical)
+        splitterV2.setContentsMargins(0,0,0,0)
 
         layoutH1.addWidget(slit_position_table)#temp_widget2)
         layoutH1.addWidget(interactive_slit_mask) #temp_widget3
-        layoutH1.setSpacing(1)
-        
-        layoutV1.addLayout(layoutH1)
-        layoutV1.addWidget(target_display)
-        layoutV1.setSpacing(1)
+        layoutH1.setSpacing(0)
+        layoutH1.setContentsMargins(0,0,0,0)
+        widgetH1 = QWidget()
+        widgetH1.setLayout(layoutH1)
 
-        main_layout.addLayout(layoutV1)
-        main_layout.addLayout(layoutV2)
-        main_layout.setSpacing(1)
+        splitterV1.addWidget(widgetH1)
+        splitterV1.setCollapsible(0,False)
+        splitterV1.addWidget(target_display)
+        splitterV1.setOrientation(Qt.Orientation.Vertical)
+        splitterV1.setContentsMargins(0,0,0,0)
 
-        widget = QWidget()
-        widget.setLayout(main_layout)
-        self.setCentralWidget(widget)
+        main_splitter.addWidget(splitterV1)
+        main_splitter.setCollapsible(0,False)
+        main_splitter.addWidget(splitterV2)
+        main_splitter.setContentsMargins(9,9,9,9)
 
+        self.setCentralWidget(main_splitter)
+        #-------------------------------------------------------
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+
+    with open("/Users/austinbowman/lris2/slitmaskgui/styles.qss", "r") as f:
+        _style = f.read()
+    app.setStyleSheet(_style)
+
     window = MainWindow()
     window.show()
     app.exec()

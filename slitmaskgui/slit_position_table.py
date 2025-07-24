@@ -11,7 +11,9 @@ from PyQt6.QtWidgets import (
     QTableView,
     QVBoxLayout,
     QTableWidget,
-    QSizePolicy
+    QSizePolicy,
+    QLabel,
+    QHeaderView,
 
 
 )
@@ -21,7 +23,7 @@ class TableModel(QAbstractTableModel):
 
         super().__init__()
         self._data = data
-        self.headers = ["Row","Center(mm)","Width"]
+        self.headers = ["Row","Center","Width"]
     def headerData(self, section, orientation, role = ...):
         if role == Qt.ItemDataRole.DisplayRole:
             #should add something about whether its vertical or horizontal
@@ -34,7 +36,13 @@ class TableModel(QAbstractTableModel):
 
     def data(self, index, role):
         if role == Qt.ItemDataRole.DisplayRole:
-            return self._data[index.row()][index.column()]
+            value = self._data[index.row()][index.column()]
+            if index.column() == 1:
+                return f"{value:.1f}"
+            return value
+        if role == Qt.ItemDataRole.TextAlignmentRole:
+            return Qt.AlignmentFlag.AlignCenter
+        return None
 
     def rowCount(self, index):
         return len(self._data)
@@ -44,6 +52,24 @@ class TableModel(QAbstractTableModel):
     
     def row_num(self,row):
         return self._data[row][0]
+    
+class CustomTableView(QTableView):
+    def __init__(self):
+        super().__init__()
+        self.verticalHeader().hide()
+        self.verticalHeader().setDefaultSectionSize(0)
+
+        self.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.setSelectionMode(QTableView.SelectionMode.SingleSelection)
+
+    def setResizeMode(self):
+        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeMode.Stretch)
+        self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+    
+    def setModel(self, model):
+        super().setModel(model)
+        self.setResizeMode()
 
 
 width = .7
@@ -56,36 +82,30 @@ class SlitDisplay(QWidget):
         super().__init__()
 
         self.setSizePolicy(
-            QSizePolicy.Policy.MinimumExpanding,
+            QSizePolicy.Policy.Maximum,
             QSizePolicy.Policy.MinimumExpanding
         )
 
+        #---------------------------definitions----------------------
         self.data = data #will look like [[row,center,width],...]
-
-        self.table = QTableView()
-        
+        self.table = CustomTableView()
         self.model = TableModel(self.data)
-        
         self.table.setModel(self.model)
-        
-        self.table.setColumnWidth(0, 32) #will avoid magic numbers here
-        self.table.setColumnWidth(1,90) #will probably do QsizePolicy
-        self.table.setColumnWidth(2,50)
-        
-        self.table.verticalHeader().setDefaultSectionSize(0)
-        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows) #makes it so when you select anything you select the entire row
-        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection) #this makes it so you can only select one row at a time
+        title = QLabel("ROW DISPLAY WIDGET")
 
-
+        #--------------------------connections-----------------------
         self.table.selectionModel().selectionChanged.connect(self.row_selected)
         # self.table.clicked.connect(self.row_selected)
 
-        layout = QVBoxLayout()
+        #----------------------------layout----------------------
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(title)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0,0,0,0)
 
-        layout.addWidget(self.table)
-        self.setLayout(layout)
-        #self.table.setModel(self.table)
-        
+        main_layout.addWidget(self.table)
+        self.setLayout(main_layout)
+        #------------------------------------------------------        
 
     def sizeHint(self):
         return QSize(40,120)
