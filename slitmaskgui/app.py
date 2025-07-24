@@ -37,12 +37,6 @@ from PyQt6.QtWidgets import (
 
 )
 
-# pos_dict = {1:(240,0,"none")}
-# for i in range(2,73):
-#     pos_dict[i]=(random.randint(100,400),i,"bob")
-
-
-
 class TempWidgets(QLabel):
     def __init__(self,w,h,text:str="hello"):
         super().__init__()
@@ -74,6 +68,7 @@ class MainWindow(QMainWindow):
         mask_gen_widget.change_data.connect(target_display.change_data)
         mask_gen_widget.change_slit_image.connect(interactive_slit_mask.change_slit_and_star)
         mask_gen_widget.change_row_widget.connect(slit_position_table.change_data)
+        mask_gen_widget.send_initial_mask_config.connect(mask_config_widget.update_table)
 
 
         #-----------------------------------layout-----------------------------
@@ -81,10 +76,7 @@ class MainWindow(QMainWindow):
         splitterV1 = QSplitter()
         main_splitter = QSplitter()
         splitterV2 = QSplitter()
-        # line_color = "#aeb5ad"
-        # splitterV1.setStyleSheet(f"QSplitter::handle {{background-color: {line_color};}}")
-        # splitterV2.setStyleSheet(f"QSplitter::handle {{background-color: {line_color};}}")
-        # main_splitter.setStyleSheet(f"QSplitter::handle {{background-color: {line_color};}}")
+
 
         interactive_slit_mask.setContentsMargins(0,0,0,0)
         slit_position_table.setContentsMargins(0,0,0,0)

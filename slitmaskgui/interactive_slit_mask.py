@@ -156,7 +156,6 @@ class interactiveSlitMask(QWidget):
         self.scene.addItem(fov)
 
         self.view = CustomGraphicsView(self.scene)
-
         #-------------------connections-----------------------
         self.scene.selectionChanged.connect(self.row_is_selected)
 
