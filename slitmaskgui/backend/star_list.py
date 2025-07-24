@@ -54,6 +54,7 @@ class StarList:
 
         self.complete_json()
         #self.calc_mask()
+        self.mask_stars = self.calc_mask(payload)
         
 
     def complete_json(self): #maybe will rename this to complete payload
@@ -82,45 +83,35 @@ class StarList:
             obj["x_mm"] = x_mm
             obj["y_mm"] = y_mm
 
-            
 
             #ok this is not how you do this bc I will only take in x and just don't care about y right now (i'll care later)
-    def calc_mask(self):
-        slit_mask = SlitMask(self.payload)
+    def calc_mask(self,all_stars):
+        slit_mask = SlitMask(all_stars)
         return slit_mask.calc_y_pos()
 
     def send_target_list(self):
-        i = self.payload
-        return_list = [[x["name"],x["priority"],x["vmag"],x["ra"],x["dec"],x["center distance"]] for x in i]
-        return return_list
+        return [[x["name"],x["priority"],x["vmag"],x["ra"],x["dec"],x["center distance"]] for x in self.mask_stars]
+
 
     def send_interactive_slit_list(self):
         #have to convert it to dict {bar_num:(position,star_name)}
         #imma just act rn like all the stars are in sequential order
         #I am going to have an optimize function that actually gets the right amount of stars with good positions
         #its going to also order them by bar
-        total_pixels = 252 #in the future I will pass this n from interactive slit mask so that will always be correct on resize
-        self.interactive_mask = self.calc_mask()
+        total_pixels = 252 
         
-        slit_dict = {}
-        _max = 72
-        for i,obj in enumerate(self.interactive_mask):
-            if _max <= 0:
-                break
-            slit_dict[i] = (240+(obj["x_mm"]/(CSU_WIDTH))*total_pixels,obj["bar id"],obj["name"])
-
-            _max -= 1
+        slit_dict = {
+            i: (240 + (obj["x_mm"] / CSU_WIDTH) * total_pixels, obj["bar_id"], obj["name"]) 
+            for i, obj in enumerate(self.mask_stars[:72])
+            if "bar_id" in obj
+            }
 
         return slit_dict
     
     def send_row_widget_list(self):
-        #again, I am going to ignore the y position of the stars when placing them, I will worry about that later
-        row_list =[]
-        _max = 72
-        for obj in self.payload:
-            if _max <= 0:
-                break
-            row_list.append([obj["bar id"],obj["x_mm"],self.slit_width])
-            _max -= 1
-        sorted_row_list = sorted(row_list, key=lambda x: x[0])
+        sorted_row_list = sorted(
+            ([obj["bar_id"], obj["x_mm"], self.slit_width] 
+            for obj in self.mask_stars[:72] if "bar_id" in obj),
+            key=lambda x: x[0]
+            )
         return sorted_row_list

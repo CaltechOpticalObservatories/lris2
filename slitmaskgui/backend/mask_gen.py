@@ -16,26 +16,30 @@ class SlitMask:
 
     def calc_y_pos(self):
         #this will calculate the bar and x of every star and remove any that do not fit in position
-        for obj in self.stars:
+        initial_len = len(self.stars)
+        for index,obj in enumerate(self.stars):
             y = obj["y_mm"]
+            x = obj["x_mm"]
             y_step = CSU_HEIGHT/TOTAL_BAR_PAIRS
 
             if y <= 0:
                 bar_id = TOTAL_BAR_PAIRS/2+round(abs(y/y_step))
             elif y > 0: 
                 bar_id = TOTAL_BAR_PAIRS/2 -round(abs(y/y_step))
-
-            obj["bar id"] = int(bar_id)
-
+            if self.check_if_within(x,y):
+                obj["bar_id"] = int(bar_id)
+            else:
+                self.stars.remove(obj)
+        print(f'Initial count: {initial_len} Final count: {len(self.stars)}')
 
         return self.stars
     
-    # def check_if_within(x,y):
-    #     if y > CSU_HEIGHT/2:
-    #         return "delete"
-    #     elif x > CSU_WIDTH/2:
-    #         return "delete"
-    #     return "save"
+    def check_if_within(self,x,y):
+        if y > CSU_HEIGHT/2:
+            return False
+        elif x > CSU_WIDTH/2:
+            return False
+        return True 
         #the delete and save is a temporary string that would tell another function to delete a star if it returned delete
         #and save the star if it returned save
         #this is just to make sure that all the stars that are given in the starlist are withing the boundaries
