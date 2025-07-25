@@ -20,7 +20,6 @@ from PyQt6.QtWidgets import (
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data=[]):
-
         super().__init__()
         self._data = data
         self.headers = ["Row","Center","Width"]
@@ -56,20 +55,23 @@ class TableModel(QAbstractTableModel):
 class CustomTableView(QTableView):
     def __init__(self):
         super().__init__()
+
         self.verticalHeader().hide()
         self.verticalHeader().setDefaultSectionSize(0)
 
         self.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.setSelectionMode(QTableView.SelectionMode.SingleSelection)
-
-    def setResizeMode(self):
-        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeMode.ResizeToContents)
-        self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-    
     def setModel(self, model):
         super().setModel(model)
         self.setResizeMode()
+
+    def setResizeMode(self):
+        for i in range(3):
+            self.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+
+    def event(self, event):
+        return super().event(event)
+        #what I will do in the future is make it so that if even == doublemousepress event that you can edit the data in the cell
 
 
 width = .7

@@ -29,6 +29,7 @@ class MaskGenWidget(QWidget):
     change_data = pyqtSignal(list)
     change_slit_image = pyqtSignal(dict)
     change_row_widget = pyqtSignal(list)
+    send_initial_mask_config = pyqtSignal(list)
     def __init__(self):
         super().__init__()
 
@@ -39,10 +40,11 @@ class MaskGenWidget(QWidget):
 
         #------------------------definitions----------------------------
         import_target_list_button = QPushButton(text = "Import Target List")
-        name_of_mask = QLineEdit()
+        self.name_of_mask = QLineEdit()
         self.center_of_mask = QLineEdit("00 00 00.00 +00 00 00.00")
         self.slit_width = QLineEdit("0.7")
         run_button = QPushButton(text="Run")
+        title = QLabel("MASK GENERATION")
         
         #worry about the formatting of center_of_mask later
 
@@ -60,11 +62,11 @@ class MaskGenWidget(QWidget):
         group_layout = QVBoxLayout()
         group_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        name_of_mask.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.name_of_mask.setAlignment(Qt.AlignmentFlag.AlignTop)
         import_target_list_button.setFixedSize(150,40)
         run_button.setFixedSize(150,30)
 
-        secondary_layout.addRow("Mask Name:",name_of_mask)
+        secondary_layout.addRow("Mask Name:",self.name_of_mask)
         below_form_layout.addRow("Slit Width:",self.slit_width)
         below_form_layout.addRow("Center Ra/Dec:", self.center_of_mask)
         unit_layout.addWidget(QLabel("arcsec")) #units for slit width
@@ -80,7 +82,7 @@ class MaskGenWidget(QWidget):
         group_layout.addWidget(run_button, alignment=Qt.AlignmentFlag.AlignBottom| Qt.AlignmentFlag.AlignCenter)
         group_box.setLayout(group_layout)
 
-        title = QLabel("MASK GENERATION")
+        
         main_layout.addWidget(title)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
@@ -102,13 +104,10 @@ class MaskGenWidget(QWidget):
         )
 
         if text_file_path: 
-            self.file_path = text_file_path
+            self.star_file_path = text_file_path
 
-
-        
     def run_button(self):
         #this right now will generate a starlist depending on center to speed up testing
-        path_to_file = self.file_path
         #path_to_file = "/Users/austinbowman/lris2/gaia_starlist.txt"
 
 
@@ -116,6 +115,7 @@ class MaskGenWidget(QWidget):
         ra = center.group("Ra")
         dec = center.group("Dec")
         width = self.slit_width.text()
+        mask_name = self.name_of_mask.text()
 
 
         query_gaia_starlist_rect(
@@ -127,8 +127,14 @@ class MaskGenWidget(QWidget):
             output_file='gaia_starlist.txt'
             )
 
-        #--------------------------connections ----------
-        target_list = TargetList(path_to_file)
+        #--------------------------run mask gen --------------------------
+        try:
+            target_list = TargetList(self.star_file_path)
+        except:
+            print("No starlist file was input")
+            self.starlist_file_button_clicked()
+            target_list = TargetList(self.star_file_path)
+
         slit_mask = StarList(target_list.send_json(),ra,dec,slit_width=width)
         interactive_slit_mask = slit_mask.send_interactive_slit_list()
 
@@ -136,6 +142,8 @@ class MaskGenWidget(QWidget):
 
         self.change_data.emit(slit_mask.send_target_list())
         self.change_row_widget.emit(slit_mask.send_row_widget_list())
+
+        self.send_initial_mask_config.emit([mask_name,slit_mask.send_interactive_slit_list()]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
         #--------------------------------------------------------------------------
 
 
