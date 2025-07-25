@@ -83,7 +83,6 @@ class MainWindow(QMainWindow):
 
         interactive_slit_mask.setContentsMargins(0,0,0,0)
         slit_position_table.setContentsMargins(0,0,0,0)
-        mask_config_widget.setMaximumHeight(200)
 
         splitterV2.addWidget(mask_config_widget)
         splitterV2.addWidget(mask_gen_widget)
