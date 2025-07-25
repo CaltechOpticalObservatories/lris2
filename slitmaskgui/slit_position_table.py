@@ -78,6 +78,7 @@ default_slit_display_list = [[i+1,0.00,width] for i in range(73)]
 
 class SlitDisplay(QWidget):
     highlight_other = pyqtSignal(int,name="row selected") #change name to match that in the interactive slit mask
+    select_star = pyqtSignal(int)
     def __init__(self,data=default_slit_display_list):
         super().__init__()
 
@@ -95,6 +96,7 @@ class SlitDisplay(QWidget):
 
         #--------------------------connections-----------------------
         self.table.selectionModel().selectionChanged.connect(self.row_selected)
+        self.table.selectionModel().selectionChanged.connect(self.select_target)
 
         #----------------------------layout----------------------
         main_layout = QVBoxLayout()
@@ -122,6 +124,11 @@ class SlitDisplay(QWidget):
         corresponding_row = self.model.get_bar_id(row=selected_row)
 
         self.highlight_other.emit(corresponding_row-1)
+    
+    def select_target(self):
+        row = self.table.selectionModel().currentIndex().row()
+        self.select_star.emit(row)
+
 
     @pyqtSlot(int,name="other row selected")
     def select_corresponding(self,bar_id):

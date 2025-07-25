@@ -133,7 +133,7 @@ class CustomGraphicsView(QGraphicsView):
 
 class interactiveSlitMask(QWidget):
     row_selected = pyqtSignal(int,name="row selected")
-    select_star = pyqtSignal(str)
+    
     def __init__(self):
         super().__init__()
 
@@ -163,6 +163,7 @@ class interactiveSlitMask(QWidget):
 
         #-------------------connections-----------------------
         self.scene.selectionChanged.connect(self.row_is_selected)
+        
 
 
         #------------------------layout-----------------------
@@ -212,12 +213,6 @@ class interactiveSlitMask(QWidget):
         try:
             row_num = self.scene.selectedItems()[0].check_id()
             self.row_selected.emit(row_num)
-        except:
-            pass
-    def select_target(self):
-        try:
-            star_name = self.scene.selectedItems()[0].star_name
-            self.select_star.emit(star_name)
         except:
             pass
 

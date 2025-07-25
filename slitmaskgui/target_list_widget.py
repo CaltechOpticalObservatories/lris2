@@ -115,6 +115,8 @@ class TargetDisplayWidget(QWidget):
     def select_corresponding(self,row): #everything will be done with the row widget
         self.table.selectRow(row)
 
+
+
 #default margin is 9 or 11 pixels
 
 
