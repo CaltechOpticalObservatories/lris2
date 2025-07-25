@@ -5,24 +5,20 @@ additionally It will also interact with the target list
 it will display where the slit is place and what stars will be shown
 """
 from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal, QSize
-from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont
+from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QTransform
 from PyQt6.QtWidgets import (
-    QApplication,
-    QMainWindow,
     QVBoxLayout,
     QHBoxLayout,
     QWidget,
     QLabel,
-    QGraphicsItem,
     QGraphicsView,
     QGraphicsScene,
-    QLayout,
     QGraphicsRectItem,
-    QStyleOptionGraphicsItem,
     QGraphicsLineItem,
     QGraphicsTextItem,
     QGraphicsItemGroup,
-    QSizePolicy
+    QSizePolicy,
+    QSizeGrip,
 
 
 )
@@ -31,13 +27,17 @@ from PyQt6.QtWidgets import (
 PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
 CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
 CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
+TOTAL_HEIGHT_OF_BARS = 7*72
 
 class interactiveBars(QGraphicsRectItem):
     
-    def __init__(self,x,y,this_id):
+    def __init__(self,x,y,bar_length,bar_width,this_id):
         super().__init__()
         #creates a rectangle that can cha
-        self.setRect(x,y, 480,7)
+        self.length = bar_length
+        self.width = bar_width
+        self.y_pos = y
+        self.setRect(x,self.y_pos, self.length,self.width)
         self.id = this_id
         self.setBrush = QBrush(Qt.GlobalColor.white)
         self.setPen = QPen(Qt.GlobalColor.black).setWidth(1)
@@ -56,6 +56,9 @@ class interactiveBars(QGraphicsRectItem):
             painter.setBrush(QBrush(Qt.GlobalColor.white))
             painter.setPen(QPen(QColor("black"), 1))
         painter.drawRect(self.rect())
+    
+    def send_size(self):
+        return (self.length,self.width)
 
 class FieldOfView(QGraphicsRectItem):
     def __init__(self,image_height,x=0,y=0):
@@ -97,47 +100,83 @@ class interactiveSlits(QGraphicsItemGroup):
         self.addToGroup(self.star)
     def get_y_value(self):
         return self.y_pos
+    def get_bar_id(self):
+        return self.y_pos/7
+
+class CustomGraphicsView(QGraphicsView):
+    def __init__(self,scene):
+        super().__init__(scene)
+        # self.scene() == scene
+        self.previous_height = self.height()
+        self.previous_width = self.width()
+    
+        self.scale(1,0.9)
+
+    def resizeEvent(self,event):
+        new_width = self.size().width()
+        new_height = self.size().height()
+
+        scale_x = new_width / self.previous_width
+        scale_y = new_height / self.previous_height
+
+        self.scale(scale_x, scale_y)
+
+        self.previous_width = new_width
+        self.previous_height = new_height
+
+        super().resizeEvent(event)
+
+    def sizePolicy(self):
+        return super().sizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+    def renderHints(self):
+        return super().renderHints(QPainter.RenderHint.Antialiasing)
 
 class interactiveSlitMask(QWidget):
     row_selected = pyqtSignal(int,name="row selected")
+    
     def __init__(self):
         super().__init__()
-        #this will display the image
-        #I think it would be cool to make the bars on the GUI move instead of just the slits moving
-        self.scene = QGraphicsScene(0,0,480,520)
-        self.setSizePolicy(
-            QSizePolicy.Policy.MinimumExpanding,
-            QSizePolicy.Policy.MinimumExpanding
-        )
-        height = self.height() #this is the height of the widget
-        width = self.width()
-        total_height_of_bars = 7*72
+
+        #--------------------definitions-----------------------
+        scene_width = 480
+        scene_height = 520
+        self.scene = QGraphicsScene(0,0,scene_width,scene_height)
+
         xcenter_of_image = self.scene.width()/2
+
+        blank_space = " "*65
+        title = QLabel(f"{blank_space}SLIT MASK VIEWER")
         
-        
+        initial_bar_width = 7
+        initial_bar_length = 480
 
         for i in range(72):
-            temp_rect = interactiveBars(0,i*7+7,i)
+            temp_rect = interactiveBars(0,i*7+7,this_id=i,bar_width=initial_bar_width,bar_length=initial_bar_length)
+            temp_slit = interactiveSlits(scene_width/2,7*i+7)
             self.scene.addItem(temp_rect)
-        for i in range(72):
-            temp_slit = interactiveSlits(240,7*i+7)
             self.scene.addItem(temp_slit)
-        fov = FieldOfView(total_height_of_bars,x=xcenter_of_image/2,y=7)
+
+        fov = FieldOfView(TOTAL_HEIGHT_OF_BARS,x=xcenter_of_image/2,y=7)
         self.scene.addItem(fov)
 
-
-        self.view = QGraphicsView(self.scene)
-        self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
-
+        self.view = CustomGraphicsView(self.scene)
+        #-------------------connections-----------------------
         self.scene.selectionChanged.connect(self.row_is_selected)
+        
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.view)
 
-        self.setLayout(layout)
-    
+        #------------------------layout-----------------------
+        main_layout = QVBoxLayout()
+        
+        main_layout.addWidget(title)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0,0,0,0)
+        main_layout.addWidget(self.view)
+
+        self.setLayout(main_layout)
+        #-------------------------------------------
     def sizeHint(self):
-        return QSize(520,550)
+        return QSize(650,620)
     
     @pyqtSlot(int,name="row selected")
     def select_corresponding_row(self,row):
@@ -151,6 +190,22 @@ class interactiveSlitMask(QWidget):
         if 0 <= row <len(all_bars):
             self.row_num = row
             all_bars[self.row_num].setSelected(True)
+    @pyqtSlot(str)
+    def get_row_from_star_name(self,name):
+        all_stars = [
+            item for item in reversed(self.scene.items())
+            if isinstance(item, QGraphicsItemGroup)
+        ]
+        all_bars = [
+            item for item in reversed(self.scene.items())
+            if isinstance(item, interactiveBars)
+        ]
+
+        self.scene.clearSelection()
+        for i in range(len(all_stars)):
+            if all_stars[i].star_name == name:
+                bar_id = int(all_stars[i].get_bar_id())
+                all_bars[bar_id-1].setSelected(True)
 
     
     def row_is_selected(self):

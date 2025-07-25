@@ -1,0 +1,22 @@
+/*Main Window Styling*/
+
+QMainWindow {
+    border: 8.5px solid #aeb5ad;
+    background-color: lightgray;
+}
+
+/* General Widget styling */
+
+QWidget {
+    
+}
+
+/* General splitter styling */
+
+QSplitter {
+    
+}
+
+QSplitter::handle {
+    background-color: #aeb5ad
+}

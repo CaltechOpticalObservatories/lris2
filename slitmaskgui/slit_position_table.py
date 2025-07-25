@@ -11,17 +11,18 @@ from PyQt6.QtWidgets import (
     QTableView,
     QVBoxLayout,
     QTableWidget,
-    QSizePolicy
+    QSizePolicy,
+    QLabel,
+    QHeaderView,
 
 
 )
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data=[]):
-
         super().__init__()
         self._data = data
-        self.headers = ["Row","Center(mm)","Width"]
+        self.headers = ["Row","Center","Width"]
     def headerData(self, section, orientation, role = ...):
         if role == Qt.ItemDataRole.DisplayRole:
             #should add something about whether its vertical or horizontal
@@ -34,7 +35,13 @@ class TableModel(QAbstractTableModel):
 
     def data(self, index, role):
         if role == Qt.ItemDataRole.DisplayRole:
-            return self._data[index.row()][index.column()]
+            value = self._data[index.row()][index.column()]
+            if index.column() == 1:
+                return f"{value:.1f}"
+            return value
+        if role == Qt.ItemDataRole.TextAlignmentRole:
+            return Qt.AlignmentFlag.AlignCenter
+        return None
 
     def rowCount(self, index):
         return len(self._data)
@@ -42,8 +49,29 @@ class TableModel(QAbstractTableModel):
     def columnCount(self, index):
         return len(self._data[0])
     
-    def row_num(self,row):
+    def get_bar_id(self, row):
         return self._data[row][0]
+    
+class CustomTableView(QTableView):
+    def __init__(self):
+        super().__init__()
+
+        self.verticalHeader().hide()
+        self.verticalHeader().setDefaultSectionSize(0)
+
+        self.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.setSelectionMode(QTableView.SelectionMode.SingleSelection)
+    def setModel(self, model):
+        super().setModel(model)
+        self.setResizeMode()
+
+    def setResizeMode(self):
+        for i in range(3):
+            self.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+
+    def event(self, event):
+        return super().event(event)
+        #what I will do in the future is make it so that if even == doublemousepress event that you can edit the data in the cell
 
 
 width = .7
@@ -52,40 +80,35 @@ default_slit_display_list = [[i+1,0.00,width] for i in range(73)]
 
 class SlitDisplay(QWidget):
     highlight_other = pyqtSignal(int,name="row selected") #change name to match that in the interactive slit mask
+    select_star = pyqtSignal(int)
     def __init__(self,data=default_slit_display_list):
         super().__init__()
 
         self.setSizePolicy(
-            QSizePolicy.Policy.MinimumExpanding,
+            QSizePolicy.Policy.Maximum,
             QSizePolicy.Policy.MinimumExpanding
         )
 
-        self.data = data #will look like [[row,center,width],...]
-
-        self.table = QTableView()
-        
+        #---------------------------definitions----------------------
+        self.data = data #will look like [[bar_id,center,width],...]
+        self.table = CustomTableView()
         self.model = TableModel(self.data)
-        
         self.table.setModel(self.model)
-        
-        self.table.setColumnWidth(0, 32) #will avoid magic numbers here
-        self.table.setColumnWidth(1,90) #will probably do QsizePolicy
-        self.table.setColumnWidth(2,50)
-        
-        self.table.verticalHeader().setDefaultSectionSize(0)
-        self.table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows) #makes it so when you select anything you select the entire row
-        self.table.setSelectionMode(QTableView.SelectionMode.SingleSelection) #this makes it so you can only select one row at a time
+        title = QLabel("ROW DISPLAY WIDGET")
 
-
+        #--------------------------connections-----------------------
         self.table.selectionModel().selectionChanged.connect(self.row_selected)
-        # self.table.clicked.connect(self.row_selected)
+        self.table.selectionModel().selectionChanged.connect(self.select_target)
 
-        layout = QVBoxLayout()
+        #----------------------------layout----------------------
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(title)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0,0,0,0)
 
-        layout.addWidget(self.table)
-        self.setLayout(layout)
-        #self.table.setModel(self.table)
-        
+        main_layout.addWidget(self.table)
+        self.setLayout(main_layout)
+        #------------------------------------------------------        
 
     def sizeHint(self):
         return QSize(40,120)
@@ -94,20 +117,31 @@ class SlitDisplay(QWidget):
     def change_data(self,data):
         self.model.beginResetModel()
         self.model._data = data
+        self.data = data
         self.model.endResetModel()
 
     
     def row_selected(self):
-        #I have to emit a list of x,y positions [[x,y],...]
-        #if there is no star in a row then we have to make it so that there is not change in position
-        #I probably need to find the row
         selected_row = self.table.selectionModel().currentIndex().row()
-        # item = int(self.model.row_num(selected_row))
-        # if selected_row in (self.data, lambda x:x[0]):
-        self.highlight_other.emit(selected_row)
+        corresponding_row = self.model.get_bar_id(row=selected_row)
+
+        self.highlight_other.emit(corresponding_row-1)
+    
+    def select_target(self):
+        row = self.table.selectionModel().currentIndex().row()
+        self.select_star.emit(row)
+
 
     @pyqtSlot(int,name="other row selected")
-    def select_corresponding(self,row):
-        self.row = row
-        self.table.selectRow(self.row)
+    def select_corresponding(self,bar_id):
+        self.bar_id = bar_id + 1
+
+        filtered_row = list(filter(lambda x:x[0] == self.bar_id,self.data))
+        if filtered_row:
+            row = filtered_row[0]
+            index_of_row = self.data.index(row)
+            self.table.selectRow(index_of_row)
+        else:
+            #this means that the bar does not have a slit on it
+            pass
  
