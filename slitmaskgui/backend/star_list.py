@@ -97,8 +97,9 @@ class StarList:
         return slit_dict
     
     def send_row_widget_list(self):
+        #the reason why the bar id is plus 1 is to transl
         sorted_row_list = sorted(
-            ([obj["bar_id"], obj["x_mm"], self.slit_width] 
+            ([obj["bar_id"]+1, obj["x_mm"], self.slit_width] 
             for obj in self.mask_stars[:72] if "bar_id" in obj),
             key=lambda x: x[0]
             )
