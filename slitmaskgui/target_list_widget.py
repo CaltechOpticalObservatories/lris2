@@ -1,7 +1,7 @@
 
 #from inputTargets import TargetList
 from slitmaskgui.menu_bar import MenuBar
-from PyQt6.QtCore import Qt, QAbstractTableModel, pyqtSlot, QSize
+from PyQt6.QtCore import Qt, QAbstractTableModel, pyqtSlot, QSize, pyqtSignal
 from PyQt6.QtWidgets import (
     QWidget,
     QTableView,
@@ -41,6 +41,10 @@ class TableModel(QAbstractTableModel):
 
     def columnCount(self, index):
         return len(self.header)
+    
+    def get_star_name(self, row):
+        return self._data[row][0]
+
 
 class CustomTableView(QTableView):
     def __init__(self):
@@ -63,6 +67,7 @@ class CustomTableView(QTableView):
         self.setResizeMode()
 
 class TargetDisplayWidget(QWidget):
+    selected_le_star = pyqtSignal(str)
     def __init__(self,data=[]):
         super().__init__()
 
@@ -78,6 +83,8 @@ class TargetDisplayWidget(QWidget):
         self.table.setModel(self.model)
         title = QLabel("TARGET LIST")
 
+        #------------------------connections----------------------
+        self.table.selectionModel().selectionChanged.connect(self.selected_star)
 
         #-------------------------layout-----------------------------
         main_layout = QVBoxLayout()
@@ -96,7 +103,19 @@ class TargetDisplayWidget(QWidget):
     def change_data(self,data):
         self.model.beginResetModel()
         self.model._data = data
+        self.data = data
         self.model.endResetModel()
+    
+    def selected_star(self):
+        selected_row = self.table.selectionModel().currentIndex().row()
+        corresponding_name = self.model.get_star_name(row=selected_row)
+        self.selected_le_star.emit(corresponding_name)
+
+    @pyqtSlot(int)
+    def select_corresponding(self,row): #everything will be done with the row widget
+        self.table.selectRow(row)
+
+
 
 #default margin is 9 or 11 pixels
 

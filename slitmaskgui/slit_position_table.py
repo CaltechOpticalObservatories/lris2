@@ -50,7 +50,7 @@ class TableModel(QAbstractTableModel):
     def columnCount(self, index):
         return len(self._data[0])
     
-    def row_num(self,row):
+    def get_bar_id(self, row):
         return self._data[row][0]
     
 class CustomTableView(QTableView):
@@ -78,6 +78,7 @@ default_slit_display_list = [[i+1,0.00,width] for i in range(73)]
 
 class SlitDisplay(QWidget):
     highlight_other = pyqtSignal(int,name="row selected") #change name to match that in the interactive slit mask
+    select_star = pyqtSignal(int)
     def __init__(self,data=default_slit_display_list):
         super().__init__()
 
@@ -87,7 +88,7 @@ class SlitDisplay(QWidget):
         )
 
         #---------------------------definitions----------------------
-        self.data = data #will look like [[row,center,width],...]
+        self.data = data #will look like [[bar_id,center,width],...]
         self.table = CustomTableView()
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
@@ -95,7 +96,7 @@ class SlitDisplay(QWidget):
 
         #--------------------------connections-----------------------
         self.table.selectionModel().selectionChanged.connect(self.row_selected)
-        # self.table.clicked.connect(self.row_selected)
+        self.table.selectionModel().selectionChanged.connect(self.select_target)
 
         #----------------------------layout----------------------
         main_layout = QVBoxLayout()
@@ -114,20 +115,31 @@ class SlitDisplay(QWidget):
     def change_data(self,data):
         self.model.beginResetModel()
         self.model._data = data
+        self.data = data
         self.model.endResetModel()
 
     
     def row_selected(self):
-        #I have to emit a list of x,y positions [[x,y],...]
-        #if there is no star in a row then we have to make it so that there is not change in position
-        #I probably need to find the row
         selected_row = self.table.selectionModel().currentIndex().row()
-        # item = int(self.model.row_num(selected_row))
-        # if selected_row in (self.data, lambda x:x[0]):
-        self.highlight_other.emit(selected_row)
+        corresponding_row = self.model.get_bar_id(row=selected_row)
+
+        self.highlight_other.emit(corresponding_row-1)
+    
+    def select_target(self):
+        row = self.table.selectionModel().currentIndex().row()
+        self.select_star.emit(row)
+
 
     @pyqtSlot(int,name="other row selected")
-    def select_corresponding(self,row):
-        self.row = row
-        self.table.selectRow(self.row)
+    def select_corresponding(self,bar_id):
+        self.bar_id = bar_id + 1
+
+        filtered_row = list(filter(lambda x:x[0] == self.bar_id,self.data))
+        if filtered_row:
+            row = filtered_row[0]
+            index_of_row = self.data.index(row)
+            self.table.selectRow(index_of_row)
+        else:
+            #this means that the bar does not have a slit on it
+            pass
  

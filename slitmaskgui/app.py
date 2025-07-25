@@ -37,11 +37,7 @@ from PyQt6.QtWidgets import (
 
 )
 
-# pos_dict = {1:(240,0,"none")}
-# for i in range(2,73):
-#     pos_dict[i]=(random.randint(100,400),i,"bob")
-
-
+#need to add something that will query where the stars will be depending on the time of day
 
 class TempWidgets(QLabel):
     def __init__(self,w,h,text:str="hello"):
@@ -70,6 +66,8 @@ class MainWindow(QMainWindow):
         #---------------------------------connections-----------------------------
         slit_position_table.highlight_other.connect(interactive_slit_mask.select_corresponding_row)
         interactive_slit_mask.row_selected.connect(slit_position_table.select_corresponding)
+        target_display.selected_le_star.connect(interactive_slit_mask.get_row_from_star_name)
+        slit_position_table.select_star.connect(target_display.select_corresponding)
 
         mask_gen_widget.change_data.connect(target_display.change_data)
         mask_gen_widget.change_slit_image.connect(interactive_slit_mask.change_slit_and_star)
@@ -81,10 +79,6 @@ class MainWindow(QMainWindow):
         splitterV1 = QSplitter()
         main_splitter = QSplitter()
         splitterV2 = QSplitter()
-        # line_color = "#aeb5ad"
-        # splitterV1.setStyleSheet(f"QSplitter::handle {{background-color: {line_color};}}")
-        # splitterV2.setStyleSheet(f"QSplitter::handle {{background-color: {line_color};}}")
-        # main_splitter.setStyleSheet(f"QSplitter::handle {{background-color: {line_color};}}")
 
         interactive_slit_mask.setContentsMargins(0,0,0,0)
         slit_position_table.setContentsMargins(0,0,0,0)

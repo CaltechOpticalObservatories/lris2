@@ -109,7 +109,7 @@ class MaskGenWidget(QWidget):
     def run_button(self):
         #this right now will generate a starlist depending on center to speed up testing
         path_to_file = self.file_path
-        path_to_file = "/Users/austinbowman/lris2/gaia_starlist.txt"
+        #path_to_file = "/Users/austinbowman/lris2/gaia_starlist.txt"
 
 
         center = re.match(r"(?P<Ra>\d{2} \d{2} \d{2}\.\d{2}(?:\.\d+)?) (?P<Dec>[\+|\-]\d{2} \d{2} \d{2}(?:\.\d+)?)",self.center_of_mask.text())
