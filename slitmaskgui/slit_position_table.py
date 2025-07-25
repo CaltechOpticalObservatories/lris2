@@ -64,7 +64,7 @@ class CustomTableView(QTableView):
 
     def setResizeMode(self):
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeMode.Stretch)
+        self.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeMode.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
     
     def setModel(self, model):

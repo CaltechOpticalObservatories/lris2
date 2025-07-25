@@ -37,11 +37,7 @@ from PyQt6.QtWidgets import (
 
 )
 
-# pos_dict = {1:(240,0,"none")}
-# for i in range(2,73):
-#     pos_dict[i]=(random.randint(100,400),i,"bob")
-
-
+#need to add something that will query where the stars will be depending on the time of day
 
 class TempWidgets(QLabel):
     def __init__(self,w,h,text:str="hello"):

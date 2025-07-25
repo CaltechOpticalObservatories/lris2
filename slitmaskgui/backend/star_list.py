@@ -14,18 +14,10 @@ import pandas as pd
 import numpy as np
 from slitmaskgui.input_targets import TargetList
 from slitmaskgui.backend.mask_gen import SlitMask
-import math as m
+
 
 #Ra and Dec --> angle Degrees
 
-RA="12 36 56.72988"
-Dec="+62 14 27.3984"
-
-#temp_center = (189.2363745,62.240944) #Ra, Dec
-temp_center = SkyCoord(ra=RA,dec=Dec,unit=(u.hourangle,u.deg))
-
-temp_width = .7
-temp_pa = 0
 
 
 #dimensions are 213.76 mm x 427.51 mm I think but have no clue
@@ -65,29 +57,25 @@ class StarList:
 
             delta_ra = (star.ra - self.center.ra).to(u.deg) #from center
             delta_dec = (star.dec - self.center.dec).to(u.arcsec) #from center
-            #this math does not work because it
+
             if delta_ra.value > 180:  # If RA difference exceeds 180 degrees, wrap it
                 delta_ra -= 360 * u.deg
             elif delta_ra.value < -180:
                 delta_ra += 360 * u.deg
 
             delta_ra = delta_ra.to(u.arcsec)
-
             delta_ra_proj = delta_ra * np.cos(self.center.dec.radian) # Correct for spherical distortion
-
-            # Convert to mm
+                # Convert to mm
             x_mm = float(delta_ra_proj.value * PLATE_SCALE)
             y_mm = float(delta_dec.value * PLATE_SCALE)
 
-            # Save or print results
             obj["x_mm"] = x_mm
             obj["y_mm"] = y_mm
-
 
             #ok this is not how you do this bc I will only take in x and just don't care about y right now (i'll care later)
     def calc_mask(self,all_stars):
         slit_mask = SlitMask(all_stars)
-        return slit_mask.calc_y_pos()
+        return slit_mask.return_mask()
 
     def send_target_list(self):
         return [[x["name"],x["priority"],x["vmag"],x["ra"],x["dec"],x["center distance"]] for x in self.mask_stars]
