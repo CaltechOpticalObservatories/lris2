@@ -27,6 +27,7 @@ from PyQt6.QtWidgets import (
 PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
 CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
 CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
+TOTAL_HEIGHT_OF_BARS = 7*72
 
 class interactiveBars(QGraphicsRectItem):
     
@@ -35,7 +36,8 @@ class interactiveBars(QGraphicsRectItem):
         #creates a rectangle that can cha
         self.length = bar_length
         self.width = bar_width
-        self.setRect(x,y, self.length,self.width)
+        self.y_pos = y
+        self.setRect(x,self.y_pos, self.length,self.width)
         self.id = this_id
         self.setBrush = QBrush(Qt.GlobalColor.white)
         self.setPen = QPen(Qt.GlobalColor.black).setWidth(1)
@@ -98,6 +100,8 @@ class interactiveSlits(QGraphicsItemGroup):
         self.addToGroup(self.star)
     def get_y_value(self):
         return self.y_pos
+    def get_bar_id(self):
+        return self.y_pos/7
 
 class CustomGraphicsView(QGraphicsView):
     def __init__(self,scene):
@@ -129,6 +133,7 @@ class CustomGraphicsView(QGraphicsView):
 
 class interactiveSlitMask(QWidget):
     row_selected = pyqtSignal(int,name="row selected")
+    select_star = pyqtSignal(str)
     def __init__(self):
         super().__init__()
 
@@ -137,7 +142,6 @@ class interactiveSlitMask(QWidget):
         scene_height = 520
         self.scene = QGraphicsScene(0,0,scene_width,scene_height)
 
-        total_height_of_bars = 7*72
         xcenter_of_image = self.scene.width()/2
 
         blank_space = " "*65
@@ -152,7 +156,7 @@ class interactiveSlitMask(QWidget):
             self.scene.addItem(temp_rect)
             self.scene.addItem(temp_slit)
 
-        fov = FieldOfView(total_height_of_bars,x=xcenter_of_image/2,y=7)
+        fov = FieldOfView(TOTAL_HEIGHT_OF_BARS,x=xcenter_of_image/2,y=7)
         self.scene.addItem(fov)
 
         self.view = CustomGraphicsView(self.scene)
@@ -186,12 +190,34 @@ class interactiveSlitMask(QWidget):
         if 0 <= row <len(all_bars):
             self.row_num = row
             all_bars[self.row_num].setSelected(True)
+    @pyqtSlot(str)
+    def get_row_from_star_name(self,name):
+        all_stars = [
+            item for item in reversed(self.scene.items())
+            if isinstance(item, QGraphicsItemGroup)
+        ]
+        all_bars = [
+            item for item in reversed(self.scene.items())
+            if isinstance(item, interactiveBars)
+        ]
+
+        self.scene.clearSelection()
+        for i in range(len(all_stars)):
+            if all_stars[i].star_name == name:
+                bar_id = int(all_stars[i].get_bar_id())
+                all_bars[bar_id-1].setSelected(True)
 
     
     def row_is_selected(self):
         try:
             row_num = self.scene.selectedItems()[0].check_id()
             self.row_selected.emit(row_num)
+        except:
+            pass
+    def select_target(self):
+        try:
+            star_name = self.scene.selectedItems()[0].star_name
+            self.select_star.emit(star_name)
         except:
             pass
 
