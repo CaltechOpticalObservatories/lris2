@@ -114,7 +114,7 @@ class MainWindow(QMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
-    with open("/Users/austinbowman/lris2/slitmaskgui/styles.qss", "r") as f:
+    with open("slitmaskgui/styles.qss", "r") as f:
         _style = f.read()
     app.setStyleSheet(_style)
 

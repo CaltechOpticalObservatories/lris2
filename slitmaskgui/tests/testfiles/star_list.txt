@@ -1,0 +1,4 @@
+Gaia_001        15 25 32.35 -50 46 46.8 2000.0 vmag=20.77 priority=1020
+Gaia_001        15 25 32.35 -50 46 46.8 2000.0 priority=1020 vmag=20.77  
+Gaia_011    15 25 32.35 -50 46 46.8 2000.0 vmag=20.77 priority=1020
+Gaia_021        15 25 32.35 -50 46 46.8 2000.0 vmag=20.77 priority=1020 must_have=True
