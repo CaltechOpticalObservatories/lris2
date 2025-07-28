@@ -40,7 +40,8 @@ class TargetList:
         with open(self.file_path) as file:
             untitled_count = 0
             for line in file:
-                if line[0] != "#" and line.split():
+                line = line.strip() #Just in case
+                if not line.startswith("#") and line.split():
                     match = re.match(r"(?P<star>\S+)\s+(?P<Ra>\d{2} \d{2} \d{2}\.\d{2}) (?P<Dec>[\+|\-]\d{2} \d{2} \d{2}(?:\.\d+)?)\s+(?P<equinox>[^\s]+)\s",line)
                     if match:
                         name, ra, dec, equinox = match.group("star"), match.group("Ra"), match.group("Dec"), match.group("equinox")
