@@ -14,6 +14,8 @@ import pandas as pd
 import numpy as np
 from slitmaskgui.input_targets import TargetList
 from slitmaskgui.backend.mask_gen import SlitMask
+import json
+import os
 
 
 #Ra and Dec --> angle Degrees
@@ -38,15 +40,19 @@ I also assume that RA and DEC are aligned with the x and y axis
 while that probably isn't right i'll just get something down for now
 """
 class StarList:
-    def __init__(self,payload,RA,Dec,slit_width=0,pa=0):
-        self.payload = payload
+    #with auto run you can select if the json is complete or not already
+    #this means that if you have a complete list of all the stars as if it rand thorough this class, then you can select auto run as false
+    #then you can use the send functions without doing a bunch of computation
+    def __init__(self,payload,RA,Dec,slit_width=0,pa=0,auto_run=True): 
+        self.payload = json.loads(payload)
         self.center = SkyCoord(ra=RA,dec=Dec,unit=(u.hourangle,u.deg))
         self.slit_width = slit_width
         self.pa = pa
-
-        self.complete_json()
-        #self.calc_mask()
-        self.mask_stars = self.calc_mask(payload)
+        
+        if auto_run:
+            self.complete_json()
+            #self.calc_mask()
+            self.payload = self.calc_mask(self.payload)
         
 
     def complete_json(self): #maybe will rename this to complete payload
@@ -73,12 +79,21 @@ class StarList:
             obj["y_mm"] = y_mm
 
             #ok this is not how you do this bc I will only take in x and just don't care about y right now (i'll care later)
-    def calc_mask(self,all_stars):
+    
+    def calc_mask(self,all_stars): 
         slit_mask = SlitMask(all_stars)
-        return slit_mask.return_mask()
+            
+        return json.loads(slit_mask.return_mask())
+
+    def send_mask_config(self,mask_name):
+        file_path = f'{os.getcwd()}/{mask_name}.json'
+        with open(file_path,'w') as f:
+            json.dump(self.payload,f,indent=4)
+        return file_path
+    
 
     def send_target_list(self):
-        return [[x["name"],x["priority"],x["vmag"],x["ra"],x["dec"],x["center distance"]] for x in self.mask_stars]
+        return [[x["name"],x["priority"],x["vmag"],x["ra"],x["dec"],x["center distance"]] for x in self.payload]
 
 
     def send_interactive_slit_list(self):
@@ -90,7 +105,7 @@ class StarList:
         
         slit_dict = {
             i: (240 + (obj["x_mm"] / CSU_WIDTH) * total_pixels, obj["bar_id"], obj["name"]) 
-            for i, obj in enumerate(self.mask_stars[:72])
+            for i, obj in enumerate(self.payload[:72])
             if "bar_id" in obj
             }
 
@@ -100,7 +115,7 @@ class StarList:
         #the reason why the bar id is plus 1 is to transl
         sorted_row_list = sorted(
             ([obj["bar_id"]+1, obj["x_mm"], self.slit_width] 
-            for obj in self.mask_stars[:72] if "bar_id" in obj),
+            for obj in self.payload[:72] if "bar_id" in obj),
             key=lambda x: x[0]
             )
         return sorted_row_list

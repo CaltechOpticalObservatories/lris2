@@ -29,7 +29,7 @@ class MaskGenWidget(QWidget):
     change_data = pyqtSignal(list)
     change_slit_image = pyqtSignal(dict)
     change_row_widget = pyqtSignal(list)
-    send_initial_mask_config = pyqtSignal(list)
+    send_mask_config = pyqtSignal(list)
     def __init__(self):
         super().__init__()
 
@@ -41,7 +41,7 @@ class MaskGenWidget(QWidget):
         #------------------------definitions----------------------------
         logger.info("mask_gen_widget: doing definitions")
         import_target_list_button = QPushButton(text = "Import Target List")
-        self.name_of_mask = QLineEdit()
+        self.name_of_mask = QLineEdit("untitled")
         self.center_of_mask = QLineEdit("00 00 00.00 +00 00 00.00")
         self.slit_width = QLineEdit("0.7")
         run_button = QPushButton(text="Run")
@@ -137,7 +137,7 @@ class MaskGenWidget(QWidget):
         try:
             target_list = TargetList(self.star_file_path)
         except:
-            print("No starlist file was input")
+            logger.info("maks_gen_widget: run button was clicked by no file selected")
             self.starlist_file_button_clicked()
             target_list = TargetList(self.star_file_path)
 
@@ -149,7 +149,8 @@ class MaskGenWidget(QWidget):
         self.change_data.emit(slit_mask.send_target_list())
         self.change_row_widget.emit(slit_mask.send_row_widget_list())
 
-        self.send_initial_mask_config.emit([mask_name,slit_mask.send_interactive_slit_list()]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
+        logger.info("mask_gen_widget: sending mask config to mask_configurations")
+        self.send_mask_config.emit([mask_name,slit_mask.send_mask_config(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
         #--------------------------------------------------------------------------
 
 

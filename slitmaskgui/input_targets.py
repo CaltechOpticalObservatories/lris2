@@ -70,6 +70,7 @@ class TargetList:
                     #change this list do be a list of celestial objects that can be used later not just for displaying lists. 
                     #self.target_list.append([name,priority,vmag,ra,dec])
     def send_json(self):
+        self.objects = json.dumps(self.objects)
         return self.objects
         
     # def send_list(self):

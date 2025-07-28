@@ -9,6 +9,7 @@ CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
 TOTAL_BAR_PAIRS = 72
 
 from itertools import groupby
+import json
 
 
 #for some reason I am splitting up everything into their own for statements
@@ -35,7 +36,6 @@ class SlitMask:
                 obj["bar_id"] = int(bar_id)
             else:
                 self.stars.remove(obj)
-        print(f'Initial count: {initial_len} Final count: {len(self.stars)}')
 
     
     def check_if_within(self,x,y):
@@ -72,7 +72,7 @@ class SlitMask:
     
 
     def return_mask(self):
-        return self.stars
+        return json.dumps(self.stars)
     
     def make_mask(self):
         #will return a list that will be used by the csu to configure the slits 
