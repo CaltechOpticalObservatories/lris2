@@ -150,7 +150,7 @@ class MaskGenWidget(QWidget):
         self.change_row_widget.emit(slit_mask.send_row_widget_list())
 
         logger.info("mask_gen_widget: sending mask config to mask_configurations")
-        self.send_mask_config.emit([mask_name,slit_mask.send_mask_config(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
+        self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
         #--------------------------------------------------------------------------
 
 

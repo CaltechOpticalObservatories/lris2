@@ -85,11 +85,13 @@ class StarList:
             
         return json.loads(slit_mask.return_mask())
 
-    def send_mask_config(self,mask_name):
-        file_path = f'{os.getcwd()}/{mask_name}.json'
+    def export_mask_config(self,file_path):
+        # file_path = f'{os.getcwd()}/{mask_name}.json'
         with open(file_path,'w') as f:
             json.dump(self.payload,f,indent=4)
-        return file_path
+        # return file_path
+    def send_mask(self, mask_name="untitled"):
+        return self.payload
     
 
     def send_target_list(self):

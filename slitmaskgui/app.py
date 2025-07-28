@@ -31,7 +31,7 @@ from slitmaskgui.menu_bar import MenuBar
 from slitmaskgui.interactive_slit_mask import interactiveSlitMask
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtCore import Qt, QSize, pyqtSlot
 
 from PyQt6.QtWidgets import (
     QApplication,
@@ -71,63 +71,87 @@ class MainWindow(QMainWindow):
         mask_config_widget = MaskConfigurationsWidget()
         mask_gen_widget = MaskGenWidget()
         
-        target_display = TargetDisplayWidget()
-        interactive_slit_mask = interactiveSlitMask()
-        slit_position_table = SlitDisplay()
+        self.target_display = TargetDisplayWidget()
+        self.interactive_slit_mask = interactiveSlitMask()
+        self.slit_position_table = SlitDisplay()
         
 
         #---------------------------------connections-----------------------------
         main_logger.info("app: doing connections")
-        slit_position_table.highlight_other.connect(interactive_slit_mask.select_corresponding_row)
-        interactive_slit_mask.row_selected.connect(slit_position_table.select_corresponding)
-        target_display.selected_le_star.connect(interactive_slit_mask.get_row_from_star_name)
-        slit_position_table.select_star.connect(target_display.select_corresponding)
+        self.slit_position_table.highlight_other.connect(self.interactive_slit_mask.select_corresponding_row)
+        self.interactive_slit_mask.row_selected.connect(self.slit_position_table.select_corresponding)
+        self.target_display.selected_le_star.connect(self.interactive_slit_mask.get_row_from_star_name)
+        self.slit_position_table.select_star.connect(self.target_display.select_corresponding)
 
-        mask_gen_widget.change_data.connect(target_display.change_data)
-        mask_gen_widget.change_slit_image.connect(interactive_slit_mask.change_slit_and_star)
-        mask_gen_widget.change_row_widget.connect(slit_position_table.change_data)
+        mask_gen_widget.change_data.connect(self.target_display.change_data)
+        mask_gen_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
+        mask_gen_widget.change_row_widget.connect(self.slit_position_table.change_data)
         mask_gen_widget.send_mask_config.connect(mask_config_widget.update_table)
 
-        mask_config_widget.change_data.connect(target_display.change_data)
-        mask_config_widget.change_row_widget.connect(slit_position_table.change_data)
-        mask_config_widget.change_slit_image.connect(interactive_slit_mask.change_slit_and_star)
+        mask_config_widget.change_data.connect(self.target_display.change_data)
+        mask_config_widget.change_row_widget.connect(self.slit_position_table.change_data)
+        mask_config_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
+        mask_config_widget.reset_scene.connect(self.reset_scene)
 
 
         #-----------------------------------layout-----------------------------
         main_logger.info("app: setting up layout")
-        layoutH1 = QHBoxLayout() #Contains slit position table and interactive slit mask
-        splitterV1 = QSplitter()
+        self.layoutH1 = QHBoxLayout() #Contains slit position table and interactive slit mask
+        self.splitterV1 = QSplitter()
         main_splitter = QSplitter()
-        splitterV2 = QSplitter()
+        self.splitterV2 = QSplitter()
 
-        interactive_slit_mask.setContentsMargins(0,0,0,0)
-        slit_position_table.setContentsMargins(0,0,0,0)
+        self.interactive_slit_mask.setContentsMargins(0,0,0,0)
+        self.slit_position_table.setContentsMargins(0,0,0,0)
 
-        splitterV2.addWidget(mask_config_widget)
-        splitterV2.addWidget(mask_gen_widget)
-        splitterV2.setOrientation(Qt.Orientation.Vertical)
-        splitterV2.setContentsMargins(0,0,0,0)
+        self.splitterV2.addWidget(mask_config_widget)
+        self.splitterV2.addWidget(mask_gen_widget)
+        self.splitterV2.setOrientation(Qt.Orientation.Vertical)
+        self.splitterV2.setContentsMargins(0,0,0,0)
 
-        layoutH1.addWidget(slit_position_table)#temp_widget2)
-        layoutH1.addWidget(interactive_slit_mask) #temp_widget3
-        layoutH1.setSpacing(0)
-        layoutH1.setContentsMargins(0,0,0,0)
+        self.layoutH1.addWidget(self.slit_position_table)#temp_widget2)
+        self.layoutH1.addWidget(self.interactive_slit_mask) #temp_widget3
+        self.layoutH1.setSpacing(0)
+        self.layoutH1.setContentsMargins(0,0,0,0)
         widgetH1 = QWidget()
-        widgetH1.setLayout(layoutH1)
+        widgetH1.setLayout(self.layoutH1)
 
-        splitterV1.addWidget(widgetH1)
-        splitterV1.setCollapsible(0,False)
-        splitterV1.addWidget(target_display)
-        splitterV1.setOrientation(Qt.Orientation.Vertical)
-        splitterV1.setContentsMargins(0,0,0,0)
+        self.splitterV1.addWidget(widgetH1)
+        self.splitterV1.setCollapsible(0,False)
+        self.splitterV1.addWidget(self.target_display)
+        self.splitterV1.setOrientation(Qt.Orientation.Vertical)
+        self.splitterV1.setContentsMargins(0,0,0,0)
 
-        main_splitter.addWidget(splitterV1)
+        main_splitter.addWidget(self.splitterV1)
         main_splitter.setCollapsible(0,False)
-        main_splitter.addWidget(splitterV2)
+        main_splitter.addWidget(self.splitterV2)
         main_splitter.setContentsMargins(9,9,9,9)
 
         self.setCentralWidget(main_splitter)
         #-------------------------------------------------------
+    @pyqtSlot(name="reset scene")
+    def reset_scene(self):
+        main_logger.info("app: scene is being reset")
+        # --- Remove old widgets from layout ---
+        self.interactive_slit_mask.setParent(None)
+        self.slit_position_table.setParent(None)
+        self.target_display.setParent(None)
+
+        # --- Create new widgets ---
+        self.target_display = TargetDisplayWidget()
+        self.interactive_slit_mask = interactiveSlitMask()
+        self.slit_position_table = SlitDisplay()
+
+        # --- Reconnect signals ---
+        self.slit_position_table.highlight_other.connect(self.interactive_slit_mask.select_corresponding_row)
+        self.interactive_slit_mask.row_selected.connect(self.slit_position_table.select_corresponding)
+        self.target_display.selected_le_star.connect(self.interactive_slit_mask.get_row_from_star_name)
+        self.slit_position_table.select_star.connect(self.target_display.select_corresponding)
+
+        # --- readd to layout --- 
+        self.layoutH1.addWidget(self.slit_position_table)
+        self.layoutH1.addWidget(self.interactive_slit_mask)
+        self.splitterV1.insertWidget(1, self.target_display)
 
 
 if __name__ == '__main__':
