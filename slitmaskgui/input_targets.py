@@ -38,10 +38,15 @@ class TargetList:
         
     def _parse_file(self):
         with open(self.file_path) as file:
+            untitled_count = 0
             for line in file:
                 if line[0] != "#" and line.split():
                     match = re.match(r"(?P<star>\S+)\s+(?P<Ra>\d{2} \d{2} \d{2}\.\d{2}) (?P<Dec>[\+|\-]\d{2} \d{2} \d{2}(?:\.\d+)?)\s+(?P<equinox>[^\s]+)\s",line)
-                    name, ra, dec, equinox = match.group("star"), match.group("Ra"), match.group("Dec"), match.group("equinox")
+                    if match:
+                        name, ra, dec, equinox = match.group("star"), match.group("Ra"), match.group("Dec"), match.group("equinox")
+                    else:
+                        name, ra, dec, equinox = f"UntitledStar{untitled_count}", "Not Provided", "Not Provided", "Not Provided"
+                        untitled_count += 1
                     #we actually don't care about equinox to display it but it might be a good thing to keep in the list
                     search = re.search(r"vmag=(?P<vmag>.+\.\S+)",line)
                     priority_search = re.search(r"priority=(?P<priority>\S+)",line)
