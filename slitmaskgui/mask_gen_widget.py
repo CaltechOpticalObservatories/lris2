@@ -3,6 +3,7 @@ from slitmaskgui.input_targets import TargetList
 from slitmaskgui.backend.star_list import StarList
 from slitmaskgui.backend.sample import query_gaia_starlist_rect
 import re
+import logging
 from PyQt6.QtCore import QObject, pyqtSignal, Qt, QSize
 from PyQt6.QtWidgets import (
     QFileDialog,
@@ -22,8 +23,7 @@ from PyQt6.QtWidgets import (
 )
 
 #need to add another class to load parameters from a text file
-
-
+logger = logging.getLogger(__name__)
 
 class MaskGenWidget(QWidget):
     change_data = pyqtSignal(list)
@@ -39,6 +39,7 @@ class MaskGenWidget(QWidget):
         )
 
         #------------------------definitions----------------------------
+        logger.info("mask_gen_widget: doing definitions")
         import_target_list_button = QPushButton(text = "Import Target List")
         self.name_of_mask = QLineEdit()
         self.center_of_mask = QLineEdit("00 00 00.00 +00 00 00.00")
@@ -49,10 +50,12 @@ class MaskGenWidget(QWidget):
         #worry about the formatting of center_of_mask later
 
         #-----------------------------connections---------------------------
+        logger.info("mask_gen_widget: doing connections")
         import_target_list_button.clicked.connect(self.starlist_file_button_clicked)
         run_button.clicked.connect(self.run_button)
 
         #------------------------------------------layout-------------------------
+        logger.info("mask_gen_widget: defining the layout")
         group_box = QGroupBox()
         main_layout = QVBoxLayout()
         secondary_layout = QFormLayout() #above import targets
@@ -96,6 +99,7 @@ class MaskGenWidget(QWidget):
         
 
     def starlist_file_button_clicked(self):
+        logger.info("mask_gen_widget: starlist file button was clicked")
         text_file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Select a File",
@@ -104,20 +108,21 @@ class MaskGenWidget(QWidget):
         )
 
         if text_file_path: 
+            logger.info(f"mask_gen_widget: file selected, file path: {text_file_path}")
             self.star_file_path = text_file_path
 
     def run_button(self):
         #this right now will generate a starlist depending on center to speed up testing
         #path_to_file = "/Users/austinbowman/lris2/gaia_starlist.txt"
 
-
+        logger.info("mask_gen_widget: run button clicked")
         center = re.match(r"(?P<Ra>\d{2} \d{2} \d{2}\.\d{2}(?:\.\d+)?) (?P<Dec>[\+|\-]\d{2} \d{2} \d{2}(?:\.\d+)?)",self.center_of_mask.text())
         ra = center.group("Ra")
         dec = center.group("Dec")
         width = self.slit_width.text()
         mask_name = self.name_of_mask.text()
 
-
+        logger.info("mask_gen_widget: generating starlist file")
         query_gaia_starlist_rect(
             ra_center=ra,              # RA in degrees
             dec_center=dec,               # Dec in degrees
@@ -128,6 +133,7 @@ class MaskGenWidget(QWidget):
             )
 
         #--------------------------run mask gen --------------------------
+        logger.info("mask_gen_widget: running mask gen")
         try:
             target_list = TargetList(self.star_file_path)
         except:

@@ -15,6 +15,16 @@ just take that and display that instead of through my awful input targets functi
 
 
 #just importing everything for now. When on the final stages I will not import what I don't need
+import sys
+import random
+import logging
+logging.basicConfig(
+    filename="main.log",
+    format='%(asctime)s %(message)s',
+    filemode='w',
+    level=logging.INFO
+)
+
 from slitmaskgui.target_list_widget import TargetDisplayWidget
 from slitmaskgui.mask_gen_widget import MaskGenWidget
 from slitmaskgui.menu_bar import MenuBar
@@ -22,8 +32,7 @@ from slitmaskgui.interactive_slit_mask import interactiveSlitMask
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
 from PyQt6.QtCore import Qt, QSize
-import sys
-import random
+
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -38,6 +47,9 @@ from PyQt6.QtWidgets import (
 )
 
 #need to add something that will query where the stars will be depending on the time of day
+main_logger = logging.getLogger()
+main_logger.info("starting logging")
+
 
 class TempWidgets(QLabel):
     def __init__(self,w,h,text:str="hello"):
@@ -55,6 +67,7 @@ class MainWindow(QMainWindow):
         self.setMenuBar(MenuBar()) #sets the menu bar
         
         #----------------------------definitions---------------------------
+        main_logger.info("app: doing definitions")
         mask_config_widget = MaskConfigurationsWidget()
         mask_gen_widget = MaskGenWidget()
         
@@ -64,6 +77,7 @@ class MainWindow(QMainWindow):
         
 
         #---------------------------------connections-----------------------------
+        main_logger.info("app: doing connections")
         slit_position_table.highlight_other.connect(interactive_slit_mask.select_corresponding_row)
         interactive_slit_mask.row_selected.connect(slit_position_table.select_corresponding)
         target_display.selected_le_star.connect(interactive_slit_mask.get_row_from_star_name)
@@ -76,6 +90,7 @@ class MainWindow(QMainWindow):
 
 
         #-----------------------------------layout-----------------------------
+        main_logger.info("app: setting up layout")
         layoutH1 = QHBoxLayout() #Contains slit position table and interactive slit mask
         splitterV1 = QSplitter()
         main_splitter = QSplitter()
