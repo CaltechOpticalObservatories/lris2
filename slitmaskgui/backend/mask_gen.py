@@ -39,11 +39,7 @@ class SlitMask:
 
     
     def check_if_within(self,x,y):
-        if abs(y) > CSU_HEIGHT/2:
-            return False
-        elif abs(x) > CSU_WIDTH/2 :
-            return False
-        return True 
+        return abs(x) <= CSU_WIDTH / 2 and abs(y) <= CSU_HEIGHT / 2
         #the delete and save is a temporary string that would tell another function to delete a star if it returned delete
         #and save the star if it returned save
         #this is just to make sure that all the stars that are given in the starlist are withing the boundaries

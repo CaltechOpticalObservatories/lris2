@@ -2,7 +2,13 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
-def generate_random_center():
+def generate_random_center() -> SkyCoord:
+    """generates a random center
+    Args:
+        None
+    Returns:
+        SkyCoord: center as a skycoord object
+    """
 
     ra_random = np.random.uniform(0, 360)  # RA in degrees
     dec_random = np.random.uniform(-90, 90)  # Dec in degrees
@@ -19,7 +25,15 @@ def generate_random_center():
 center = generate_random_center()
 
 
-def make_bunch_o_stars(center, radius, num_stars):
+def make_bunch_o_stars(center, radius, num_stars) -> list:
+    """makes a bunch of stars (that don't necessarily exist)
+    Args:
+        center (SkyCoord): the center of the FOV as a SkyCoord object
+        radius (float): the radius of the FOV from the center
+        num_stars (int): the number of stars you want to make up
+    Returns:
+        list: list of all the made up stars
+    """
     star_list = []
     center_ra = center.ra.deg
     center_dec = center.dec.deg
