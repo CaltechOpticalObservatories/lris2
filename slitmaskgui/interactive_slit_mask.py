@@ -4,6 +4,7 @@ when you click the bar on the left then the image will display which row that is
 additionally It will also interact with the target list
 it will display where the slit is place and what stars will be shown
 """
+import logging
 from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal, QSize
 from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QTransform
 from PyQt6.QtWidgets import (
@@ -28,6 +29,8 @@ PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
 CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
 CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
 TOTAL_HEIGHT_OF_BARS = 7*72
+
+logger = logging.getLogger(__name__)
 
 class interactiveBars(QGraphicsRectItem):
     
@@ -102,6 +105,8 @@ class interactiveSlits(QGraphicsItemGroup):
         return self.y_pos
     def get_bar_id(self):
         return self.y_pos/7
+    def get_star_name(self):
+        return self.star_name
 
 class CustomGraphicsView(QGraphicsView):
     def __init__(self,scene):
@@ -133,11 +138,13 @@ class CustomGraphicsView(QGraphicsView):
 
 class interactiveSlitMask(QWidget):
     row_selected = pyqtSignal(int,name="row selected")
+    select_star = pyqtSignal(str)
     
     def __init__(self):
         super().__init__()
 
         #--------------------definitions-----------------------
+        logger.info("interactive_slit_mask: doing definitions")
         scene_width = 480
         scene_height = 520
         self.scene = QGraphicsScene(0,0,scene_width,scene_height)
@@ -161,11 +168,13 @@ class interactiveSlitMask(QWidget):
 
         self.view = CustomGraphicsView(self.scene)
         #-------------------connections-----------------------
+        logger.info("interactive_slit_mask: establishing connections")
         self.scene.selectionChanged.connect(self.row_is_selected)
-        
+        self.scene.selectionChanged.connect(self.get_star_name_from_row)
 
 
         #------------------------layout-----------------------
+        logger.info("interactive_slit_mask: defining layout")
         main_layout = QVBoxLayout()
         
         main_layout.addWidget(title)
@@ -177,9 +186,17 @@ class interactiveSlitMask(QWidget):
         #-------------------------------------------
     def sizeHint(self):
         return QSize(650,620)
-    
+    def connect_on(self,answer:bool):
+        #---------------reconnect connections---------------
+        if answer:
+            self.scene.selectionChanged.connect(self.row_is_selected)
+            self.scene.selectionChanged.connect(self.get_star_name_from_row)
+        else:
+            self.scene.selectionChanged.disconnect(self.row_is_selected)
+            self.scene.selectionChanged.disconnect(self.get_star_name_from_row)
     @pyqtSlot(int,name="row selected")
     def select_corresponding_row(self,row):
+        logger.info("interactive_slit_mask: method select_correspond_row called")
         
         all_bars = [
             item for item in reversed(self.scene.items())
@@ -187,11 +204,15 @@ class interactiveSlitMask(QWidget):
         ]
         
         self.scene.clearSelection()
+        # self.connect_on(False)
         if 0 <= row <len(all_bars):
             self.row_num = row
             all_bars[self.row_num].setSelected(True)
+        # self.connect_on(True)
+
     @pyqtSlot(str)
     def get_row_from_star_name(self,name):
+        logger.info("interactive_slit_mask: method get_row_from_star_name called")
         all_stars = [
             item for item in reversed(self.scene.items())
             if isinstance(item, QGraphicsItemGroup)
@@ -200,23 +221,39 @@ class interactiveSlitMask(QWidget):
             item for item in reversed(self.scene.items())
             if isinstance(item, interactiveBars)
         ]
-
+        
         self.scene.clearSelection()
         for i in range(len(all_stars)):
             if all_stars[i].star_name == name:
                 bar_id = int(all_stars[i].get_bar_id())
+                self.connect_on(False)
                 all_bars[bar_id-1].setSelected(True)
-
+                self.connect_on(True)
+                
+        
     
+    def get_star_name_from_row(self):
+        
+        
+        row_list = [x.check_id() for x in self.scene.selectedItems()]
+        selected_star = [
+            item.get_star_name() for item in reversed(self.scene.items())
+            if isinstance(item, QGraphicsItemGroup) and item.get_bar_id()-1 in row_list
+        ]
+        if selected_star != []:
+            logger.info(f"interactive_slit_mask: method get_star_name_from_row called, selected star: {selected_star[0]}")
+            self.select_star.emit(selected_star[0])
+
     def row_is_selected(self):
-        try:
+        if self.scene.selectedItems() != []:
             row_num = self.scene.selectedItems()[0].check_id()
+            logger.info(f"interactive_slit_mask: method row_is_selected called, row_num: {row_num}")
             self.row_selected.emit(row_num)
-        except:
-            pass
 
     @pyqtSlot(dict,name="targets converted")
     def change_slit_and_star(self,pos):
+        logger.info("interactive_slit_mask: method change_slit_and_star called")
+
         #will get it in the form of {1:(position,star_names),...}
         self.position = list(pos.values())
         magic_number = 7
@@ -226,21 +263,16 @@ class interactiveSlitMask(QWidget):
             if isinstance(item, QGraphicsItemGroup)
         ]
         for num, item in enumerate(slits_to_replace):
-
             try:
                 self.scene.removeItem(item)
 
                 x_pos, bar_id, name = self.position[num]
                 new_item = interactiveSlits(x_pos, bar_id*magic_number+7, name) #7 is the margin at the top 
                 new_items.append(new_item)
-            except Exception as e:
-                print(f"Error processing item {num}: {e}")
+            except:
                 continue
         #item_list.reverse()
         for item in new_items:
             self.scene.addItem(item)
         self.view = QGraphicsScene(self.scene)
-
-
-        
-
+    

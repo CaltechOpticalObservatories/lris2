@@ -1,7 +1,9 @@
 
 #from inputTargets import TargetList
+import logging
 from slitmaskgui.menu_bar import MenuBar
 from PyQt6.QtCore import Qt, QAbstractTableModel, pyqtSlot, QSize, pyqtSignal
+import itertools
 from PyQt6.QtWidgets import (
     QWidget,
     QTableView,
@@ -10,9 +12,9 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QHeaderView,
     
-
-
 )
+logger = logging.getLogger(__name__)
+
 class TableModel(QAbstractTableModel):
     def __init__(self, data=[]):
         super().__init__()
@@ -44,6 +46,11 @@ class TableModel(QAbstractTableModel):
     
     def get_star_name(self, row):
         return self._data[row][0]
+    
+    def get_row(self,name):
+        for x in self._data:
+            if x[0] == name:
+                return self._data.index(x)
 
 
 class CustomTableView(QTableView):
@@ -77,6 +84,7 @@ class TargetDisplayWidget(QWidget):
         )
 
         #---------------------------definitions------------------------
+        logger.info("target_list_widget: doing definitions")
         self.data = data
         self.table = CustomTableView()
         self.model = TableModel(self.data)
@@ -84,9 +92,11 @@ class TargetDisplayWidget(QWidget):
         title = QLabel("TARGET LIST")
 
         #------------------------connections----------------------
+        logger.info("target_list_widget: establishing connections")
         self.table.selectionModel().selectionChanged.connect(self.selected_star)
 
         #-------------------------layout-----------------------------
+        logger.info("target_list_widget: defining layout")
         main_layout = QVBoxLayout()
         main_layout.addWidget(title)
         main_layout.setSpacing(0)
@@ -98,22 +108,36 @@ class TargetDisplayWidget(QWidget):
 
     def sizeHint(self):
         return QSize(700,200)
+    def connect_on(self,answer:bool):
+        #---------------reconnect connections---------------
+        if answer:
+            self.table.selectionModel().selectionChanged.connect(self.selected_star)
+        else:
+            self.table.selectionModel().selectionChanged.disconnect(self.selected_star)
     
     @pyqtSlot(list,name="target list")
     def change_data(self,data):
+        logger.info("target_list_widget: method change_data called, changing data")
         self.model.beginResetModel()
-        self.model._data = data
-        self.data = data
+        replacement = list(x for x,_ in itertools.groupby(data))
+        self.model._data = replacement
+        self.data = replacement
         self.model.endResetModel()
     
     def selected_star(self):
+        
         selected_row = self.table.selectionModel().currentIndex().row()
         corresponding_name = self.model.get_star_name(row=selected_row)
+        logger.info(f"target_list_widget: method selected_star called, corresponding name: {corresponding_name}")
         self.selected_le_star.emit(corresponding_name)
 
-    @pyqtSlot(int)
-    def select_corresponding(self,row): #everything will be done with the row widget
+    @pyqtSlot(str)
+    def select_corresponding(self,star): #everything will be done with the row widget
+        self.connect_on(False)
+        row = self.model.get_row(star)
+        logger.info(f'target_list_widget: method select_corresponding called: row {row}')
         self.table.selectRow(row)
+        self.connect_on(True)
 
 
 

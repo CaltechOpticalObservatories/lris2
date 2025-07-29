@@ -81,7 +81,7 @@ class MainWindow(QMainWindow):
         self.slit_position_table.highlight_other.connect(self.interactive_slit_mask.select_corresponding_row)
         self.interactive_slit_mask.row_selected.connect(self.slit_position_table.select_corresponding)
         self.target_display.selected_le_star.connect(self.interactive_slit_mask.get_row_from_star_name)
-        self.slit_position_table.select_star.connect(self.target_display.select_corresponding)
+        self.interactive_slit_mask.select_star.connect(self.target_display.select_corresponding)
 
         mask_gen_widget.change_data.connect(self.target_display.change_data)
         mask_gen_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
