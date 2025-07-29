@@ -72,7 +72,6 @@ class TableModel(QAbstractTableModel):
         if len(index) > 0:
             return index[0].row()
         return None
-
     def rowCount(self, index):
         return len(self._data)
     def columnCount(self, index):
@@ -222,11 +221,13 @@ class MaskConfigurationsWidget(QWidget):
         #this will save the current file selected in the table
         config_logger.info(f"mask configurations: start of export button function {self.row_to_config_dict}")
         row_num = self.model.get_row_num(self.table.selectedIndexes()) #this gets the row num
+        index = self.model.index(row_num, 1)
+        name = self.model.data(index,Qt.ItemDataRole.DisplayRole)
         if row_num is not None:
             file_path, _ = QFileDialog.getSaveFileName(
                 self,
                 "Save File",
-                "",
+                f"{name}",
                 "JSON Files (*.json)"
             )
             if file_path:
@@ -254,9 +255,6 @@ class MaskConfigurationsWidget(QWidget):
             row_num = self.model.get_num_rows() -1
             self.row_to_config_dict.update({row_num: mask_info})
             self.table.selectRow(row_num)
-        if info is type(int): #this is for deleting a row, don't even need it
-            pass 
-
         else:
             print("will change thing to saved")
         config_logger.info(f"mask configurations: end of update table function {self.row_to_config_dict}")
