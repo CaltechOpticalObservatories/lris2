@@ -1,3 +1,9 @@
+/*Fonts for everything*/
+
+* {
+    font-family: "Avenir";
+}
+
 /*Main Window Styling*/
 
 QMainWindow {

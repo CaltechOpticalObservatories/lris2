@@ -135,8 +135,9 @@ class TargetDisplayWidget(QWidget):
     def select_corresponding(self,star): #everything will be done with the row widget
         self.connect_on(False)
         row = self.model.get_row(star)
-        logger.info(f'target_list_widget: method select_corresponding called: row {row}')
-        self.table.selectRow(row)
+        if row:
+            logger.info(f'target_list_widget: method select_corresponding called: row {row}')
+            self.table.selectRow(row)
         self.connect_on(True)
 
 

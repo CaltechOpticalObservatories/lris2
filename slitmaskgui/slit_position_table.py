@@ -79,7 +79,7 @@ class CustomTableView(QTableView):
 
 
 width = .7
-default_slit_display_list = [[i+1,0.00,width] for i in range(73)]
+default_slit_display_list = [[i+1,0.00,width] for i in range(72)]
 
 
 class SlitDisplay(QWidget):

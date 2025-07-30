@@ -32,7 +32,7 @@ from slitmaskgui.interactive_slit_mask import interactiveSlitMask
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
 from PyQt6.QtCore import Qt, QSize, pyqtSlot
-
+from PyQt6.QtGui import QFontDatabase
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -43,12 +43,18 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QSplitter,
     QLayout,
+    QTreeWidgetItem,
+    QTreeWidget,
+
 
 )
 
 #need to add something that will query where the stars will be depending on the time of day
 main_logger = logging.getLogger()
 main_logger.info("starting logging")
+
+
+
 
 
 class TempWidgets(QLabel):
@@ -152,7 +158,7 @@ class MainWindow(QMainWindow):
         self.layoutH1.addWidget(self.slit_position_table)
         self.layoutH1.addWidget(self.interactive_slit_mask)
         self.splitterV1.insertWidget(1, self.target_display)
-
+    
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
@@ -160,6 +166,7 @@ if __name__ == '__main__':
     with open("slitmaskgui/styles.qss", "r") as f:
         _style = f.read()
     app.setStyleSheet(_style)
+    
 
     window = MainWindow()
     window.show()
