@@ -33,6 +33,7 @@ from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
 from PyQt6.QtCore import Qt, QSize, pyqtSlot
 
+
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -152,6 +153,7 @@ class MainWindow(QMainWindow):
         self.layoutH1.addWidget(self.slit_position_table)
         self.layoutH1.addWidget(self.interactive_slit_mask)
         self.splitterV1.insertWidget(1, self.target_display)
+
 
 
 if __name__ == '__main__':

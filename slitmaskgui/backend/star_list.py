@@ -18,6 +18,7 @@ import json
 import os
 
 
+
 #Ra and Dec --> angle Degrees
 
 
@@ -53,6 +54,7 @@ class StarList:
             self.complete_json()
             #self.calc_mask()
             self.payload = self.calc_mask(self.payload)
+
         
 
     def complete_json(self): #maybe will rename this to complete payload
@@ -79,7 +81,7 @@ class StarList:
             obj["y_mm"] = y_mm
 
             #ok this is not how you do this bc I will only take in x and just don't care about y right now (i'll care later)
-    
+
     def calc_mask(self,all_stars): 
         slit_mask = SlitMask(all_stars)
             
@@ -98,6 +100,8 @@ class StarList:
         return [[x["name"],x["priority"],x["vmag"],x["ra"],x["dec"],x["center distance"]] for x in self.payload]
 
 
+
+
     def send_interactive_slit_list(self):
         #have to convert it to dict {bar_num:(position,star_name)}
         #imma just act rn like all the stars are in sequential order
@@ -108,6 +112,7 @@ class StarList:
         slit_dict = {
             i: (240 + (obj["x_mm"] / CSU_WIDTH) * total_pixels, obj["bar_id"], obj["name"]) 
             for i, obj in enumerate(self.payload[:72])
+
             if "bar_id" in obj
             }
 
@@ -117,7 +122,9 @@ class StarList:
         #the reason why the bar id is plus 1 is to transl
         sorted_row_list = sorted(
             ([obj["bar_id"]+1, obj["x_mm"], self.slit_width] 
+
             for obj in self.payload[:72] if "bar_id" in obj),
+
             key=lambda x: x[0]
             )
         return sorted_row_list
