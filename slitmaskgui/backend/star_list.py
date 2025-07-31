@@ -85,6 +85,11 @@ class StarList:
             }
 
         return slit_dict
+    def send_list_for_wavelength(self):
+        old_ra_dec_list = [[x["ra"],x["dec"]]for x in self.payload]
+        ra_dec_list =[]
+        [ra_dec_list.append(x) for x in old_ra_dec_list if x not in ra_dec_list]
+        return ra_dec_list
     
     def send_row_widget_list(self):
         #the reason why the bar id is plus 1 is to transl

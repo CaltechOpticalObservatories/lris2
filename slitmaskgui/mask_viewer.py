@@ -6,6 +6,9 @@ it will display where the slit is place and what stars will be shown
 """
 import logging
 import numpy as np
+from astroquery.gaia import Gaia
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal, QSize
 from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QTransform
 from PyQt6.QtWidgets import (
@@ -21,6 +24,7 @@ from PyQt6.QtWidgets import (
     QGraphicsItemGroup,
     QSizePolicy,
     QSizeGrip,
+    QTabWidget,
 
 
 )
@@ -151,9 +155,6 @@ class interactiveSlitMask(QWidget):
         self.scene = QGraphicsScene(0,0,scene_width,scene_height)
 
         xcenter_of_image = self.scene.width()/2
-
-        blank_space = " "*65
-        #title = QLabel(f"{blank_space}SLIT MASK VIEWER")
 
         self.mask_name_title = QLabel(f'MASK NAME: None')
         self.center_title = QLabel(f'CENTER: None')
@@ -287,4 +288,143 @@ class interactiveSlitMask(QWidget):
         self.center_title.setText(f'CENTER: {center}')
         self.pa_title.setText(f'PA: {pa}')
 
+
+"""
+all the connections will be handled through the main widget
+The tab widget will emit a signal on whether wavelengthview is in view or not (or which one is in view)
+depending of in the wavelengthview is in view or now will change if the slitmask view will send information to it
+all signals to outside will be handled through the slitmaskview
+"""
+
+
+
+class WavelengthView(QWidget):
+    row_selected = pyqtSignal(int,name="row selected")
     
+    def __init__(self):
+        super().__init__()
+
+        #--------------------definitions-----------------------
+        logger.info("interactive_slit_mask: doing definitions")
+        scene_width = 480
+        scene_height = 520
+        self.scene = QGraphicsScene(0,0,scene_width,scene_height)
+
+        xcenter_of_image = self.scene.width()/2
+        self.stars = []
+
+        self.mask_name_title = QLabel(f'MASK NAME: None')
+        self.center_title = QLabel(f'CENTER: None')
+        self.pa_title = QLabel(f'PA: None')
+        
+        initial_bar_width = 7
+        initial_bar_length = 480
+
+        for i in range(72):
+            temp_rect = interactiveBars(0,i*7+7,this_id=i,bar_width=initial_bar_width,bar_length=initial_bar_length)
+            temp_slit = interactiveSlits(scene_width/2,7*i+7)
+            self.scene.addItem(temp_rect)
+            self.scene.addItem(temp_slit)
+
+        fov = FieldOfView(TOTAL_HEIGHT_OF_BARS,x=xcenter_of_image/2,y=7)
+        self.scene.addItem(fov)
+
+        self.view = CustomGraphicsView(self.scene)
+        #-------------------connections-----------------------
+        logger.info("interactive_slit_mask: establishing connections")
+
+        self.scene.selectionChanged.connect(self.send_row)
+
+        #------------------------layout-----------------------
+        logger.info("interactive_slit_mask: defining layout")
+        top_layout = QHBoxLayout()
+        main_layout = QVBoxLayout()
+
+        top_layout.addWidget(self.mask_name_title,alignment=Qt.AlignmentFlag.AlignHCenter)
+        top_layout.addWidget(self.center_title,alignment=Qt.AlignmentFlag.AlignHCenter)
+        top_layout.addWidget(self.pa_title,alignment=Qt.AlignmentFlag.AlignHCenter)
+        main_layout.addLayout(top_layout)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0,0,0,0)
+        main_layout.addWidget(self.view)
+
+        self.setLayout(main_layout)
+        #-------------------------------------------
+    def sizeHint(self):
+        return QSize(650,620)
+    
+    def connect_on(self,answer:bool):
+        #---------------reconnect connections---------------
+        if answer:
+            self.scene.selectionChanged.connect(self.send_row)
+        else:
+            self.scene.selectionChanged.disconnect(self.send_row)
+
+    @pyqtSlot(int,name="row selected")
+    def select_corresponding_row(self,row):
+        all_bars = [
+            item for item in reversed(self.scene.items())
+            if isinstance(item, QGraphicsRectItem)
+        ]
+        self.connect_on(False)
+        self.scene.clearSelection()
+        # 
+        if 0 <= row <len(all_bars):
+            self.row_num = row
+            all_bars[self.row_num].setSelected(True)
+        self.connect_on(True)
+
+    def send_row(self):
+        row_num = self.scene.selectedItems()[0].check_id()
+        self.row_selected.emit(row_num)
+
+    @pyqtSlot(dict,name="targets converted")
+    def change_slit_and_star(self,pos):
+        logger.info("interactive_slit_mask: method change_slit_and_star called")
+        #will get it in the form of {1:(position,star_names),...}
+        self.position = list(pos.values())
+        magic_number = 7
+        new_items = []
+        slits_to_replace = [
+            item for item in reversed(self.scene.items())
+            if isinstance(item, QGraphicsItemGroup)
+        ]
+        for num, item in enumerate(slits_to_replace):
+            try:
+                self.scene.removeItem(item)
+
+                x_pos, bar_id, name = self.position[num]
+                new_item = interactiveSlits(x_pos, bar_id*magic_number+7, name) #7 is the margin at the top 
+                new_items.append(new_item)
+            except:
+                continue
+        #item_list.reverse()
+        for item in new_items:
+            self.scene.addItem(item)
+        self.view = QGraphicsScene(self.scene)
+    @pyqtSlot(list,name="wavelength data")
+    def get_spectra_of_star(self,ra_dec_list):
+        for x in ra_dec_list:
+            ra = x[0]  # RA in degrees (example)
+            dec = x[1]  # Dec in degrees (example)
+
+            coord = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), frame='icrs')
+
+            radius = .8 *u.arcmin  # degrees
+
+            results = Gaia.query_object_async(coordinate=coord, radius=radius)
+
+            print(results[['source_id', 'ra', 'dec', 'phot_bp_mean_mag', 'phot_g_mean_mag', 'phot_rp_mean_mag']])    
+        
+
+    @pyqtSlot(np.ndarray, name="update labels")
+    def update_name_center_pa(self,info):
+        mask_name, center, pa = info[0], info[1], info[2] #the format of info is [mask_name,center,pa]
+        self.mask_name_title.setText(f'MASK NAME: {mask_name}')
+        self.center_title.setText(f'CENTER: {center}')
+        self.pa_title.setText(f'PA: {pa}')
+
+
+
+# Define the coordinates (RA, Dec) - replace with your values
+

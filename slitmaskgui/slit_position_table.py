@@ -99,7 +99,7 @@ class SlitDisplay(QWidget):
         self.table = CustomTableView()
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
-        title = QLabel("")
+        # title = QLabel("")
 
         #--------------------------connections-----------------------
         logger.info("slit_position_table: doing conections")
@@ -110,7 +110,7 @@ class SlitDisplay(QWidget):
         
         main_layout = QVBoxLayout()
         
-        main_layout.addWidget(title)
+        # main_layout.addWidget(title)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
         # self.table.setFrameShape(QFrame.Shape.Box)

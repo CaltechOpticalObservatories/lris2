@@ -32,6 +32,7 @@ class MaskGenWidget(QWidget):
     change_row_widget = pyqtSignal(list)
     send_mask_config = pyqtSignal(list)
     change_mask_name = pyqtSignal(np.ndarray)
+    change_wavelength_data = pyqtSignal(list)
     def __init__(self):
         super().__init__()
 
@@ -66,10 +67,14 @@ class MaskGenWidget(QWidget):
         unit_layout = QVBoxLayout()
         group_layout = QVBoxLayout()
         group_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        import_target_list_button_layout = QVBoxLayout()
+        run_button_layout = QVBoxLayout()
 
         self.name_of_mask.setAlignment(Qt.AlignmentFlag.AlignTop)
-        import_target_list_button.setFixedSize(150,40)
-        run_button.setFixedSize(150,30)
+        import_target_list_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+        import_target_list_button.setLayout(import_target_list_button_layout)
+        run_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+        run_button.setLayout(run_button_layout)
 
         secondary_layout.addRow("Mask Name:",self.name_of_mask)
         below_form_layout.addRow("Slit Width:",self.slit_width)
@@ -81,14 +86,14 @@ class MaskGenWidget(QWidget):
         below_layout.addLayout(unit_layout)
         group_layout.addLayout(secondary_layout)
 
-        group_layout.addWidget(import_target_list_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        group_layout.addWidget(import_target_list_button)
         group_layout.addLayout(below_layout)
         group_layout.addStretch(40)
-        group_layout.addWidget(run_button, alignment=Qt.AlignmentFlag.AlignBottom| Qt.AlignmentFlag.AlignCenter)
+        group_layout.addWidget(run_button)
         group_box.setLayout(group_layout)
 
         
-        main_layout.addWidget(title)
+        main_layout.addWidget(title,alignment=Qt.AlignmentFlag.AlignHCenter)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
         main_layout.addWidget(group_box)
@@ -157,6 +162,7 @@ class MaskGenWidget(QWidget):
         self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
         mask_name_info = np.array([str(mask_name),str(center),str(pa)])
         self.change_mask_name.emit(mask_name_info)
+        self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
         #--------------------------------------------------------------------------
 
 

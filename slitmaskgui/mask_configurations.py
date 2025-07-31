@@ -162,7 +162,7 @@ class MaskConfigurationsWidget(QWidget):
         group_box.setLayout(group_layout)
         group_box.setContentsMargins(2,0,2,0)
         
-        main_layout.addWidget(title)
+        main_layout.addWidget(title,alignment=Qt.AlignmentFlag.AlignHCenter)
         main_layout.addWidget(group_box)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)

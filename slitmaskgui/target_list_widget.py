@@ -89,7 +89,7 @@ class TargetDisplayWidget(QWidget):
         self.table = CustomTableView()
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
-        title = QLabel("TARGET LIST")
+        # title = QLabel("TARGET LIST")
 
         #------------------------connections----------------------
         logger.info("target_list_widget: establishing connections")
@@ -98,7 +98,7 @@ class TargetDisplayWidget(QWidget):
         #-------------------------layout-----------------------------
         logger.info("target_list_widget: defining layout")
         main_layout = QVBoxLayout()
-        main_layout.addWidget(title)
+        # main_layout.addWidget(title)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
 
