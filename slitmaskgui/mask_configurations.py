@@ -129,6 +129,7 @@ class MaskConfigurationsWidget(QWidget):
 
         self.row_to_config_dict = {}
 
+
         #------------------------connections-----------------
         open_button.clicked.connect(self.open_button_clicked)
         save_button.clicked.connect(self.save_button_clicked)
@@ -136,6 +137,7 @@ class MaskConfigurationsWidget(QWidget):
         export_button.clicked.connect(self.export_button_clicked)
         export_all_button.clicked.connect(self.export_all_button_clicked)
         self.table.selectionModel().selectionChanged.connect(self.selected) #sends the row number for the selected item
+
 
         #-------------------layout-------------------
         group_box = QGroupBox()
@@ -176,6 +178,7 @@ class MaskConfigurationsWidget(QWidget):
         config_logger.info(f"mask configurations: start of open button function {self.row_to_config_dict}")
 
         file_path, _ = QFileDialog.getOpenFileName(
+
             self,
             "Select a File",
             "",
@@ -203,7 +206,9 @@ class MaskConfigurationsWidget(QWidget):
     def close_button_clicked(self,item):
         #this will delete the item from the list and the information that goes along with it
         #get selected item
+
         config_logger.info(f"mask configurations: start of close button function {self.row_to_config_dict}")
+
         row_num = self.model.get_row_num(self.table.selectedIndexes())
         if row_num is not None:
             del self.row_to_config_dict[row_num]
@@ -237,7 +242,7 @@ class MaskConfigurationsWidget(QWidget):
                 star_list.export_mask_config(file_path=file_path)
 
         config_logger.info(f"mask configurations: end of export button function {self.row_to_config_dict}")
-        
+
 
     def export_all_button_clicked(self):
         #this will save all unsaved files
@@ -249,6 +254,7 @@ class MaskConfigurationsWidget(QWidget):
         config_logger.info(f"mask configurations: start of update table function {self.row_to_config_dict}")
         if info is not None: #info for now will be a list [name,file_path]
             name, mask_info = info[0], info[1]
+
             self.model.beginResetModel()
             self.model._data.append(["Saved",name])
             self.model.endResetModel()
@@ -275,7 +281,6 @@ class MaskConfigurationsWidget(QWidget):
             self.change_data.emit(slit_mask.send_target_list())
             self.change_row_widget.emit(slit_mask.send_row_widget_list())
 
-        
 
 
 

@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
     QFrame,
 
 
+
 )
 
 logger = logging.getLogger(__name__)
@@ -85,6 +86,7 @@ default_slit_display_list = [[i+1,0.00,width] for i in range(72)]
 
 class SlitDisplay(QWidget):
     highlight_other = pyqtSignal(int,name="row selected") #change name to match that in the interactive slit mask
+    select_star = pyqtSignal(int)
     def __init__(self,data=default_slit_display_list):
         super().__init__()
 
@@ -94,11 +96,14 @@ class SlitDisplay(QWidget):
         )
 
         #---------------------------definitions----------------------
+
         logger.info("slit_position_table: doing definitions")
+
         self.data = data #will look like [[bar_id,center,width],...]
         self.table = CustomTableView()
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
+
         title = QLabel("")
 
         #--------------------------connections-----------------------
@@ -114,6 +119,7 @@ class SlitDisplay(QWidget):
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
         # self.table.setFrameShape(QFrame.Shape.Box)
+
         main_layout.addWidget(self.table)
         self.setLayout(main_layout)
         #------------------------------------------------------        
@@ -134,11 +140,13 @@ class SlitDisplay(QWidget):
         replacement = list(x for x,_ in itertools.groupby(data))
         self.model._data = replacement
         self.data = replacement
+
         self.model.endResetModel()
 
     
     def row_selected(self):
         logger.info("slit_position_table: method row_selected is called, row in slit_table was selected")
+
         selected_row = self.table.selectionModel().currentIndex().row()
         corresponding_row = self.model.get_bar_id(row=selected_row)
 
@@ -149,6 +157,7 @@ class SlitDisplay(QWidget):
     def select_corresponding(self,bar_id):
         logger.info("slit_position_table: method select_corresponding is called, selected corresponding row from slit mask view")
         self.connect_on(False)
+
         self.bar_id = bar_id + 1
 
         filtered_row = list(filter(lambda x:x[0] == self.bar_id,self.data))
@@ -160,4 +169,5 @@ class SlitDisplay(QWidget):
             #this means that the bar does not have a slit on it
             pass
         self.connect_on(True)
+
  

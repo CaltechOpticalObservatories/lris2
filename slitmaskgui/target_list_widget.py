@@ -43,7 +43,6 @@ class TableModel(QAbstractTableModel):
 
     def columnCount(self, index):
         return len(self.header)
-    
     def get_star_name(self, row):
         return self._data[row][0]
     

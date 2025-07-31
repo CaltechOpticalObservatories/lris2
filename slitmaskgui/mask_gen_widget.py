@@ -5,6 +5,7 @@ from slitmaskgui.backend.sample import query_gaia_starlist_rect
 import re
 import logging
 import numpy as np
+
 from PyQt6.QtCore import QObject, pyqtSignal, Qt, QSize
 from PyQt6.QtWidgets import (
     QFileDialog,
@@ -32,6 +33,7 @@ class MaskGenWidget(QWidget):
     change_row_widget = pyqtSignal(list)
     send_mask_config = pyqtSignal(list)
     change_mask_name = pyqtSignal(np.ndarray)
+
     def __init__(self):
         super().__init__()
 
@@ -44,6 +46,7 @@ class MaskGenWidget(QWidget):
         logger.info("mask_gen_widget: doing definitions")
         import_target_list_button = QPushButton(text = "Import Target List")
         self.name_of_mask = QLineEdit("untitled")
+
         self.center_of_mask = QLineEdit("00 00 00.00 +00 00 00.00")
         self.slit_width = QLineEdit("0.7")
         run_button = QPushButton(text="Run")
@@ -126,6 +129,7 @@ class MaskGenWidget(QWidget):
         mask_name = self.name_of_mask.text()
         pa = 0
 
+
         logger.info("mask_gen_widget: generating starlist file")
         query_gaia_starlist_rect(
             ra_center=ra,              # RA in degrees
@@ -157,6 +161,7 @@ class MaskGenWidget(QWidget):
         self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
         mask_name_info = np.array([str(mask_name),str(center),str(pa)])
         self.change_mask_name.emit(mask_name_info)
+
         #--------------------------------------------------------------------------
 
 

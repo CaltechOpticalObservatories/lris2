@@ -9,10 +9,14 @@ CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
 TOTAL_BAR_PAIRS = 72
 
 from itertools import groupby
+
 import json
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import numpy as np
+
+
+import json
 
 
 #for some reason I am splitting up everything into their own for statements
@@ -27,6 +31,7 @@ class SlitMask:
         self.calc_bar_id()
         self.optimize()
         self.lengthen_slits(max_slit_length)
+
 
     def calc_y_pos(self):
         for obj in self.stars:
@@ -53,6 +58,7 @@ class SlitMask:
 
     def calc_bar_id(self):
         #this will calculate the bar and x of every star and remove any that do not fit in position
+        initial_len = len(self.stars)
         for obj in self.stars:
             y, x = obj["y_mm"], obj["x_mm"]
             y_step = CSU_HEIGHT/TOTAL_BAR_PAIRS
@@ -74,6 +80,7 @@ class SlitMask:
                                 ∑ priority
         """
         pass
+
     
     def generate_pa(self):
         pass
@@ -110,6 +117,7 @@ class SlitMask:
         
     def return_mask(self):
         return json.dumps(self.stars)
+
     
     def make_mask(self):
         #will return a list that will be used by the csu to configure the slits 

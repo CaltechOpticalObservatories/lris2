@@ -1,3 +1,4 @@
+
 /*Fonts for everything*/
 * {
     font-family: "Avenir";
@@ -69,8 +70,4 @@ QPushButton {
 Qlabel {
     color: black;
 }
-
-
-
-
 
