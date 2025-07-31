@@ -80,7 +80,7 @@ class TargetDisplayWidget(QWidget):
 
         self.setSizePolicy(
             QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Preferred
+            QSizePolicy.Policy.Ignored
         )
 
         #---------------------------definitions------------------------
@@ -107,7 +107,7 @@ class TargetDisplayWidget(QWidget):
         #-------------------------------------------
 
     def sizeHint(self):
-        return QSize(700,200)
+        return QSize(700,100)
     def connect_on(self,answer:bool):
         #---------------reconnect connections---------------
         if answer:

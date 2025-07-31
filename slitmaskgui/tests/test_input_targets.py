@@ -11,6 +11,7 @@ Gaia_021        15 25 32.35 -50 46 46.8 2000.0 vmag=20.77 priority=1020 must_hav
 
 #I just have to test the parsing 
 
+
 def test_parsing():
     target_list = TargetList("slitmaskgui/tests/testfiles/star_list.txt")
     object = target_list.send_json()

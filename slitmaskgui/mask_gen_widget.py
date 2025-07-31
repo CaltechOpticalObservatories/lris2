@@ -4,6 +4,7 @@ from slitmaskgui.backend.star_list import StarList
 from slitmaskgui.backend.sample import query_gaia_starlist_rect
 import re
 import logging
+import numpy as np
 from PyQt6.QtCore import QObject, pyqtSignal, Qt, QSize
 from PyQt6.QtWidgets import (
     QFileDialog,
@@ -30,6 +31,7 @@ class MaskGenWidget(QWidget):
     change_slit_image = pyqtSignal(dict)
     change_row_widget = pyqtSignal(list)
     send_mask_config = pyqtSignal(list)
+    change_mask_name = pyqtSignal(np.ndarray)
     def __init__(self):
         super().__init__()
 
@@ -46,7 +48,7 @@ class MaskGenWidget(QWidget):
         self.slit_width = QLineEdit("0.7")
         run_button = QPushButton(text="Run")
         title = QLabel("MASK GENERATION")
-        
+
         #worry about the formatting of center_of_mask later
 
         #-----------------------------connections---------------------------
@@ -119,8 +121,10 @@ class MaskGenWidget(QWidget):
         center = re.match(r"(?P<Ra>\d{2} \d{2} \d{2}\.\d{2}(?:\.\d+)?) (?P<Dec>[\+|\-]\d{2} \d{2} \d{2}(?:\.\d+)?)",self.center_of_mask.text())
         ra = center.group("Ra")
         dec = center.group("Dec")
+        center = center.group(0)
         width = self.slit_width.text()
         mask_name = self.name_of_mask.text()
+        pa = 0
 
         logger.info("mask_gen_widget: generating starlist file")
         query_gaia_starlist_rect(
@@ -151,6 +155,8 @@ class MaskGenWidget(QWidget):
 
         logger.info("mask_gen_widget: sending mask config to mask_configurations")
         self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
+        mask_name_info = np.array([str(mask_name),str(center),str(pa)])
+        self.change_mask_name.emit(mask_name_info)
         #--------------------------------------------------------------------------
 
 

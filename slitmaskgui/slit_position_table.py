@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QLabel,
     QHeaderView,
+    QFrame,
 
 
 )
@@ -88,7 +89,7 @@ class SlitDisplay(QWidget):
         super().__init__()
 
         self.setSizePolicy(
-            QSizePolicy.Policy.Maximum,
+            QSizePolicy.Policy.Fixed,
             QSizePolicy.Policy.MinimumExpanding
         )
 
@@ -98,7 +99,7 @@ class SlitDisplay(QWidget):
         self.table = CustomTableView()
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
-        title = QLabel("ROW DISPLAY WIDGET")
+        title = QLabel("")
 
         #--------------------------connections-----------------------
         logger.info("slit_position_table: doing conections")
@@ -106,17 +107,19 @@ class SlitDisplay(QWidget):
 
         #----------------------------layout----------------------
         logger.info("slit_position_table: defining layout")
+        
         main_layout = QVBoxLayout()
+        
         main_layout.addWidget(title)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
-
+        # self.table.setFrameShape(QFrame.Shape.Box)
         main_layout.addWidget(self.table)
         self.setLayout(main_layout)
         #------------------------------------------------------        
 
     def sizeHint(self):
-        return QSize(40,120)
+        return QSize(135,120)
     def connect_on(self,answer:bool):
         #---------------reconnect connections---------------
         if answer:

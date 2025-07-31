@@ -5,6 +5,7 @@ additionally It will also interact with the target list
 it will display where the slit is place and what stars will be shown
 """
 import logging
+import numpy as np
 from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal, QSize
 from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QTransform
 from PyQt6.QtWidgets import (
@@ -152,7 +153,11 @@ class interactiveSlitMask(QWidget):
         xcenter_of_image = self.scene.width()/2
 
         blank_space = " "*65
-        title = QLabel(f"{blank_space}SLIT MASK VIEWER")
+        #title = QLabel(f"{blank_space}SLIT MASK VIEWER")
+
+        self.mask_name_title = QLabel(f'MASK NAME: None')
+        self.center_title = QLabel(f'CENTER: None')
+        self.pa_title = QLabel(f'PA: None')
         
         initial_bar_width = 7
         initial_bar_length = 480
@@ -175,9 +180,14 @@ class interactiveSlitMask(QWidget):
 
         #------------------------layout-----------------------
         logger.info("interactive_slit_mask: defining layout")
+        top_layout = QHBoxLayout()
         main_layout = QVBoxLayout()
         
-        main_layout.addWidget(title)
+
+        top_layout.addWidget(self.mask_name_title,alignment=Qt.AlignmentFlag.AlignHCenter)
+        top_layout.addWidget(self.center_title,alignment=Qt.AlignmentFlag.AlignHCenter)
+        top_layout.addWidget(self.pa_title,alignment=Qt.AlignmentFlag.AlignHCenter)
+        main_layout.addLayout(top_layout)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
         main_layout.addWidget(self.view)
@@ -230,11 +240,7 @@ class interactiveSlitMask(QWidget):
                 all_bars[bar_id-1].setSelected(True)
                 self.connect_on(True)
                 
-        
-    
     def get_star_name_from_row(self):
-        
-        
         row_list = [x.check_id() for x in self.scene.selectedItems()]
         selected_star = [
             item.get_star_name() for item in reversed(self.scene.items())
@@ -253,7 +259,6 @@ class interactiveSlitMask(QWidget):
     @pyqtSlot(dict,name="targets converted")
     def change_slit_and_star(self,pos):
         logger.info("interactive_slit_mask: method change_slit_and_star called")
-
         #will get it in the form of {1:(position,star_names),...}
         self.position = list(pos.values())
         magic_number = 7
@@ -275,4 +280,11 @@ class interactiveSlitMask(QWidget):
         for item in new_items:
             self.scene.addItem(item)
         self.view = QGraphicsScene(self.scene)
+    @pyqtSlot(np.ndarray, name="update labels")
+    def update_name_center_pa(self,info):
+        mask_name, center, pa = info[0], info[1], info[2] #the format of info is [mask_name,center,pa]
+        self.mask_name_title.setText(f'MASK NAME: {mask_name}')
+        self.center_title.setText(f'CENTER: {center}')
+        self.pa_title.setText(f'PA: {pa}')
+
     

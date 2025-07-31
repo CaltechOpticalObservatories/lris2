@@ -93,6 +93,7 @@ class MainWindow(QMainWindow):
         mask_gen_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
         mask_gen_widget.change_row_widget.connect(self.slit_position_table.change_data)
         mask_gen_widget.send_mask_config.connect(mask_config_widget.update_table)
+        mask_gen_widget.change_mask_name.connect(self.interactive_slit_mask.update_name_center_pa)
 
         mask_config_widget.change_data.connect(self.target_display.change_data)
         mask_config_widget.change_row_widget.connect(self.slit_position_table.change_data)
@@ -116,6 +117,7 @@ class MainWindow(QMainWindow):
         self.splitterV2.setContentsMargins(0,0,0,0)
 
         self.layoutH1.addWidget(self.slit_position_table)#temp_widget2)
+
         self.layoutH1.addWidget(self.interactive_slit_mask) #temp_widget3
         self.layoutH1.setSpacing(0)
         self.layoutH1.setContentsMargins(0,0,0,0)

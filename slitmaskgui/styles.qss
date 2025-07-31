@@ -1,28 +1,76 @@
 /*Fonts for everything*/
-
 * {
     font-family: "Avenir";
 }
 
 /*Main Window Styling*/
-
 QMainWindow {
-    border: 8.5px solid #aeb5ad;
-    background-color: lightgray;
+    border: 8.5px solid #cacaca;
+    background-color: #eeeeee;
+}
+
+QMainWindow::separator:hover {
+    background: red;
 }
 
 /* General Widget styling */
-
 QWidget {
-    
+    color: black;
 }
 
 /* General splitter styling */
-
 QSplitter {
-    
+
+}
+QSplitter::handle {
+    /*border: 2px solid #a6b4c1;*/
+    background-color: #cacaca
 }
 
-QSplitter::handle {
-    background-color: #aeb5ad
+/*
+QScrollBar:vertical {
+    background-color: #f0f0f0;
+    width: 16px;
+    margin: 16px 0 16px 0;
 }
+
+QScrollBar::handle:vertical {
+    background-color: lightgray;
+    min-height: 20px;
+}
+
+QScrollBar::add-line:vertical {
+    background-color: #d3d3d3;
+    height: 16px;
+    subcontrol-position: bottom;
+    subcontrol-origin: margin;
+}
+
+QScrollBar::sub-line:vertical {
+    background-color: #d3d3d3;
+    height: 16px;
+    subcontrol-position: top;
+    subcontrol-origin: margin;
+}
+
+QScrollBar::up-arrow:vertical,
+QScrollBar::down-arrow:vertical {
+    width: 10px;
+    height: 10px;
+    background: transparent;
+}
+*/
+
+QPushButton {
+    background: #d9d9d9
+}
+
+/**/
+Qlabel {
+    color: black;
+}
+
+
+
+
+
