@@ -25,6 +25,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QSizeGrip,
     QTabWidget,
+    QComboBox
 
 
 )
@@ -78,7 +79,8 @@ class FieldOfView(QGraphicsRectItem):
         self.setRect(x,y,self.height*self.ratio,self.height)
 
         self.setPen(QPen(Qt.GlobalColor.darkGreen,4))
-        #self.setFlags(self.GraphicsItemFlag.ItemIsSelectable,False)
+        self.setFlags(self.flags() & ~self.GraphicsItemFlag.ItemIsSelectable)
+
         self.setOpacity(0.35)
     def change_height(self):
         pass
@@ -103,6 +105,8 @@ class interactiveSlits(QGraphicsItemGroup):
         self.star.setDefaultTextColor(Qt.GlobalColor.red)
         self.star.setFont(QFont("Arial",6))
         self.star.setPos(x+5,y-4)
+        self.setFlags(self.flags() & ~self.GraphicsItemFlag.ItemIsSelectable)
+
 
         self.addToGroup(self.line)
         self.addToGroup(self.star)
@@ -316,7 +320,13 @@ class WavelengthView(QWidget):
         self.mask_name_title = QLabel(f'MASK NAME: None')
         self.center_title = QLabel(f'CENTER: None')
         self.pa_title = QLabel(f'PA: None')
+        self.combobox = QComboBox()
+        self.combobox.addItem('phot_bp_mean_mag')
+        self.combobox.addItem('phot_g_mean_mag')
+        self.combobox.addItem('phot_rp_mean_mag')
+        self.combobox.setContentsMargins(0,0,0,0)
         
+
         initial_bar_width = 7
         initial_bar_length = 480
 
@@ -334,6 +344,7 @@ class WavelengthView(QWidget):
         logger.info("interactive_slit_mask: establishing connections")
 
         self.scene.selectionChanged.connect(self.send_row)
+        self.combobox.currentIndexChanged.connect(self.change_scene_to_wavelength)
 
         #------------------------layout-----------------------
         logger.info("interactive_slit_mask: defining layout")
@@ -343,6 +354,9 @@ class WavelengthView(QWidget):
         top_layout.addWidget(self.mask_name_title,alignment=Qt.AlignmentFlag.AlignHCenter)
         top_layout.addWidget(self.center_title,alignment=Qt.AlignmentFlag.AlignHCenter)
         top_layout.addWidget(self.pa_title,alignment=Qt.AlignmentFlag.AlignHCenter)
+        top_layout.addWidget(self.combobox)
+        top_layout.setContentsMargins(0,0,0,0)
+        top_layout.setSpacing(0)
         main_layout.addLayout(top_layout)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
@@ -375,47 +389,64 @@ class WavelengthView(QWidget):
         self.connect_on(True)
 
     def send_row(self):
-        row_num = self.scene.selectedItems()[0].check_id()
-        self.row_selected.emit(row_num)
+        if len(self.scene.selectedItems()) >0:
+            row_num = self.scene.selectedItems()[0].check_id()
+            self.row_selected.emit(row_num)
 
-    @pyqtSlot(dict,name="targets converted")
-    def change_slit_and_star(self,pos):
-        logger.info("interactive_slit_mask: method change_slit_and_star called")
-        #will get it in the form of {1:(position,star_names),...}
-        self.position = list(pos.values())
-        magic_number = 7
-        new_items = []
-        slits_to_replace = [
-            item for item in reversed(self.scene.items())
-            if isinstance(item, QGraphicsItemGroup)
-        ]
-        for num, item in enumerate(slits_to_replace):
+    @pyqtSlot(list,name="wavelength data")
+    def get_spectra_of_star(self,ra_dec_list): #[bar_id,ra,dec]
+        self.spectra_dict = {}
+        for x in ra_dec_list:
+            bar_id = x[0]
+            ra = x[1]
+            dec = x[2] 
+            coord = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), frame='icrs')
+            radius = .8 *u.arcmin
+            results = Gaia.query_object_async(coordinate=coord, radius=radius)
             try:
-                self.scene.removeItem(item)
-
-                x_pos, bar_id, name = self.position[num]
-                new_item = interactiveSlits(x_pos, bar_id*magic_number+7, name) #7 is the margin at the top 
-                new_items.append(new_item)
+                rp = results[['source_id', 'ra', 'dec', 'phot_bp_mean_mag', 'phot_g_mean_mag', 'phot_rp_mean_mag']]['phot_rp_mean_mag'][0]
             except:
-                continue
-        #item_list.reverse()
+                pass
+            try:
+                g = results[['source_id', 'ra', 'dec', 'phot_bp_mean_mag', 'phot_g_mean_mag', 'phot_rp_mean_mag']]['phot_g_mean_mag'][0]
+            except:
+                pass
+            try:
+                bp = results[['source_id', 'ra', 'dec', 'phot_bp_mean_mag', 'phot_g_mean_mag', 'phot_rp_mean_mag']]['phot_bp_mean_mag'][0]
+            except:
+                pass
+            self.spectra_dict[bar_id]= (bp,g,rp)
+        self.re_initialize_scene()
+
+    def re_initialize_scene(self,index=0):
+        slit_spacing = 7
+        
+        [self.scene.removeItem(item) for item in reversed(self.scene.items()) if isinstance(item, QGraphicsItemGroup)]
+
+        new_items = [
+            interactiveSlits(x=240, y=bar_id * slit_spacing + 7, name=str(np.float32(value[index])))
+            for bar_id, value in self.spectra_dict.items()
+        ]
+        
         for item in new_items:
             self.scene.addItem(item)
-        self.view = QGraphicsScene(self.scene)
-    @pyqtSlot(list,name="wavelength data")
-    def get_spectra_of_star(self,ra_dec_list):
-        for x in ra_dec_list:
-            ra = x[0]  # RA in degrees (example)
-            dec = x[1]  # Dec in degrees (example)
 
-            coord = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), frame='icrs')
-
-            radius = .8 *u.arcmin  # degrees
-
-            results = Gaia.query_object_async(coordinate=coord, radius=radius)
-
-            print(results[['source_id', 'ra', 'dec', 'phot_bp_mean_mag', 'phot_g_mean_mag', 'phot_rp_mean_mag']])    
+        self.view.setScene(self.scene)
+    
+    def change_scene_to_wavelength(self,index): #if this works then combine it with re_initialize_scene and also change the index of the items to match combobox
+        slit_spacing = 7
         
+        [self.scene.removeItem(item) for item in reversed(self.scene.items()) if isinstance(item, QGraphicsItemGroup)]
+
+        new_items = [
+            interactiveSlits(x=240, y=bar_id * slit_spacing + 7, name=str(np.float32(value[index])))
+            for bar_id, value in self.spectra_dict.items()
+        ]
+        
+        for item in new_items:
+            self.scene.addItem(item)
+
+        self.view.setScene(self.scene)
 
     @pyqtSlot(np.ndarray, name="update labels")
     def update_name_center_pa(self,info):

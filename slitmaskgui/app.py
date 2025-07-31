@@ -45,7 +45,8 @@ from PyQt6.QtWidgets import (
     QLayout,
     QTreeWidgetItem,
     QTreeWidget,
-    QTabWidget
+    QTabWidget,
+    QComboBox
 
 
 )
@@ -77,7 +78,6 @@ class MainWindow(QMainWindow):
         self.mask_tab.addTab(self.interactive_slit_mask,"Slit Mask")
         self.mask_tab.addTab(self.wavelength_view,"Spectral View")
         #---------------------------------
-        
 
         #---------------------------------connections-----------------------------
         main_logger.info("app: doing connections")
@@ -111,9 +111,6 @@ class MainWindow(QMainWindow):
 
         self.interactive_slit_mask.setContentsMargins(0,0,0,0)
         self.slit_position_table.setContentsMargins(0,0,0,0)
-
-        # self.mask_viewer_main.addWidget(self.mask_tab_bar)
-        # self.mask_viewer_main.addWidget(self.interactive_slit_mask)
 
         self.splitterV2.addWidget(mask_config_widget)
         self.splitterV2.addWidget(mask_gen_widget)
@@ -156,8 +153,10 @@ class MainWindow(QMainWindow):
         # --- Reconnect signals ---
         self.slit_position_table.highlight_other.connect(self.interactive_slit_mask.select_corresponding_row)
         self.interactive_slit_mask.row_selected.connect(self.slit_position_table.select_corresponding)
+        self.interactive_slit_mask.row_selected.connect(self.wavelength_view.select_corresponding_row)
         self.target_display.selected_le_star.connect(self.interactive_slit_mask.get_row_from_star_name)
-        self.slit_position_table.select_star.connect(self.target_display.select_corresponding)
+        self.interactive_slit_mask.select_star.connect(self.target_display.select_corresponding)
+        self.wavelength_view.row_selected.connect(self.interactive_slit_mask.select_corresponding_row)
 
         # --- readd to layout --- 
         self.layoutH1.addWidget(self.slit_position_table)
