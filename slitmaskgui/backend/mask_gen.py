@@ -53,6 +53,7 @@ class SlitMask:
 
     def calc_bar_id(self):
         #this will calculate the bar and x of every star and remove any that do not fit in position
+        initial_len = len(self.stars)
         for obj in self.stars:
             y, x = obj["y_mm"], obj["x_mm"]
             y_step = CSU_HEIGHT/TOTAL_BAR_PAIRS
@@ -117,4 +118,6 @@ class SlitMask:
         #will return a list that will be used by the csu to configure the slits 
         #this could also be used by the interactive slit mask
         pass
+
+
 

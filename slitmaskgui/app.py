@@ -25,6 +25,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+
 from slitmaskgui.target_list_widget import TargetDisplayWidget
 from slitmaskgui.mask_gen_widget import MaskGenWidget
 from slitmaskgui.menu_bar import MenuBar
@@ -66,6 +67,7 @@ class MainWindow(QMainWindow):
         
         #----------------------------definitions---------------------------
         main_logger.info("app: doing definitions")
+        
         mask_config_widget = MaskConfigurationsWidget()
         mask_gen_widget = MaskGenWidget()
         

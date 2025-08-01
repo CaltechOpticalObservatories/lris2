@@ -23,8 +23,10 @@ from PyQt6.QtWidgets import (
     QHeaderView,
     QFileDialog,
 
+
 )
 config_logger = logging.getLogger(__name__)
+
 class Button(QPushButton):
     def __init__(self,w,h,text):
         super().__init__()
@@ -46,8 +48,10 @@ class TableModel(QAbstractTableModel):
             if orientation == Qt.Orientation.Horizontal:
                 
                 return self.headers[section]
+                
             if orientation == Qt.Orientation.Vertical:
                 return None
+        
         
         return super().headerData(section, orientation, role)
 
@@ -72,6 +76,7 @@ class TableModel(QAbstractTableModel):
         if len(index) > 0:
             return index[0].row()
         return None
+
     def rowCount(self, index):
         return len(self._data)
     def columnCount(self, index):
@@ -97,6 +102,10 @@ class CustomTableView(QTableView):
         self.setResizeMode()
 
 
+        return 2
+    
+
+
 
 
 #I am unsure of whether to go with a abstract table model or an abstract list model
@@ -107,6 +116,7 @@ class MaskConfigurationsWidget(QWidget):
     reset_scene = pyqtSignal(bool)
     def __init__(self):
         super().__init__()
+        
         
         self.setSizePolicy(
             QSizePolicy.Policy.Preferred,
@@ -152,6 +162,7 @@ class MaskConfigurationsWidget(QWidget):
         bot_hori_layout.addWidget(export_button)
         bot_hori_layout.addWidget(export_all_button)
         bot_hori_layout.setSpacing(0)
+        bot_hori_layout.addWidget(export_button)
 
         group_layout.addLayout(top_hori_layout)
         group_layout.addWidget(self.table)

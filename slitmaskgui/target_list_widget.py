@@ -21,6 +21,7 @@ class TableModel(QAbstractTableModel):
         self._data = data
         self.header = ["Name","Priority","Magnitude","Ra","Dec","Center Distance"]
 
+
     def headerData(self, section, orientation, role = ...):
         if role == Qt.ItemDataRole.DisplayRole:
             if orientation == Qt.Orientation.Horizontal:

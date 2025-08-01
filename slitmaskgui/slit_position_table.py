@@ -77,6 +77,8 @@ class CustomTableView(QTableView):
     def event(self, event):
         return super().event(event)
         #what I will do in the future is make it so that if even == doublemousepress event that you can edit the data in the cell
+    
+
 
 
 width = .7
@@ -85,6 +87,7 @@ default_slit_display_list = [[i+1,0.00,width] for i in range(72)]
 
 class SlitDisplay(QWidget):
     highlight_other = pyqtSignal(int,name="row selected") #change name to match that in the interactive slit mask
+    select_star = pyqtSignal(int)
     def __init__(self,data=default_slit_display_list):
         super().__init__()
 

@@ -39,10 +39,10 @@ class MaskGenWidget(QWidget):
         self.setSizePolicy(
             QSizePolicy.Policy.Preferred,
             QSizePolicy.Policy.Expanding
-        )
 
         #------------------------definitions----------------------------
         logger.info("mask_gen_widget: doing definitions")
+
         import_target_list_button = QPushButton(text = "Import Target List")
         self.name_of_mask = QLineEdit("untitled")
         self.center_of_mask = QLineEdit("00 00 00.00 +00 00 00.00")
@@ -86,7 +86,7 @@ class MaskGenWidget(QWidget):
         below_layout.addLayout(unit_layout)
         group_layout.addLayout(secondary_layout)
 
-        group_layout.addWidget(import_target_list_button)
+        group_layout.addWidget(import_target_list_button, alignment=Qt.AlignmentFlag.AlignCenter)
         group_layout.addLayout(below_layout)
         group_layout.addStretch(40)
         group_layout.addWidget(run_button)
@@ -121,6 +121,7 @@ class MaskGenWidget(QWidget):
     def run_button(self):
         #this right now will generate a starlist depending on center to speed up testing
         #path_to_file = "/Users/austinbowman/lris2/gaia_starlist.txt"
+
 
         logger.info("mask_gen_widget: run button clicked")
         center = re.match(r"(?P<Ra>\d{2} \d{2} \d{2}\.\d{2}(?:\.\d+)?) (?P<Dec>[\+|\-]\d{2} \d{2} \d{2}(?:\.\d+)?)",self.center_of_mask.text())
@@ -164,6 +165,7 @@ class MaskGenWidget(QWidget):
         self.change_mask_name.emit(mask_name_info)
         self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
         #--------------------------------------------------------------------------
+
 
 
 
