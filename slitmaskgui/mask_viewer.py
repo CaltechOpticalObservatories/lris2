@@ -133,7 +133,7 @@ class CustomGraphicsView(QGraphicsView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.fitInView(scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
-        self.setViewportMargins(9,9,9,9)
+        self.setViewportMargins(0,0,0,0)
 
     def resizeEvent(self,event):
         super().resizeEvent(event)
@@ -174,7 +174,7 @@ class interactiveSlitMask(QWidget):
 
         fov = FieldOfView(TOTAL_HEIGHT_OF_BARS,x=xcenter_of_image/2,y=7)
         self.scene.addItem(fov)
-        
+
         self.scene.setSceneRect(self.scene.itemsBoundingRect())
         self.view = CustomGraphicsView(self.scene)
 

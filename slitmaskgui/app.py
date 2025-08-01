@@ -115,6 +115,8 @@ class MainWindow(QMainWindow):
         self.slit_position_table.setContentsMargins(0,0,0,0)
         self.slit_position_table.setMinimumHeight(1)
         self.mask_tab.setMinimumSize(1,1)
+        mask_config_widget.setMinimumSize(1,1)
+        mask_gen_widget.setMinimumSize(1,1)
 
 
         self.splitterV2.addWidget(mask_config_widget)
