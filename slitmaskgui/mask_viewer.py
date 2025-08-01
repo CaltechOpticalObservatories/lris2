@@ -153,7 +153,7 @@ class interactiveSlitMask(QWidget):
         super().__init__()
 
         #--------------------definitions-----------------------
-        logger.info("interactive_slit_mask: doing definitions")
+        logger.info("slit_view: doing definitions")
         scene_width = 480
         scene_height = 520
         self.scene = QGraphicsScene(0,0,scene_width,scene_height)
@@ -178,13 +178,13 @@ class interactiveSlitMask(QWidget):
 
         self.view = CustomGraphicsView(self.scene)
         #-------------------connections-----------------------
-        logger.info("interactive_slit_mask: establishing connections")
+        logger.info("slit_view: establishing connections")
         self.scene.selectionChanged.connect(self.row_is_selected)
         self.scene.selectionChanged.connect(self.get_star_name_from_row)
 
 
         #------------------------layout-----------------------
-        logger.info("interactive_slit_mask: defining layout")
+        logger.info("slit_view: defining layout")
         top_layout = QHBoxLayout()
         main_layout = QVBoxLayout()
         
@@ -211,7 +211,7 @@ class interactiveSlitMask(QWidget):
             self.scene.selectionChanged.disconnect(self.get_star_name_from_row)
     @pyqtSlot(int,name="row selected")
     def select_corresponding_row(self,row):
-        logger.info("interactive_slit_mask: method select_correspond_row called")
+        logger.info("slit_view: method select_correspond_row called")
         
         all_bars = [
             item for item in reversed(self.scene.items())
@@ -227,7 +227,7 @@ class interactiveSlitMask(QWidget):
 
     @pyqtSlot(str)
     def get_row_from_star_name(self,name):
-        logger.info("interactive_slit_mask: method get_row_from_star_name called")
+        logger.info("slit_view: method get_row_from_star_name called")
         all_stars = [
             item for item in reversed(self.scene.items())
             if isinstance(item, QGraphicsItemGroup)
@@ -252,18 +252,18 @@ class interactiveSlitMask(QWidget):
             if isinstance(item, QGraphicsItemGroup) and item.get_bar_id()-1 in row_list
         ]
         if selected_star != []:
-            logger.info(f"interactive_slit_mask: method get_star_name_from_row called, selected star: {selected_star[0]}")
+            logger.info(f"slit_view: method get_star_name_from_row called, selected star: {selected_star[0]}")
             self.select_star.emit(selected_star[0])
 
     def row_is_selected(self):
         if self.scene.selectedItems() != []:
             row_num = self.scene.selectedItems()[0].check_id()
-            logger.info(f"interactive_slit_mask: method row_is_selected called, row_num: {row_num}")
+            logger.info(f"slit_view: method row_is_selected called, row_num: {row_num}")
             self.row_selected.emit(row_num)
 
     @pyqtSlot(dict,name="targets converted")
     def change_slit_and_star(self,pos):
-        logger.info("interactive_slit_mask: method change_slit_and_star called")
+        logger.info("slit_view: method change_slit_and_star called")
         #will get it in the form of {1:(position,star_names),...}
         self.position = list(pos.values())
         magic_number = 7
@@ -309,7 +309,7 @@ class WavelengthView(QWidget):
         super().__init__()
 
         #--------------------definitions-----------------------
-        logger.info("interactive_slit_mask: doing definitions")
+        logger.info("wavelength_view: doing definitions")
         scene_width = 480
         scene_height = 520
         self.scene = QGraphicsScene(0,0,scene_width,scene_height)
@@ -341,13 +341,13 @@ class WavelengthView(QWidget):
 
         self.view = CustomGraphicsView(self.scene)
         #-------------------connections-----------------------
-        logger.info("interactive_slit_mask: establishing connections")
+        logger.info("wavelength_view: establishing connections")
 
         self.scene.selectionChanged.connect(self.send_row)
-        self.combobox.currentIndexChanged.connect(self.change_scene_to_wavelength)
+        self.combobox.currentIndexChanged.connect(self.re_initialize_scene)
 
         #------------------------layout-----------------------
-        logger.info("interactive_slit_mask: defining layout")
+        logger.info("wavelength_view: defining layout")
         top_layout = QHBoxLayout()
         main_layout = QVBoxLayout()
 
@@ -416,37 +416,26 @@ class WavelengthView(QWidget):
             except:
                 pass
             self.spectra_dict[bar_id]= (bp,g,rp)
-        self.re_initialize_scene()
+        self.re_initialize_scene(0)
 
-    def re_initialize_scene(self,index=0):
+    def re_initialize_scene(self,index):
         slit_spacing = 7
         
-        [self.scene.removeItem(item) for item in reversed(self.scene.items()) if isinstance(item, QGraphicsItemGroup)]
+        try:
+            new_items = [
+                interactiveSlits(x=240, y=bar_id * slit_spacing + 7, name=str(np.float32(value[index])))
+                for bar_id, value in self.spectra_dict.items()
+            ]
+            [self.scene.removeItem(item) for item in reversed(self.scene.items()) if isinstance(item, QGraphicsItemGroup)]
 
-        new_items = [
-            interactiveSlits(x=240, y=bar_id * slit_spacing + 7, name=str(np.float32(value[index])))
-            for bar_id, value in self.spectra_dict.items()
-        ]
+        except:
+            return
         
         for item in new_items:
             self.scene.addItem(item)
 
         self.view.setScene(self.scene)
     
-    def change_scene_to_wavelength(self,index): #if this works then combine it with re_initialize_scene and also change the index of the items to match combobox
-        slit_spacing = 7
-        
-        [self.scene.removeItem(item) for item in reversed(self.scene.items()) if isinstance(item, QGraphicsItemGroup)]
-
-        new_items = [
-            interactiveSlits(x=240, y=bar_id * slit_spacing + 7, name=str(np.float32(value[index])))
-            for bar_id, value in self.spectra_dict.items()
-        ]
-        
-        for item in new_items:
-            self.scene.addItem(item)
-
-        self.view.setScene(self.scene)
 
     @pyqtSlot(np.ndarray, name="update labels")
     def update_name_center_pa(self,info):

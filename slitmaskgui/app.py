@@ -144,11 +144,17 @@ class MainWindow(QMainWindow):
         self.interactive_slit_mask.setParent(None)
         self.slit_position_table.setParent(None)
         self.target_display.setParent(None)
+        self.mask_tab.setParent(None)
+        self.wavelength_view.setParent(None)
 
         # --- Create new widgets ---
         self.target_display = TargetDisplayWidget()
         self.interactive_slit_mask = interactiveSlitMask()
         self.slit_position_table = SlitDisplay()
+        self.wavelength_view = WavelengthView()
+        self.mask_tab = QTabWidget()
+        self.mask_tab.addTab(self.interactive_slit_mask,"Slit Mask")
+        self.mask_tab.addTab(self.wavelength_view,"Spectral View")
 
         # --- Reconnect signals ---
         self.slit_position_table.highlight_other.connect(self.interactive_slit_mask.select_corresponding_row)
@@ -160,7 +166,7 @@ class MainWindow(QMainWindow):
 
         # --- readd to layout --- 
         self.layoutH1.addWidget(self.slit_position_table)
-        self.layoutH1.addWidget(self.interactive_slit_mask)
+        self.layoutH1.addWidget(self.mask_tab)
         self.splitterV1.insertWidget(1, self.target_display)
         
 

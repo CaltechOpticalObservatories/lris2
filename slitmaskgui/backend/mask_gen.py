@@ -15,7 +15,7 @@ import astropy.units as u
 import numpy as np
 
 
-#for some reason I am splitting up everything into their own for statements
+#for some reason I am splitting up everything into their own for s©tatements
 #should be able to put this all into one for statement but I don't wanna think about that rnß
 class SlitMask:
     def __init__(self,stars,center,slit_width=0,pa=0,max_slit_length=3):
@@ -96,17 +96,19 @@ class SlitMask:
     def lengthen_slits(self,max_length=3):
         index = 0
         while index < len(self.stars):
+            current_bar_id = self.stars[index]["bar_id"]
             try:
-                slit_diff = self.stars[index+1]["bar_id"] - self.stars[index]["bar_id"]
-            except:
-                slit_diff = 72 - self.stars[index]["bar_id"]
+                slit_diff = self.stars[index+1]["bar_id"] - current_bar_id
+            except IndexError:
+                slit_diff = 72 - current_bar_id
             slit_diff = slit_diff if slit_diff < max_length else max_length
 
             if slit_diff > 1:
-                long_slit_list = [{**self.stars[index],"bar_id":self.stars[index]["bar_id"]+x} for x in range(slit_diff)]
+                long_slit_list = [{**self.stars[index],"bar_id":current_bar_id+x} for x in range(slit_diff)]
                 self.stars[index+1:index+1] = long_slit_list
                 index += slit_diff
             index += 1
+            
         
     def return_mask(self):
         return json.dumps(self.stars)

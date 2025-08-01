@@ -182,15 +182,18 @@ class MaskConfigurationsWidget(QWidget):
             "All files (*)" #will need to make sure it is a specific file
         )
         #update this with the row to json dict thing
-        if file_path: 
-            with open(file_path,'r') as f:
-                temp = f.read()
-                data = json.loads(temp)
-            mask_name = os.path.splitext(os.path.basename(file_path))[0]
-            self.update_table((mask_name,data)) #doesn't work right now
-            config_logger.info(f"mask_configurations: open button clicked {mask_name} {file_path}")
-            #in the future this will take the mask config file and take the name from that file and display it
-            #it will also auto select itself and display the mask configuration on the interactive slit mask
+        try:
+            if file_path: 
+                with open(file_path,'r') as f:
+                    temp = f.read()
+                    data = json.loads(temp)
+                mask_name = os.path.splitext(os.path.basename(file_path))[0]
+                self.update_table((mask_name,data)) #doesn't work right now
+                config_logger.info(f"mask_configurations: open button clicked {mask_name} {file_path}")
+                #in the future this will take the mask config file and take the name from that file and display it
+                #it will also auto select itself and display the mask configuration on the interactive slit mask
+        except:
+            pass
         config_logger.info(f"mask configurations: end of open button function {self.row_to_config_dict}")
 
 
@@ -205,16 +208,17 @@ class MaskConfigurationsWidget(QWidget):
         #get selected item
         config_logger.info(f"mask configurations: start of close button function {self.row_to_config_dict}")
         row_num = self.model.get_row_num(self.table.selectedIndexes())
-        if row_num is not None:
+        if row_num is None:
+            config_logger.warning("No row selected for removal.")
+            return
+        else:
             del self.row_to_config_dict[row_num]
             self.model.beginResetModel()
             self.model.removeRow(row_num)
             self.model.endResetModel()
-        if len(self.row_to_config_dict) == 0:
+        if not self.row_to_config_dict:
             config_logger.info("mask configuratios: reseting scene")
             self.reset_scene.emit(True)
-        config_logger.info(f"mask configurations: end of close button function {self.row_to_config_dict}")
-
             
 
     def export_button_clicked(self): #should probably change to export to avoid confusion with saved/unsaved which is actually updated/notupdated
@@ -223,7 +227,10 @@ class MaskConfigurationsWidget(QWidget):
         row_num = self.model.get_row_num(self.table.selectedIndexes()) #this gets the row num
         index = self.model.index(row_num, 1)
         name = self.model.data(index,Qt.ItemDataRole.DisplayRole)
-        if row_num is not None:
+        if row_num is None:
+            config_logger.warning("No row selected for export.")
+            return
+        else:
             file_path, _ = QFileDialog.getSaveFileName(
                 self,
                 "Save File",

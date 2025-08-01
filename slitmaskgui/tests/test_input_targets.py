@@ -1,12 +1,7 @@
 from slitmaskgui.input_targets import TargetList
 import pytest
 
-star_list = """
-Gaia_001        15 25 32.35 -50 46 46.8 2000.0 vmag=20.77 priority=1020
-Gaia_001        15 25 32.35 -50 46 46.8 2000.0 priority=1020 vmag=20.77  
-Gaia_011    15 25 32.35 -50 46 46.8 2000.0 vmag=20.77 priority=1020
-Gaia_021        15 25 32.35 -50 46 46.8 2000.0 vmag=20.77 priority=1020 must_have=True
-""" #third one should return an error, fourth one shouldn't return error but must_have wont be read
+#third one should return an error, fourth one shouldn't return error but must_have wont be read
 #add something to input_targets that makes it so that if one thing fails it doesn't all fail
 
 #I just have to test the parsing 
