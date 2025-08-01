@@ -4,6 +4,7 @@ from slitmaskgui.backend.star_list import StarList
 from slitmaskgui.backend.sample import query_gaia_starlist_rect
 import re
 import logging
+import numpy as np
 from PyQt6.QtCore import QObject, pyqtSignal, Qt, QSize
 from PyQt6.QtWidgets import (
     QFileDialog,
@@ -19,6 +20,7 @@ from PyQt6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLayout,
     
 )
 
@@ -29,9 +31,9 @@ class MaskGenWidget(QWidget):
     change_data = pyqtSignal(list)
     change_slit_image = pyqtSignal(dict)
     change_row_widget = pyqtSignal(list)
-
     send_mask_config = pyqtSignal(list)
-
+    change_mask_name = pyqtSignal(np.ndarray)
+    change_wavelength_data = pyqtSignal(list)
     def __init__(self):
         super().__init__()
 
@@ -39,18 +41,16 @@ class MaskGenWidget(QWidget):
             QSizePolicy.Policy.Preferred,
             QSizePolicy.Policy.Expanding
         )
-
         #------------------------definitions----------------------------
         logger.info("mask_gen_widget: doing definitions")
+
         import_target_list_button = QPushButton(text = "Import Target List")
-
         self.name_of_mask = QLineEdit("untitled")
-
         self.center_of_mask = QLineEdit("00 00 00.00 +00 00 00.00")
         self.slit_width = QLineEdit("0.7")
         run_button = QPushButton(text="Run")
         title = QLabel("MASK GENERATION")
-        
+
         #worry about the formatting of center_of_mask later
 
         #-----------------------------connections---------------------------
@@ -63,15 +63,19 @@ class MaskGenWidget(QWidget):
         group_box = QGroupBox()
         main_layout = QVBoxLayout()
         secondary_layout = QFormLayout() #above import targets
-        below_form_layout = QFormLayout()
+        below_form_layout = QFormLayout() #below imput targets
         below_layout = QHBoxLayout() # displayed below import targets
         unit_layout = QVBoxLayout()
         group_layout = QVBoxLayout()
         group_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        import_target_list_button_layout = QVBoxLayout()
+        run_button_layout = QVBoxLayout()
 
         self.name_of_mask.setAlignment(Qt.AlignmentFlag.AlignTop)
-        import_target_list_button.setFixedSize(150,40)
-        run_button.setFixedSize(150,30)
+        import_target_list_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+        import_target_list_button.setLayout(import_target_list_button_layout)
+        run_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+        run_button.setLayout(run_button_layout)
 
         secondary_layout.addRow("Mask Name:",self.name_of_mask)
         below_form_layout.addRow("Slit Width:",self.slit_width)
@@ -83,14 +87,14 @@ class MaskGenWidget(QWidget):
         below_layout.addLayout(unit_layout)
         group_layout.addLayout(secondary_layout)
 
-        group_layout.addWidget(import_target_list_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        group_layout.addWidget(import_target_list_button)
         group_layout.addLayout(below_layout)
         group_layout.addStretch(40)
-        group_layout.addWidget(run_button, alignment=Qt.AlignmentFlag.AlignBottom| Qt.AlignmentFlag.AlignCenter)
+        group_layout.addWidget(run_button)
         group_box.setLayout(group_layout)
 
         
-        main_layout.addWidget(title)
+        main_layout.addWidget(title,alignment=Qt.AlignmentFlag.AlignHCenter)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
         main_layout.addWidget(group_box)
@@ -119,12 +123,15 @@ class MaskGenWidget(QWidget):
         #this right now will generate a starlist depending on center to speed up testing
         #path_to_file = "/Users/austinbowman/lris2/gaia_starlist.txt"
 
+
         logger.info("mask_gen_widget: run button clicked")
         center = re.match(r"(?P<Ra>\d{2} \d{2} \d{2}\.\d{2}(?:\.\d+)?) (?P<Dec>[\+|\-]\d{2} \d{2} \d{2}(?:\.\d+)?)",self.center_of_mask.text())
         ra = center.group("Ra")
         dec = center.group("Dec")
+        center = center.group(0)
         width = self.slit_width.text()
         mask_name = self.name_of_mask.text()
+        pa = 0
 
         logger.info("mask_gen_widget: generating starlist file")
         query_gaia_starlist_rect(
@@ -142,7 +149,6 @@ class MaskGenWidget(QWidget):
             target_list = TargetList(self.star_file_path)
         except:
             logger.info("maks_gen_widget: run button was clicked by no file selected")
-
             self.starlist_file_button_clicked()
             target_list = TargetList(self.star_file_path)
 
@@ -154,11 +160,13 @@ class MaskGenWidget(QWidget):
         self.change_data.emit(slit_mask.send_target_list())
         self.change_row_widget.emit(slit_mask.send_row_widget_list())
 
-
         logger.info("mask_gen_widget: sending mask config to mask_configurations")
         self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
-
+        mask_name_info = np.array([str(mask_name),str(center),str(pa)])
+        self.change_mask_name.emit(mask_name_info)
+        self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
         #--------------------------------------------------------------------------
+
 
 
 

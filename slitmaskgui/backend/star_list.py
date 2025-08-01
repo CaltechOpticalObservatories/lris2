@@ -18,7 +18,6 @@ import json
 import os
 
 
-
 #Ra and Dec --> angle Degrees
 
 
@@ -51,39 +50,11 @@ class StarList:
         self.pa = pa
         
         if auto_run:
-            self.complete_json()
             #self.calc_mask()
             self.payload = self.calc_mask(self.payload)
-
-        
-
-    def complete_json(self): #maybe will rename this to complete payload
-        for obj in self.payload:
-            star = SkyCoord(obj["ra"],obj["dec"], unit=(u.hourangle, u.deg), frame='icrs')
-            separation = self.center.separation(star)  # returns an angle
-            obj["center distance"] = float(separation.to(u.arcmin).value)
-
-            delta_ra = (star.ra - self.center.ra).to(u.deg) #from center
-            delta_dec = (star.dec - self.center.dec).to(u.arcsec) #from center
-
-            if delta_ra.value > 180:  # If RA difference exceeds 180 degrees, wrap it
-                delta_ra -= 360 * u.deg
-            elif delta_ra.value < -180:
-                delta_ra += 360 * u.deg
-
-            delta_ra = delta_ra.to(u.arcsec)
-            delta_ra_proj = delta_ra * np.cos(self.center.dec.radian) # Correct for spherical distortion
-                # Convert to mm
-            x_mm = float(delta_ra_proj.value * PLATE_SCALE)
-            y_mm = float(delta_dec.value * PLATE_SCALE)
-
-            obj["x_mm"] = x_mm
-            obj["y_mm"] = y_mm
-
-            #ok this is not how you do this bc I will only take in x and just don't care about y right now (i'll care later)
-
+    
     def calc_mask(self,all_stars): 
-        slit_mask = SlitMask(all_stars)
+        slit_mask = SlitMask(all_stars,center=self.center, slit_width= self.slit_width, pa= self.pa)
             
         return json.loads(slit_mask.return_mask())
 
@@ -100,8 +71,6 @@ class StarList:
         return [[x["name"],x["priority"],x["vmag"],x["ra"],x["dec"],x["center distance"]] for x in self.payload]
 
 
-
-
     def send_interactive_slit_list(self):
         #have to convert it to dict {bar_num:(position,star_name)}
         #imma just act rn like all the stars are in sequential order
@@ -112,19 +81,21 @@ class StarList:
         slit_dict = {
             i: (240 + (obj["x_mm"] / CSU_WIDTH) * total_pixels, obj["bar_id"], obj["name"]) 
             for i, obj in enumerate(self.payload[:72])
-
             if "bar_id" in obj
             }
 
         return slit_dict
+    def send_list_for_wavelength(self):
+        old_ra_dec_list = [[x["bar_id"],x["ra"],x["dec"]]for x in self.payload]
+        ra_dec_list =[]
+        [ra_dec_list.append(x) for x in old_ra_dec_list if x not in ra_dec_list]
+        return ra_dec_list
     
     def send_row_widget_list(self):
         #the reason why the bar id is plus 1 is to transl
         sorted_row_list = sorted(
             ([obj["bar_id"]+1, obj["x_mm"], self.slit_width] 
-
             for obj in self.payload[:72] if "bar_id" in obj),
-
             key=lambda x: x[0]
             )
         return sorted_row_list

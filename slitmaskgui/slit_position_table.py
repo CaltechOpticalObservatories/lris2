@@ -5,6 +5,8 @@ interactive image and highlight the corresponding star in the target list table
 """
 
 from slitmaskgui.menu_bar import MenuBar
+import logging
+import itertools
 from PyQt6.QtCore import Qt, QAbstractTableModel, pyqtSlot, pyqtSignal, QSize
 from PyQt6.QtWidgets import (
     QWidget,
@@ -14,9 +16,13 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QLabel,
     QHeaderView,
+    QFrame,
+    QAbstractScrollArea
 
 
 )
+
+logger = logging.getLogger(__name__)
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data=[]):
@@ -61,21 +67,29 @@ class CustomTableView(QTableView):
 
         self.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.setSelectionMode(QTableView.SelectionMode.SingleSelection)
+
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
     def setModel(self, model):
         super().setModel(model)
         self.setResizeMode()
 
     def setResizeMode(self):
-        for i in range(3):
-            self.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+
+        
 
     def event(self, event):
         return super().event(event)
         #what I will do in the future is make it so that if even == doublemousepress event that you can edit the data in the cell
+    
+
 
 
 width = .7
-default_slit_display_list = [[i+1,0.00,width] for i in range(73)]
+default_slit_display_list = [[i+1,0.00,width] for i in range(72)]
 
 
 class SlitDisplay(QWidget):
@@ -85,55 +99,65 @@ class SlitDisplay(QWidget):
         super().__init__()
 
         self.setSizePolicy(
-            QSizePolicy.Policy.Maximum,
+            QSizePolicy.Policy.Fixed,
             QSizePolicy.Policy.MinimumExpanding
         )
 
         #---------------------------definitions----------------------
+        logger.info("slit_position_table: doing definitions")
         self.data = data #will look like [[bar_id,center,width],...]
         self.table = CustomTableView()
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
-        title = QLabel("ROW DISPLAY WIDGET")
 
         #--------------------------connections-----------------------
+        logger.info("slit_position_table: doing conections")
         self.table.selectionModel().selectionChanged.connect(self.row_selected)
-        self.table.selectionModel().selectionChanged.connect(self.select_target)
 
         #----------------------------layout----------------------
+        logger.info("slit_position_table: defining layout")
+        
         main_layout = QVBoxLayout()
-        main_layout.addWidget(title)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
-
+        
         main_layout.addWidget(self.table)
         self.setLayout(main_layout)
         #------------------------------------------------------        
 
     def sizeHint(self):
-        return QSize(40,120)
+        return QSize(135,120)
+    def connect_on(self,answer:bool):
+        #---------------reconnect connections---------------
+        if answer:
+            self.table.selectionModel().selectionChanged.connect(self.row_selected)
+        else:
+            self.table.selectionModel().selectionChanged.disconnect(self.row_selected)
     
     @pyqtSlot(list,name="input slit positions")
     def change_data(self,data):
+        logger.info("slit_position_table: change_data function called, changing data")
         self.model.beginResetModel()
-        self.model._data = data
-        self.data = data
+        replacement = list(x for x,_ in itertools.groupby(data))
+        self.model._data = replacement
+        self.data = replacement
         self.model.endResetModel()
+        self.table.resizeColumnsToContents()
+        self.table.resize(self.table.sizeHint())
 
     
     def row_selected(self):
+        logger.info("slit_position_table: method row_selected is called, row in slit_table was selected")
         selected_row = self.table.selectionModel().currentIndex().row()
         corresponding_row = self.model.get_bar_id(row=selected_row)
 
         self.highlight_other.emit(corresponding_row-1)
-    
-    def select_target(self):
-        row = self.table.selectionModel().currentIndex().row()
-        self.select_star.emit(row)
 
 
     @pyqtSlot(int,name="other row selected")
     def select_corresponding(self,bar_id):
+        logger.info("slit_position_table: method select_corresponding is called, selected corresponding row from slit mask view")
+        self.connect_on(False)
         self.bar_id = bar_id + 1
 
         filtered_row = list(filter(lambda x:x[0] == self.bar_id,self.data))
@@ -144,4 +168,5 @@ class SlitDisplay(QWidget):
         else:
             #this means that the bar does not have a slit on it
             pass
+        self.connect_on(True)
  

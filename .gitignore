@@ -171,8 +171,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-
+>>>>>>> upstream/main
 notes.txt
-
 slitmaskgui/tests/problemchild.json
-
+allfonts.txt
+slitmaskgui/tests/testfiles/problemchild.json
+gaia_starlist.txt
