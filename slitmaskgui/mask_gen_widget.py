@@ -39,7 +39,7 @@ class MaskGenWidget(QWidget):
         self.setSizePolicy(
             QSizePolicy.Policy.Preferred,
             QSizePolicy.Policy.Expanding
-
+        )
         #------------------------definitions----------------------------
         logger.info("mask_gen_widget: doing definitions")
 
