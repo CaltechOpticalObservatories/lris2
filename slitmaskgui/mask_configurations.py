@@ -162,7 +162,6 @@ class MaskConfigurationsWidget(QWidget):
         bot_hori_layout.addWidget(export_button)
         bot_hori_layout.addWidget(export_all_button)
         bot_hori_layout.setSpacing(0)
-        bot_hori_layout.addWidget(export_button)
 
         group_layout.addLayout(top_hori_layout)
         group_layout.addWidget(self.table)
@@ -236,8 +235,12 @@ class MaskConfigurationsWidget(QWidget):
         #this will save the current file selected in the table
         config_logger.info(f"mask configurations: start of export button function {self.row_to_config_dict}")
         row_num = self.model.get_row_num(self.table.selectedIndexes()) #this gets the row num
-        index = self.model.index(row_num, 1)
-        name = self.model.data(index,Qt.ItemDataRole.DisplayRole)
+        try:
+            index = self.model.index(row_num, 1)
+            name = self.model.data(index,Qt.ItemDataRole.DisplayRole)
+        except:
+            #index has recieved nonetype
+            pass
         if row_num is None:
             config_logger.warning("No row selected for export.")
             return
