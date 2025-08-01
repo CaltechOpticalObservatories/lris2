@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QHeaderView,
     QFrame,
+    QAbstractScrollArea
 
 
 )
@@ -66,13 +67,19 @@ class CustomTableView(QTableView):
 
         self.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.setSelectionMode(QTableView.SelectionMode.SingleSelection)
+
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
     def setModel(self, model):
         super().setModel(model)
         self.setResizeMode()
 
     def setResizeMode(self):
-        for i in range(3):
-            self.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+
+        
 
     def event(self, event):
         return super().event(event)
@@ -102,7 +109,6 @@ class SlitDisplay(QWidget):
         self.table = CustomTableView()
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
-        # title = QLabel("")
 
         #--------------------------connections-----------------------
         logger.info("slit_position_table: doing conections")
@@ -112,11 +118,9 @@ class SlitDisplay(QWidget):
         logger.info("slit_position_table: defining layout")
         
         main_layout = QVBoxLayout()
-        
-        # main_layout.addWidget(title)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
-        # self.table.setFrameShape(QFrame.Shape.Box)
+        
         main_layout.addWidget(self.table)
         self.setLayout(main_layout)
         #------------------------------------------------------        
@@ -138,6 +142,8 @@ class SlitDisplay(QWidget):
         self.model._data = replacement
         self.data = replacement
         self.model.endResetModel()
+        self.table.resizeColumnsToContents()
+        self.table.resize(self.table.sizeHint())
 
     
     def row_selected(self):

@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("LRIS-2 Slit Configuration Tool")
-        self.setGeometry(100,100,1000,700)
+        self.setGeometry(100,100,1000,760)
         self.setMenuBar(MenuBar()) #sets the menu bar
         
         #----------------------------definitions---------------------------
@@ -74,13 +74,11 @@ class MainWindow(QMainWindow):
         self.target_display = TargetDisplayWidget()
         self.interactive_slit_mask = interactiveSlitMask()
         self.slit_position_table = SlitDisplay()
-        self.slit_position_table.setMinimumHeight(0)
         self.wavelength_view = WavelengthView()
         #-------tab widget ----------------
         self.mask_tab = QTabWidget()
         self.mask_tab.addTab(self.interactive_slit_mask,"Slit Mask")
         self.mask_tab.addTab(self.wavelength_view,"Spectral View")
-        self.mask_tab.setMinimumSize(0,0)
         #---------------------------------
 
         #---------------------------------connections-----------------------------
@@ -115,6 +113,9 @@ class MainWindow(QMainWindow):
 
         self.interactive_slit_mask.setContentsMargins(0,0,0,0)
         self.slit_position_table.setContentsMargins(0,0,0,0)
+        self.slit_position_table.setMinimumHeight(1)
+        self.mask_tab.setMinimumSize(1,1)
+
 
         self.splitterV2.addWidget(mask_config_widget)
         self.splitterV2.addWidget(mask_gen_widget)
@@ -129,13 +130,13 @@ class MainWindow(QMainWindow):
         widgetH1.setLayout(self.layoutH1)
 
         self.splitterV1.addWidget(widgetH1)
-        self.splitterV1.setCollapsible(0,False)
+        # self.splitterV1.setCollapsible(0,False)
         self.splitterV1.addWidget(self.target_display)
         self.splitterV1.setOrientation(Qt.Orientation.Vertical)
         self.splitterV1.setContentsMargins(0,0,0,0)
 
         main_splitter.addWidget(self.splitterV1)
-        main_splitter.setCollapsible(0,False)
+        # main_splitter.setCollapsible(0,False)
         main_splitter.addWidget(self.splitterV2)
         main_splitter.setContentsMargins(9,9,9,9)
 

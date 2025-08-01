@@ -124,24 +124,20 @@ class CustomGraphicsView(QGraphicsView):
         self.previous_height = self.height()
         self.previous_width = self.width()
 
-        self.scale_x = 0.9
-        self.scale_y = 0.9 #0.9
+        self.scale_x = 1.8
+        self.scale_y = 1.8 #0.9
     
         self.scale(self.scale_x, self.scale_y)
 
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        self.fitInView(scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+        self.setViewportMargins(9,9,9,9)
+
     def resizeEvent(self,event):
-        new_width = self.size().width()
-        new_height = self.size().height()
-
-        if self.previous_width != 0: self.scale_x = new_width / self.previous_width 
-        if self.previous_height !=0: self.scale_y = new_height / self.previous_height 
-
-        self.scale(self.scale_x, self.scale_y)
-
-        self.previous_width = new_width
-        self.previous_height = new_height
-
         super().resizeEvent(event)
+        self.fitInView(self.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
     def sizePolicy(self):
         return super().sizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -154,11 +150,6 @@ class interactiveSlitMask(QWidget):
     
     def __init__(self):
         super().__init__()
-        self.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Expanding
-        )
-        self.setMinimumSize(1,1)
 
         #--------------------definitions-----------------------
         logger.info("slit_view: doing definitions")
@@ -183,8 +174,10 @@ class interactiveSlitMask(QWidget):
 
         fov = FieldOfView(TOTAL_HEIGHT_OF_BARS,x=xcenter_of_image/2,y=7)
         self.scene.addItem(fov)
-
+        
+        self.scene.setSceneRect(self.scene.itemsBoundingRect())
         self.view = CustomGraphicsView(self.scene)
+
         #-------------------connections-----------------------
         logger.info("slit_view: establishing connections")
         self.scene.selectionChanged.connect(self.row_is_selected)
@@ -208,7 +201,7 @@ class interactiveSlitMask(QWidget):
         self.setLayout(main_layout)
         #-------------------------------------------
     def sizeHint(self):
-        return QSize(650,620)
+        return QSize(550,620)
     def connect_on(self,answer:bool):
         #---------------reconnect connections---------------
         if answer:
