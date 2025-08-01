@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLayout,
     
 )
 
@@ -62,7 +63,7 @@ class MaskGenWidget(QWidget):
         group_box = QGroupBox()
         main_layout = QVBoxLayout()
         secondary_layout = QFormLayout() #above import targets
-        below_form_layout = QFormLayout()
+        below_form_layout = QFormLayout() #below imput targets
         below_layout = QHBoxLayout() # displayed below import targets
         unit_layout = QVBoxLayout()
         group_layout = QVBoxLayout()
@@ -86,7 +87,7 @@ class MaskGenWidget(QWidget):
         below_layout.addLayout(unit_layout)
         group_layout.addLayout(secondary_layout)
 
-        group_layout.addWidget(import_target_list_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        group_layout.addWidget(import_target_list_button)
         group_layout.addLayout(below_layout)
         group_layout.addStretch(40)
         group_layout.addWidget(run_button)

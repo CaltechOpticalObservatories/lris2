@@ -123,17 +123,20 @@ class CustomGraphicsView(QGraphicsView):
         # self.scene() == scene
         self.previous_height = self.height()
         self.previous_width = self.width()
+
+        self.scale_x = 0.9
+        self.scale_y = 0.9 #0.9
     
-        self.scale(1,0.9)
+        self.scale(self.scale_x, self.scale_y)
 
     def resizeEvent(self,event):
         new_width = self.size().width()
         new_height = self.size().height()
 
-        scale_x = new_width / self.previous_width
-        scale_y = new_height / self.previous_height
+        if self.previous_width != 0: self.scale_x = new_width / self.previous_width 
+        if self.previous_height !=0: self.scale_y = new_height / self.previous_height 
 
-        self.scale(scale_x, scale_y)
+        self.scale(self.scale_x, self.scale_y)
 
         self.previous_width = new_width
         self.previous_height = new_height
@@ -151,6 +154,11 @@ class interactiveSlitMask(QWidget):
     
     def __init__(self):
         super().__init__()
+        self.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding
+        )
+        self.setMinimumSize(1,1)
 
         #--------------------definitions-----------------------
         logger.info("slit_view: doing definitions")
@@ -307,6 +315,11 @@ class WavelengthView(QWidget):
     
     def __init__(self):
         super().__init__()
+        self.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding
+        )
+        self.setMinimumSize(1,1)
 
         #--------------------definitions-----------------------
         logger.info("wavelength_view: doing definitions")
