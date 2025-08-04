@@ -11,7 +11,8 @@ from PyQt6.QtCore import pyqtSignal
 
 from PyQt6.QtWidgets import (
     QTabWidget,
-    QComboBox
+    QComboBox,
+    QLabel
 
 )
 
@@ -22,8 +23,9 @@ class TabBar(QTabWidget):
     def __init__(self,slitmask,waveview):
         super().__init__()
         #--------------defining widgets for tabs---------
-        self.wavelength_view = waveview
+        self.wavelength_view = waveview #currently waveview hasn't been developed
         self.interactive_slit_mask = slitmask
+        self.sky_view = QLabel("Sky View")
 
         #--------------defining comobox------------------
         self.combobox = QComboBox()
@@ -34,6 +36,7 @@ class TabBar(QTabWidget):
         #--------------defining tabs--------------
         self.addTab(self.interactive_slit_mask,"Slit Mask")
         self.addTab(self.wavelength_view,"Spectral View")
+        self.addTab(self.sky_view,"Sky View")
 
         self.setCornerWidget(self.combobox)
         self.combobox.hide()

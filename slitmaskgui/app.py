@@ -57,7 +57,11 @@ from PyQt6.QtWidgets import (
 main_logger = logging.getLogger()
 main_logger.info("starting logging")
 
-
+"""
+currently use center of priority doesn't work (don't know the problem will diagnose it at some later point)
+need to make it so that it doesn't randomly generate a starlist with random priority
+add more logging to all the functions
+"""
 
 class MainWindow(QMainWindow):
     def __init__(self):

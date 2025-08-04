@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLayout,
+    QCheckBox
     
 )
 
@@ -48,6 +49,7 @@ class MaskGenWidget(QWidget):
         self.name_of_mask = QLineEdit("untitled")
         self.center_of_mask = QLineEdit("00 00 00.00 +00 00 00.00")
         self.slit_width = QLineEdit("0.7")
+        self.use_center_of_priority = QCheckBox("Use Center of Priority")
         run_button = QPushButton(text="Run")
         title = QLabel("MASK GENERATION")
 
@@ -89,6 +91,7 @@ class MaskGenWidget(QWidget):
 
         group_layout.addWidget(import_target_list_button)
         group_layout.addLayout(below_layout)
+        group_layout.addWidget(self.use_center_of_priority)
         group_layout.addStretch(40)
         group_layout.addWidget(run_button)
         group_box.setLayout(group_layout)
@@ -133,6 +136,7 @@ class MaskGenWidget(QWidget):
         mask_name = self.name_of_mask.text()
         pa = 0
 
+        #---------------------------------------------------------
         logger.info("mask_gen_widget: generating starlist file")
         query_gaia_starlist_rect(
             ra_center=ra,              # RA in degrees
@@ -151,8 +155,7 @@ class MaskGenWidget(QWidget):
             logger.info("maks_gen_widget: run button was clicked by no file selected")
             self.starlist_file_button_clicked()
             target_list = TargetList(self.star_file_path)
-
-        slit_mask = StarList(target_list.send_json(),ra,dec,slit_width=width)
+        slit_mask = StarList(target_list.send_json(),ra,dec,slit_width=width,use_center_of_priority=self.use_center_of_priority.isChecked())
         interactive_slit_mask = slit_mask.send_interactive_slit_list()
 
         self.change_slit_image.emit(interactive_slit_mask)

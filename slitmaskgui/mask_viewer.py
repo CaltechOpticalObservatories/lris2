@@ -403,22 +403,10 @@ class WavelengthView(QWidget):
             ra = x[1]
             dec = x[2] 
             coord = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), frame='icrs')
-            radius = .8 *u.arcmin
-            results = Gaia.query_object_async(coordinate=coord, radius=radius)
-            try:
-                rp = results[['source_id', 'ra', 'dec', 'phot_bp_mean_mag', 'phot_g_mean_mag', 'phot_rp_mean_mag']]['phot_rp_mean_mag'][0]
-            except:
-                pass
-            try:
-                g = results[['source_id', 'ra', 'dec', 'phot_bp_mean_mag', 'phot_g_mean_mag', 'phot_rp_mean_mag']]['phot_g_mean_mag'][0]
-            except:
-                pass
-            try:
-                bp = results[['source_id', 'ra', 'dec', 'phot_bp_mean_mag', 'phot_g_mean_mag', 'phot_rp_mean_mag']]['phot_bp_mean_mag'][0]
-            except:
-                pass
-            self.spectra_dict[bar_id]= (bp,g,rp)
+            #Currently not available
+            
         self.re_initialize_scene(0)
+        #gets the flux of each
     pyqtSlot(int,name="re-initializing scene")
     def re_initialize_scene(self,index):
         slit_spacing = 7

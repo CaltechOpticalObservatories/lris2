@@ -288,7 +288,7 @@ class MaskConfigurationsWidget(QWidget):
             config_logger.info(f"mask_configurations: row is selected function {row} {self.row_to_config_dict}")
             data = json.dumps(self.row_to_config_dict[row])
 
-            slit_mask = StarList(data,RA="00 00 00.00",Dec="+00 00 00.00",slit_width=0.7,auto_run=False)
+            slit_mask = StarList(data,ra="00 00 00.00",dec="+00 00 00.00",slit_width=0.7,auto_run=False)
             interactive_slit_mask = slit_mask.send_interactive_slit_list()
 
             self.change_slit_image.emit(interactive_slit_mask)

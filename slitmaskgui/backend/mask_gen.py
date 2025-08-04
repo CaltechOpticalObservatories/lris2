@@ -10,7 +10,7 @@ TOTAL_BAR_PAIRS = 72
 
 from itertools import groupby
 import json
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
 import astropy.units as u
 import numpy as np
 
@@ -53,7 +53,6 @@ class SlitMask:
 
     def calc_bar_id(self):
         #this will calculate the bar and x of every star and remove any that do not fit in position
-        initial_len = len(self.stars)
         for obj in self.stars:
             y, x = obj["y_mm"], obj["x_mm"]
             y_step = CSU_HEIGHT/TOTAL_BAR_PAIRS
@@ -69,13 +68,7 @@ class SlitMask:
     def check_if_within(self,x,y):
         return abs(x) <= CSU_WIDTH / 2 and abs(y) <= CSU_HEIGHT / 2
     
-    def find_center_of_priority(self):
-        """              ∑ coordinates *priority
-        CoP coordinate = ------------------------
-                                ∑ priority
-        """
-        pass
-    
+
     def generate_pa(self):
         pass
 
