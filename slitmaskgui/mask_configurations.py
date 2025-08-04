@@ -180,7 +180,7 @@ class MaskConfigurationsWidget(QWidget):
         self.setLayout(main_layout)
         #------------------------------------------------
     def sizeHint(self):
-        return QSize(300,60)
+        return QSize(300,100)
     
     def open_button_clicked(self):
         config_logger.info(f"mask configurations: start of open button function {self.row_to_config_dict}")

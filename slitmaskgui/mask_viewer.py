@@ -326,11 +326,8 @@ class WavelengthView(QWidget):
         self.mask_name_title = QLabel(f'MASK NAME: None')
         self.center_title = QLabel(f'CENTER: None')
         self.pa_title = QLabel(f'PA: None')
-        self.combobox = QComboBox()
-        self.combobox.addItem('phot_bp_mean_mag')
-        self.combobox.addItem('phot_g_mean_mag')
-        self.combobox.addItem('phot_rp_mean_mag')
-        self.combobox.setContentsMargins(0,0,0,0)
+        
+        # self.combobox.setContentsMargins(0,0,0,0)
         
 
         initial_bar_width = 7
@@ -350,7 +347,7 @@ class WavelengthView(QWidget):
         logger.info("wavelength_view: establishing connections")
 
         self.scene.selectionChanged.connect(self.send_row)
-        self.combobox.currentIndexChanged.connect(self.re_initialize_scene)
+        # self.combobox.currentIndexChanged.connect(self.re_initialize_scene)
 
         #------------------------layout-----------------------
         logger.info("wavelength_view: defining layout")
@@ -360,7 +357,6 @@ class WavelengthView(QWidget):
         top_layout.addWidget(self.mask_name_title,alignment=Qt.AlignmentFlag.AlignHCenter)
         top_layout.addWidget(self.center_title,alignment=Qt.AlignmentFlag.AlignHCenter)
         top_layout.addWidget(self.pa_title,alignment=Qt.AlignmentFlag.AlignHCenter)
-        top_layout.addWidget(self.combobox)
         top_layout.setContentsMargins(0,0,0,0)
         top_layout.setSpacing(0)
         main_layout.addLayout(top_layout)
@@ -423,7 +419,7 @@ class WavelengthView(QWidget):
                 pass
             self.spectra_dict[bar_id]= (bp,g,rp)
         self.re_initialize_scene(0)
-
+    pyqtSlot(int,name="re-initializing scene")
     def re_initialize_scene(self,index):
         slit_spacing = 7
         

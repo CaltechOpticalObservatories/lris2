@@ -32,6 +32,7 @@ from slitmaskgui.menu_bar import MenuBar
 from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
+from slitmaskgui.mask_view_tab_bar import TabBar
 from PyQt6.QtCore import Qt, QSize, pyqtSlot
 from PyQt6.QtGui import QFontDatabase
 from PyQt6.QtWidgets import (
@@ -75,11 +76,8 @@ class MainWindow(QMainWindow):
         self.interactive_slit_mask = interactiveSlitMask()
         self.slit_position_table = SlitDisplay()
         self.wavelength_view = WavelengthView()
-        #-------tab widget ----------------
-        self.mask_tab = QTabWidget()
-        self.mask_tab.addTab(self.interactive_slit_mask,"Slit Mask")
-        self.mask_tab.addTab(self.wavelength_view,"Spectral View")
-        #---------------------------------
+        self.mask_tab = TabBar(slitmask=self.interactive_slit_mask,waveview=self.wavelength_view)
+        
 
         #---------------------------------connections-----------------------------
         main_logger.info("app: doing connections")
@@ -89,6 +87,7 @@ class MainWindow(QMainWindow):
         self.target_display.selected_le_star.connect(self.interactive_slit_mask.get_row_from_star_name)
         self.interactive_slit_mask.select_star.connect(self.target_display.select_corresponding)
         self.wavelength_view.row_selected.connect(self.interactive_slit_mask.select_corresponding_row)
+        self.mask_tab.waveview_change.connect(self.wavelength_view.re_initialize_scene)
 
         mask_gen_widget.change_data.connect(self.target_display.change_data)
         mask_gen_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
@@ -126,6 +125,7 @@ class MainWindow(QMainWindow):
 
         self.layoutH1.addWidget(self.slit_position_table)#temp_widget2)
         self.layoutH1.addWidget(self.mask_tab)
+        # self.layoutH1.addWidget(self.combobox)
         self.layoutH1.setSpacing(0)
         self.layoutH1.setContentsMargins(0,0,0,0)
         widgetH1 = QWidget()
