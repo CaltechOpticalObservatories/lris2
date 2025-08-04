@@ -20,12 +20,12 @@ from PyQt6.QtWidgets import (
 
 class TabBar(QTabWidget):
     waveview_change = pyqtSignal(int)
-    def __init__(self,slitmask,waveview):
+    def __init__(self,slitmask,waveview,skyview):
         super().__init__()
         #--------------defining widgets for tabs---------
         self.wavelength_view = waveview #currently waveview hasn't been developed
         self.interactive_slit_mask = slitmask
-        self.sky_view = QLabel("Sky View")
+        self.sky_view = skyview
 
         #--------------defining comobox------------------
         self.combobox = QComboBox()

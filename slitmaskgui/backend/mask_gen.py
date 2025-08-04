@@ -18,7 +18,7 @@ import numpy as np
 #for some reason I am splitting up everything into their own for s©tatements
 #should be able to put this all into one for statement but I don't wanna think about that rnß
 class SlitMask:
-    def __init__(self,stars,center,slit_width=0,pa=0,max_slit_length=3):
+    def __init__(self,stars,center,slit_width=0,pa=0,max_slit_length=72):
         self.stars = stars
         self.center = center
         self.slit_width = slit_width
@@ -29,27 +29,30 @@ class SlitMask:
         self.lengthen_slits(max_slit_length)
 
     def calc_y_pos(self):
+        print(self.center)
         for obj in self.stars:
-            star = SkyCoord(obj["ra"],obj["dec"], unit=(u.hourangle, u.deg), frame='icrs')
-            separation = self.center.separation(star)  # returns an angle
-            obj["center distance"] = float(separation.to(u.arcmin).value)
+            star = SkyCoord(obj["ra"], obj["dec"], unit=(u.hourangle, u.deg), frame='icrs')
+            separation = self.center.separation(star)
+            obj["center distance"] = separation.to(u.arcmin).value  # float is implicit in .value
 
-            delta_ra = (star.ra - self.center.ra).to(u.deg) #from center
-            delta_dec = (star.dec - self.center.dec).to(u.arcsec) #from center
+            # Wrap RA difference to [-180, 180) degrees and convert to arcsec
+            
+            delta_ra = (star.ra - self.center.ra).wrap_at(180 * u.deg).to(u.arcsec)
 
-            if delta_ra.value > 180:  # If RA difference exceeds 180 degrees, wrap it
-                delta_ra -= 360 * u.deg
-            elif delta_ra.value < -180:
-                delta_ra += 360 * u.deg
+            # Dec difference in arcsec (no wrap needed for Dec)
+            delta_dec = (star.dec - self.center.dec).to(u.arcsec)
 
-            delta_ra = delta_ra.to(u.arcsec)
-            delta_ra_proj = delta_ra * np.cos(self.center.dec.radian) # Correct for spherical distortion
-                # Convert to mm
-            x_mm = float(delta_ra_proj.value * PLATE_SCALE)
-            y_mm = float(delta_dec.value * PLATE_SCALE)
+            # Correct RA offset for spherical projection
+            delta_ra_proj = delta_ra * np.cos(self.center.dec.radian)
+            print(delta_ra_proj)
+
+            # Convert to mm using plate scale
+            x_mm = delta_ra_proj.value * PLATE_SCALE
+            y_mm = delta_dec.value * PLATE_SCALE
 
             obj["x_mm"] = x_mm
             obj["y_mm"] = y_mm
+
 
     def calc_bar_id(self):
         #this will calculate the bar and x of every star and remove any that do not fit in position
@@ -67,7 +70,6 @@ class SlitMask:
     
     def check_if_within(self,x,y):
         return abs(x) <= CSU_WIDTH / 2 and abs(y) <= CSU_HEIGHT / 2
-    
 
     def generate_pa(self):
         pass

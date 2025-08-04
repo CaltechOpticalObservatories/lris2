@@ -4,11 +4,20 @@ when you click the bar on the left then the image will display which row that is
 additionally It will also interact with the target list
 it will display where the slit is place and what stars will be shown
 """
+from astroquery.skyview import SkyView
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+
+
+
 import logging
 import numpy as np
 from astroquery.gaia import Gaia
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+import matplotlib.pyplot as plt
+from astropy.wcs import WCS
+from astropy.io import fits
 from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal, QSize
 from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QTransform
 from PyQt6.QtWidgets import (
@@ -438,3 +447,8 @@ class WavelengthView(QWidget):
 
 # Define the coordinates (RA, Dec) - replace with your values
 
+class SkyImageView(QWidget):
+    def __init__(self):
+        super().__init__()
+        #eventually this will be an image of the sky but for now it will be just a scene with circles
+        pass

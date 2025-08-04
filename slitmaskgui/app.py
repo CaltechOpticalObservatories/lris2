@@ -29,7 +29,7 @@ logging.basicConfig(
 from slitmaskgui.target_list_widget import TargetDisplayWidget
 from slitmaskgui.mask_gen_widget import MaskGenWidget
 from slitmaskgui.menu_bar import MenuBar
-from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView
+from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView, SkyImageView
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
 from slitmaskgui.mask_view_tab_bar import TabBar
@@ -63,6 +63,16 @@ need to make it so that it doesn't randomly generate a starlist with random prio
 add more logging to all the functions
 """
 
+"""
+Things to do before launch
+photo display of the stars
+use center of priority should work
+ability to modulate slit width
+actually use a starlist instead of generating your own
+add logging to everything
+ability to state max slit length
+"""
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -80,7 +90,8 @@ class MainWindow(QMainWindow):
         self.interactive_slit_mask = interactiveSlitMask()
         self.slit_position_table = SlitDisplay()
         self.wavelength_view = WavelengthView()
-        self.mask_tab = TabBar(slitmask=self.interactive_slit_mask,waveview=self.wavelength_view)
+        self.sky_view = SkyImageView()
+        self.mask_tab = TabBar(slitmask=self.interactive_slit_mask,waveview=self.wavelength_view,skyview=self.sky_view)
         
 
         #---------------------------------connections-----------------------------
@@ -99,6 +110,7 @@ class MainWindow(QMainWindow):
         mask_gen_widget.send_mask_config.connect(mask_config_widget.update_table)
         mask_gen_widget.change_mask_name.connect(self.interactive_slit_mask.update_name_center_pa)
         mask_gen_widget.change_wavelength_data.connect(self.wavelength_view.get_spectra_of_star)
+        mask_gen_widget.update_image.connect(self.sky_view.show_image)
 
         mask_config_widget.change_data.connect(self.target_display.change_data)
         mask_config_widget.change_row_widget.connect(self.slit_position_table.change_data)

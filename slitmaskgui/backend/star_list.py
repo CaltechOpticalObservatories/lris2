@@ -39,6 +39,7 @@ I currently don't factor in PA because I don't know how to
 I also assume that RA and DEC are aligned with the x and y axis
 while that probably isn't right i'll just get something down for now
 """
+
 class StarList:
     #with auto run you can select if the json is complete or not already
     #this means that if you have a complete list of all the stars as if it rand thorough this class, then you can select auto run as false
@@ -49,7 +50,7 @@ class StarList:
         if use_center_of_priority:
             ra_coord, dec_coord =self.find_center_of_priority()
         self.center = SkyCoord(ra=ra_coord,dec=dec_coord,unit=(u.hourangle,u.deg))
-        print("52 star_list", self.center)
+
         self.slit_width = slit_width
         self.pa = pa
 
@@ -111,19 +112,22 @@ class StarList:
         star_list = [[SkyCoord(obj["ra"],obj["dec"], unit=(u.hourangle, u.deg), frame='icrs'),obj["priority"]] for obj in self.payload]
         ra_numerator, dec_numerator = 0,0
         for x in star_list:
-            ra = float(np.float64(x[0].ra.hourangle))
+            ra = float(Angle(x[0].ra).wrap_at(180 * u.deg).deg)
             dec = float(np.float64(x[0].dec.deg))
             priority = float(x[1])
             ra_numerator += priority*ra
             dec_numerator += priority*dec
         
         denominator_list = [float(star_list[x][1]) for x in range(len(star_list))]
-
         sum_denominator = sum(denominator_list)
         ra = Angle((ra_numerator/sum_denominator)*u.deg).to_string(unit=u.hourangle, sep=' ', precision=2, pad=True)
         dec = Angle((dec_numerator/sum_denominator)*u.deg).to_string(unit=u.deg, sep=' ', precision=2, pad=True,alwayssign=True)
 
         return ra, dec
-    def translate_stars(self,ra,dec):
-        for x in self.payload:
-            pass
+    
+    def generate_skyview(self):
+        return "temp"
+        
+        
+
+

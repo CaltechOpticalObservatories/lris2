@@ -35,6 +35,7 @@ class MaskGenWidget(QWidget):
     send_mask_config = pyqtSignal(list)
     change_mask_name = pyqtSignal(np.ndarray)
     change_wavelength_data = pyqtSignal(list)
+    update_image = pyqtSignal(str) #will change type later
     def __init__(self):
         super().__init__()
 
@@ -168,8 +169,8 @@ class MaskGenWidget(QWidget):
         mask_name_info = np.array([str(mask_name),str(center),str(pa)])
         self.change_mask_name.emit(mask_name_info)
         self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
+        self.update_image.emit(slit_mask.generate_skyview())
         #--------------------------------------------------------------------------
-
 
 
 
