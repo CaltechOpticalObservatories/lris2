@@ -3,6 +3,8 @@
 from PyQt6.QtGui import QAction
 #from inputTargets import TargetList
 from PyQt6.QtWidgets import QMenuBar
+from slitmaskgui.backend.sample import query_gaia_starlist_rect
+
 
 '''
 menu bar will have a file option, and a help option for now
@@ -23,5 +25,19 @@ class MenuBar(QMenuBar):
 
         help_menu = self.addMenu("&Help")
         help_menu.addAction(help_button)
+    
+    def query_starlist(self):
+        ra = 0
+        dec = 0 
+        generate = False
+        if generate:
+            query_gaia_starlist_rect(
+                ra_center=ra,              # RA in degrees
+                dec_center=dec,               # Dec in degrees
+                width_arcmin=5,
+                height_arcmin=10,
+                n_stars=104,
+                output_file='gaia_starlist.txt'
+            )
 
         

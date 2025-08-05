@@ -1,7 +1,6 @@
 
 from slitmaskgui.input_targets import TargetList
 from slitmaskgui.backend.star_list import StarList
-from slitmaskgui.backend.sample import query_gaia_starlist_rect
 import re
 import logging
 import numpy as np
@@ -35,7 +34,7 @@ class MaskGenWidget(QWidget):
     send_mask_config = pyqtSignal(list)
     change_mask_name = pyqtSignal(np.ndarray)
     change_wavelength_data = pyqtSignal(list)
-    update_image = pyqtSignal(str) #will change type later
+    update_image = pyqtSignal(np.ndarray) #will change type later
     def __init__(self):
         super().__init__()
 
@@ -136,17 +135,7 @@ class MaskGenWidget(QWidget):
         width = self.slit_width.text()
         mask_name = self.name_of_mask.text()
         pa = 0
-
-        #---------------------------------------------------------
-        logger.info("mask_gen_widget: generating starlist file")
-        query_gaia_starlist_rect(
-            ra_center=ra,              # RA in degrees
-            dec_center=dec,               # Dec in degrees
-            width_arcmin=5,
-            height_arcmin=10,
-            n_stars=104,
-            output_file='gaia_starlist.txt'
-            )
+        
 
         #--------------------------run mask gen --------------------------
         logger.info("mask_gen_widget: running mask gen")

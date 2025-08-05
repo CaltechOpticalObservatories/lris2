@@ -29,7 +29,8 @@ logging.basicConfig(
 from slitmaskgui.target_list_widget import TargetDisplayWidget
 from slitmaskgui.mask_gen_widget import MaskGenWidget
 from slitmaskgui.menu_bar import MenuBar
-from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView, SkyImageView
+from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView
+from slitmaskgui.sky_viewer import SkyImageView
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
 from slitmaskgui.mask_view_tab_bar import TabBar

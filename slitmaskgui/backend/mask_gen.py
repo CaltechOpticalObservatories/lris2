@@ -29,24 +29,16 @@ class SlitMask:
         self.lengthen_slits(max_slit_length)
 
     def calc_y_pos(self):
-        print(self.center)
         for obj in self.stars:
             star = SkyCoord(obj["ra"], obj["dec"], unit=(u.hourangle, u.deg), frame='icrs')
             separation = self.center.separation(star)
             obj["center distance"] = separation.to(u.arcmin).value  # float is implicit in .value
-
-            # Wrap RA difference to [-180, 180) degrees and convert to arcsec
             
             delta_ra = (star.ra - self.center.ra).wrap_at(180 * u.deg).to(u.arcsec)
 
-            # Dec difference in arcsec (no wrap needed for Dec)
             delta_dec = (star.dec - self.center.dec).to(u.arcsec)
-
-            # Correct RA offset for spherical projection
             delta_ra_proj = delta_ra * np.cos(self.center.dec.radian)
-            print(delta_ra_proj)
 
-            # Convert to mm using plate scale
             x_mm = delta_ra_proj.value * PLATE_SCALE
             y_mm = delta_dec.value * PLATE_SCALE
 

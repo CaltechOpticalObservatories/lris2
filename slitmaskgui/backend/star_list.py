@@ -16,6 +16,7 @@ from slitmaskgui.input_targets import TargetList
 from slitmaskgui.backend.mask_gen import SlitMask
 import json
 import os
+from astroquery.hips2fits import hips2fits
 
 
 #Ra and Dec --> angle Degrees
@@ -50,7 +51,6 @@ class StarList:
         if use_center_of_priority:
             ra_coord, dec_coord =self.find_center_of_priority()
         self.center = SkyCoord(ra=ra_coord,dec=dec_coord,unit=(u.hourangle,u.deg))
-
         self.slit_width = slit_width
         self.pa = pa
 
@@ -126,7 +126,20 @@ class StarList:
         return ra, dec
     
     def generate_skyview(self):
-        return "temp"
+        hips = 'CDS/P/DSS2/red'
+        field_of_view = 10#np.sqrt(5**2+10**2)
+        hdulist = hips2fits.query(
+            hips=hips,
+            width=1000, #in pixels
+            height=1000,
+            ra=self.center.ra.deg*u.deg,
+            dec=self.center.dec.deg*u.deg,
+            fov=field_of_view*u.arcmin, #random thing (will change to to the actual diagonal distance)
+            projection='TAN',
+            format='fits'
+        )
+        data = hdulist[0].data
+        return data
         
         
 
