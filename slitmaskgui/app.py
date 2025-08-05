@@ -118,6 +118,11 @@ class MainWindow(QMainWindow):
         mask_config_widget.reset_scene.connect(self.reset_scene)
         mask_config_widget.update_image.connect(self.sky_view.show_image)
 
+        #if the data is changed connections
+        self.slit_position_table.tell_unsaved.connect(mask_config_widget.update_table)
+        mask_config_widget.data_to_save_request.connect(self.slit_position_table.data_saved)
+        self.slit_position_table.data_changed.connect(mask_config_widget.save_data_to_mask)
+
 
         #-----------------------------------layout-----------------------------
         main_logger.info("app: setting up layout")

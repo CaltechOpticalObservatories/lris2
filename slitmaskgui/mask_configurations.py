@@ -90,6 +90,15 @@ class TableModel(QAbstractTableModel):
     def columnCount(self, index):
         return 2
     
+    def setData(self, index, value, role = ...):
+        if role == Qt.ItemDataRole.EditRole:
+            # Set the value into the frame.
+            self._data[index.row()][index.column()] = value
+            self.dataChanged.emit(index, index)
+            return True
+
+        return False
+    
 class CustomTableView(QTableView):
     def __init__(self):
         super().__init__()
@@ -123,6 +132,8 @@ class MaskConfigurationsWidget(QWidget):
     change_row_widget = pyqtSignal(list)
     reset_scene = pyqtSignal(bool)
     update_image = pyqtSignal(np.ndarray)
+    data_to_save_request = pyqtSignal(object)
+    changes_have_been_saved = pyqtSignal(object)
     def __init__(self):
         super().__init__()
         
@@ -135,12 +146,12 @@ class MaskConfigurationsWidget(QWidget):
         #--------------------------------Definitions---------------------
         title = QLabel("MASK CONFIGURATIONS")
 
-        open_button = Button(80,30,"Open")
-        save_button = Button(80,30,"Save")
-        close_button = Button(80,30,"Close")
+        self.open_button = Button(80,30,"Open")
+        self.save_button = Button(80,30,"Save")
+        self.close_button = Button(80,30,"Close")
 
-        export_button = Button(120,30,"Export")
-        export_all_button = Button(120,30,"Export All")
+        self.export_button = Button(120,30,"Export")
+        self.export_all_button = Button(120,30,"Export All")
 
         self.table = CustomTableView()
         self.model = TableModel()
@@ -149,11 +160,11 @@ class MaskConfigurationsWidget(QWidget):
         self.row_to_config_dict = {}
 
         #------------------------connections-----------------
-        open_button.clicked.connect(self.open_button_clicked)
-        save_button.clicked.connect(self.save_button_clicked)
-        close_button.clicked.connect(self.close_button_clicked)
-        export_button.clicked.connect(self.export_button_clicked)
-        export_all_button.clicked.connect(self.export_all_button_clicked)
+        self.open_button.clicked.connect(self.open_button_clicked)
+        self.save_button.clicked.connect(self.save_button_clicked)
+        self.close_button.clicked.connect(self.close_button_clicked)
+        self.export_button.clicked.connect(self.export_button_clicked)
+        self.export_all_button.clicked.connect(self.export_all_button_clicked)
         self.table.selectionModel().selectionChanged.connect(self.selected) #sends the row number for the selected item
 
         #-------------------layout-------------------
@@ -163,13 +174,13 @@ class MaskConfigurationsWidget(QWidget):
         top_hori_layout = QHBoxLayout()
         bot_hori_layout = QHBoxLayout()
 
-        top_hori_layout.addWidget(open_button)
-        top_hori_layout.addWidget(save_button)
-        top_hori_layout.addWidget(close_button)
+        top_hori_layout.addWidget(self.open_button)
+        top_hori_layout.addWidget(self.save_button)
+        top_hori_layout.addWidget(self.close_button)
         top_hori_layout.setSpacing(0)
 
-        bot_hori_layout.addWidget(export_button)
-        bot_hori_layout.addWidget(export_all_button)
+        bot_hori_layout.addWidget(self.export_button)
+        bot_hori_layout.addWidget(self.export_all_button)
         bot_hori_layout.setSpacing(0)
 
         group_layout.addLayout(top_hori_layout)
@@ -190,6 +201,23 @@ class MaskConfigurationsWidget(QWidget):
         #------------------------------------------------
     def sizeHint(self):
         return QSize(300,100)
+    
+    def is_connected(self,connect:bool):
+        if connect:
+            self.open_button.clicked.connect(self.open_button_clicked)
+            self.save_button.clicked.connect(self.save_button_clicked)
+            self.close_button.clicked.connect(self.close_button_clicked)
+            self.export_button.clicked.connect(self.export_button_clicked)
+            self.export_all_button.clicked.connect(self.export_all_button_clicked)
+            self.table.selectionModel().selectionChanged.connect(self.selected) #sends the row number for the selected item
+        else:
+            self.open_button.clicked.disconnect(self.open_button_clicked)
+            self.save_button.clicked.disconnect(self.save_button_clicked)
+            self.close_button.clicked.disconnect(self.close_button_clicked)
+            self.export_button.clicked.disconnect(self.export_button_clicked)
+            self.export_all_button.clicked.disconnect(self.export_all_button_clicked)
+            self.table.selectionModel().selectionChanged.disconnect(self.selected) #sends the row number for the selected item
+
     
     def open_button_clicked(self):
         config_logger.info(f"mask configurations: start of open button function {self.row_to_config_dict}")
@@ -217,10 +245,18 @@ class MaskConfigurationsWidget(QWidget):
 
 
     def save_button_clicked(self,item):
-        #This will update the mask configuration file to fit the changed mask
-        #can't make any edits to the data currently so i'll just wait to do this one
-        print("save button clicked")
-        pass
+        self.data_to_save_request.emit(None)
+    
+    def save_data_to_mask(self,new_data):
+        data = new_data
+        if data[0]: #if data has actually been changed
+            row_num = self.model.get_row_num(self.table.selectedIndexes())
+            for x in self.row_to_config_dict[row_num]:
+                bar_id = x["bar_id"]
+                if bar_id in data[1]:
+                    x["slit_width"] = data[1][bar_id]
+            self.update_table(row=row_num)
+        
 
     def close_button_clicked(self,item):
         #this will delete the item from the list and the information that goes along with it
@@ -275,9 +311,10 @@ class MaskConfigurationsWidget(QWidget):
         row_num = self.model.get_row_num(self.table.selectedIndexes())
 
     pyqtSlot(name="update_table")
-    def update_table(self,info=None):
+    def update_table(self,info=None,row=None):
         #the first if statement is for opening a mask file and making a mask in the gui which will be automatically added
         config_logger.info(f"mask configurations: start of update table function {self.row_to_config_dict}")
+
         if info is not None: #info for now will be a list [name,file_path]
             name, mask_info = info[0], info[1]
             self.model.beginResetModel()
@@ -286,8 +323,24 @@ class MaskConfigurationsWidget(QWidget):
             row_num = self.model.get_num_rows() -1
             self.row_to_config_dict.update({row_num: mask_info})
             self.table.selectRow(row_num)
+        elif row:
+            config_logger.info(f"mask configurations: changes have been saved to {self.model._data[row][1]}")
+            self.model.beginResetModel()
+            self.model._data[row] = ["Saved",self.model._data[row][1]]
+            self.model.endResetModel()
         else:
-            print("will change thing to saved")
+            config_logger.info(f'mask configurations: new data added but is unsaved')
+            try:
+                self.is_connected(False)
+                row_num = self.model.get_row_num(self.table.selectedIndexes())
+                self.model.beginResetModel()
+                self.model._data[row_num] = ["Unsaved",self.model._data[row_num][1]]
+                self.model.endResetModel()
+                self.table.selectRow(row_num)
+                self.is_connected(True)
+            
+            except:
+                config_logger.info(f'mask configurations: there are no rows')
         config_logger.info(f"mask configurations: end of update table function {self.row_to_config_dict}")
         # when a mask configuration is run, this will save the data in a list
     @pyqtSlot(name="selected file path")
@@ -323,6 +376,8 @@ class MaskConfigurationsWidget(QWidget):
         center_dec = Angle(new_dec).to_string(unit=u.deg, sep=' ', precision=2, pad=True,alwayssign=True)
         #return it
         return center_ra,center_dec
+    
+
 
         
 

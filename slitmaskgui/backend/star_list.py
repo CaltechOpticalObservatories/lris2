@@ -43,7 +43,6 @@ while that probably isn't right i'll just get something down for now
 """
 
 class StarList:
-
     #with auto run you can select if the json is complete or not already
     #this means that if you have a complete list of all the stars as if it rand thorough this class, then you can select auto run as false
     #then you can use the send functions without doing a bunch of computation
@@ -101,7 +100,7 @@ class StarList:
     def send_row_widget_list(self):
         #the reason why the bar id is plus 1 is to transl
         sorted_row_list = sorted(
-            ([obj["bar_id"]+1, obj["x_mm"], self.slit_width] 
+            ([obj["bar_id"]+1, obj["x_mm"], obj["slit_width"]] 
             for obj in self.payload[:72] if "bar_id" in obj),
             key=lambda x: x[0]
             )
@@ -135,7 +134,6 @@ class StarList:
         ra, dec = self.center.ra.deg*u.deg, self.center.dec.deg*u.deg
         fov = np.sqrt(9**2+10**2) *u.arcmin
         key = (hips, width, height, ra, dec, fov)
-        print("backend star list",key, HIPS_CACHE)
         if key in HIPS_CACHE:
             return HIPS_CACHE[key]
 
@@ -152,7 +150,6 @@ class StarList:
 
         data = hdulist[0].data
         HIPS_CACHE[key] = data
-        print(HIPS_CACHE)
         return data
         
         

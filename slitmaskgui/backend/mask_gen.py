@@ -24,10 +24,15 @@ class SlitMask:
         self.center = center
         self.slit_width = slit_width
         self.pa = pa
+        self.add_slit_width()
         self.calc_y_pos()
         self.calc_bar_id()
         self.optimize()
         self.lengthen_slits(max_slit_length)
+    
+    def add_slit_width(self):
+        for obj in self.stars:
+            obj["slit_width"] = self.slit_width
 
     def calc_y_pos(self):
         for obj in self.stars:
