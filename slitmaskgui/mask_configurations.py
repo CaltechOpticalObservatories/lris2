@@ -134,6 +134,7 @@ class MaskConfigurationsWidget(QWidget):
     update_image = pyqtSignal(np.ndarray)
     data_to_save_request = pyqtSignal(object)
     changes_have_been_saved = pyqtSignal(object)
+    change_name_above_slit_mask = pyqtSignal(np.ndarray)
     def __init__(self):
         super().__init__()
         
@@ -307,7 +308,9 @@ class MaskConfigurationsWidget(QWidget):
         
 
     def export_all_button_clicked(self):
-        #this will save all unsaved files
+        #this will export all files 
+        #you will choose a directory for all the files to go to and then all the files will be automatically named
+        #mask_name.json and will be saved in that directory
         row_num = self.model.get_row_num(self.table.selectedIndexes())
 
     pyqtSlot(name="update_table")
@@ -331,7 +334,6 @@ class MaskConfigurationsWidget(QWidget):
         else:
             config_logger.info(f'mask configurations: new data added but is unsaved')
             try:
-                
                 row_num = self.model.get_row_num(self.table.selectedIndexes())
                 self.model.beginResetModel()
                 self.model._data[row_num] = ["Unsaved",self.model._data[row_num][1]]
@@ -339,7 +341,6 @@ class MaskConfigurationsWidget(QWidget):
                 self.is_connected(False)
                 self.table.selectRow(row_num)
                 self.is_connected(True)
-            
             except:
                 config_logger.info(f'mask configurations: there are no rows')
         config_logger.info(f"mask configurations: end of update table function {self.row_to_config_dict}")
@@ -352,6 +353,8 @@ class MaskConfigurationsWidget(QWidget):
             config_logger.info(f"mask_configurations: row is selected function {row} {self.row_to_config_dict}")
             data = json.dumps(self.row_to_config_dict[row])
             ra, dec = self.get_center(json.loads(data))
+            name = self.model._data[row][1]
+            pa = 0
 
             slit_mask = StarList(data,ra=ra,dec=dec,slit_width=0.7,auto_run=False)
             interactive_slit_mask = slit_mask.send_interactive_slit_list()
@@ -361,6 +364,8 @@ class MaskConfigurationsWidget(QWidget):
             self.change_data.emit(slit_mask.send_target_list())
             self.change_row_widget.emit(slit_mask.send_row_widget_list())
             self.update_image.emit(slit_mask.generate_skyview())
+            mask_name_info = np.array([str(name),str(str(ra)+str(dec)),str(pa)])
+            self.change_name_above_slit_mask.emit(mask_name_info)
     
     def get_center(self,star_data):
         star = star_data[0]

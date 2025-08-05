@@ -7,8 +7,7 @@
 # from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QTransform
 # from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView
 
-from PyQt6.QtCore import pyqtSignal
-
+from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtWidgets import (
     QTabWidget,
     QComboBox,
@@ -23,7 +22,7 @@ class TabBar(QTabWidget):
     def __init__(self,slitmask,waveview,skyview):
         super().__init__()
         #--------------defining widgets for tabs---------
-        self.wavelength_view = QLabel("Wavelength view is currently under development")#waveview #currently waveview hasn't been developed
+        self.wavelength_view = QLabel("Spectral view is currently under development")#waveview #currently waveview hasn't been developed
         self.interactive_slit_mask = slitmask
         self.sky_view = skyview
 
@@ -41,6 +40,9 @@ class TabBar(QTabWidget):
         self.setCornerWidget(self.combobox)
         self.combobox.hide()
         # self.mask_tab.setCornerWidget(self.combobox) #this would add the widget to the corner (only want it when spectral view is selected)
+        #------------------other---------------
+        self.wavelength_view.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.wavelength_view.setStyleSheet("font-size: 20px;")
 
         #------------------connections------------
         self.tabBar().currentChanged.connect(self.wavetab_selected)

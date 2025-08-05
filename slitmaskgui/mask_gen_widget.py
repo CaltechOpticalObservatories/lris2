@@ -20,12 +20,33 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLayout,
-    QCheckBox
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox
     
 )
 
 #need to add another class to load parameters from a text file
 logger = logging.getLogger(__name__)
+
+class ErrorWidget(QDialog):
+    def __init__(self,dialog_text):
+        super().__init__()
+        self.setWindowTitle("ERROR")
+        layout = QVBoxLayout()
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setWindowFlags(
+            self.windowFlags() |
+            Qt.WindowType.WindowStaysOnTopHint
+        )
+        
+        self.label = QLabel(dialog_text)
+        buttons = QDialogButtonBox.StandardButton.Ok
+        button_box = QDialogButtonBox(buttons)
+        button_box.accepted.connect(self.accept)
+        layout.addWidget(self.label)
+        layout.addWidget(button_box)
+        self.setLayout(layout)
 
 class MaskGenWidget(QWidget):
     change_data = pyqtSignal(list)
@@ -148,18 +169,26 @@ class MaskGenWidget(QWidget):
         slit_mask = StarList(target_list.send_json(),ra,dec,slit_width=width,use_center_of_priority=self.use_center_of_priority.isChecked())
         interactive_slit_mask = slit_mask.send_interactive_slit_list()
 
-        self.change_slit_image.emit(interactive_slit_mask)
+        if interactive_slit_mask:
+            self.change_slit_image.emit(interactive_slit_mask)
 
-        self.change_data.emit(slit_mask.send_target_list())
-        self.change_row_widget.emit(slit_mask.send_row_widget_list())
+            self.change_data.emit(slit_mask.send_target_list())
+            self.change_row_widget.emit(slit_mask.send_row_widget_list())
 
-        logger.info("mask_gen_widget: sending mask config to mask_configurations")
-        self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
-        mask_name_info = np.array([str(mask_name),str(center),str(pa)])
-        self.change_mask_name.emit(mask_name_info)
-        self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
-        # self.update_image.emit(slit_mask.generate_skyview())
+            logger.info("mask_gen_widget: sending mask config to mask_configurations")
+            self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
+            self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
+            # self.update_image.emit(slit_mask.generate_skyview())
         #--------------------------------------------------------------------------
+        else:
+            self.error_catching()
+
+    def error_catching(self):
+        text = """The center you have selected is too far away from the list of stars. \nMaybe try selecting \"use center of priority\" or typing in a closer center"""
+        self.error_widget = ErrorWidget(text)
+        self.error_widget.show()
+        if self.error_widget.exec() == QDialog.DialogCode.Accepted:
+            pass
 
 
 

@@ -53,7 +53,10 @@ class TableModel(QAbstractTableModel):
         return len(self._data)
 
     def columnCount(self, index):
-        return len(self._data[0])
+        try:
+            return len(self._data[0])
+        except:
+            return 0
     
     def get_bar_id(self, row):
         return self._data[row][0]
@@ -158,13 +161,14 @@ class SlitDisplay(QWidget):
     @pyqtSlot(list,name="input slit positions")
     def change_data(self,data):
         logger.info("slit_position_table: change_data function called, changing data")
-        self.model.beginResetModel()
-        replacement = list(x for x,_ in itertools.groupby(data))
-        self.model._data = replacement
-        self.data = replacement
-        self.model.endResetModel()
-        self.table.resizeColumnsToContents()
-        self.table.resize(self.table.sizeHint())
+        if data:
+            self.model.beginResetModel()
+            replacement = list(x for x,_ in itertools.groupby(data))
+            self.model._data = replacement
+            self.data = replacement
+            self.model.endResetModel()
+            self.table.resizeColumnsToContents()
+            self.table.resize(self.table.sizeHint())
 
     
     def row_selected(self):

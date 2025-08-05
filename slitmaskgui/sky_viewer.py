@@ -22,6 +22,18 @@ class SkyImageView(QWidget):
         self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
         self.canvas.axes.clear()
         self.canvas.axes.axis('off')
+        self.canvas.figure.set_facecolor("whitesmoke")
+
+        placeholder_text = "Run Mask Generation to update Skyview"
+        self.canvas.axes.text(
+            0.5, 0.5, placeholder_text,
+            horizontalalignment='center',
+            verticalalignment='center',
+            transform=self.canvas.axes.transAxes,
+            fontsize=14,
+            color='black'
+        )
+        self.canvas.draw()
 
         layout = QHBoxLayout()
         layout.setSpacing(0)

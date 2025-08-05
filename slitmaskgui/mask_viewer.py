@@ -301,6 +301,8 @@ class interactiveSlitMask(QWidget):
     @pyqtSlot(np.ndarray, name="update labels")
     def update_name_center_pa(self,info):
         mask_name, center, pa = info[0], info[1], info[2] #the format of info is [mask_name,center,pa]
+        if type(center) is tuple():
+            center = str(center[0])+str(center[1])
         self.mask_name_title.setText(f'MASK NAME: {mask_name}')
         self.center_title.setText(f'CENTER: {center}')
         self.pa_title.setText(f'PA: {pa}')
