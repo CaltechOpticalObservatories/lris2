@@ -23,7 +23,7 @@ class TabBar(QTabWidget):
     def __init__(self,slitmask,waveview,skyview):
         super().__init__()
         #--------------defining widgets for tabs---------
-        self.wavelength_view = waveview #currently waveview hasn't been developed
+        self.wavelength_view = QLabel("Wavelength view is currently under development")#waveview #currently waveview hasn't been developed
         self.interactive_slit_mask = slitmask
         self.sky_view = skyview
 

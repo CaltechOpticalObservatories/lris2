@@ -158,7 +158,7 @@ class MaskGenWidget(QWidget):
         mask_name_info = np.array([str(mask_name),str(center),str(pa)])
         self.change_mask_name.emit(mask_name_info)
         self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
-        self.update_image.emit(slit_mask.generate_skyview())
+        # self.update_image.emit(slit_mask.generate_skyview())
         #--------------------------------------------------------------------------
 
 

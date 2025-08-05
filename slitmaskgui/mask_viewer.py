@@ -40,7 +40,7 @@ from PyQt6.QtWidgets import (
 PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
 CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
 CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
-TOTAL_HEIGHT_OF_BARS = 7*72
+MM_TO_PIXEL = 1 #this is a mm to pixel ratio, it is currently just made up
 
 logger = logging.getLogger(__name__)
 
@@ -76,13 +76,13 @@ class interactiveBars(QGraphicsRectItem):
         return (self.length,self.width)
 
 class FieldOfView(QGraphicsRectItem):
-    def __init__(self,image_height,x=0,y=0):
+    def __init__(self,height=CSU_HEIGHT*MM_TO_PIXEL,width=CSU_WIDTH*MM_TO_PIXEL,x=0,y=0):
         super().__init__()
 
-        self.height = image_height
-        self.ratio = CSU_WIDTH/CSU_HEIGHT #ratio of height to width 
+        self.height = height
+        self.width = width #ratio of height to width 
 
-        self.setRect(x,y,self.height*self.ratio,self.height)
+        self.setRect(x,y,self.width,self.height)
 
         self.setPen(QPen(Qt.GlobalColor.darkGreen,4))
         self.setFlags(self.flags() & ~self.GraphicsItemFlag.ItemIsSelectable)
@@ -159,26 +159,31 @@ class interactiveSlitMask(QWidget):
 
         #--------------------definitions-----------------------
         logger.info("slit_view: doing definitions")
-        scene_width = 480
-        scene_height = 520
-        self.scene = QGraphicsScene(0,0,scene_width,scene_height)
+        self.scene_width = (CSU_WIDTH+CSU_WIDTH/1.25) * MM_TO_PIXEL
+        scene_height = CSU_HEIGHT * MM_TO_PIXEL
+        self.scene = QGraphicsScene(0,0,self.scene_width,scene_height)
 
-        xcenter_of_image = self.scene.width()/2
+        xcenter_of_image = self.scene.sceneRect().center().x()
 
         self.mask_name_title = QLabel(f'MASK NAME: None')
         self.center_title = QLabel(f'CENTER: None')
         self.pa_title = QLabel(f'PA: None')
         
         initial_bar_width = 7
-        initial_bar_length = 480
+        bar_length = self.scene_width
+        self.bar_height = scene_height/72#PLATE_SCALE*7.6
+        padding = 7
 
         for i in range(72):
-            temp_rect = interactiveBars(0,i*7+7,this_id=i,bar_width=initial_bar_width,bar_length=initial_bar_length)
-            temp_slit = interactiveSlits(scene_width/2,7*i+7)
+            temp_rect = interactiveBars(0,i*self.bar_height+padding,this_id=i,bar_width=initial_bar_width,bar_length=bar_length)
+            temp_slit = interactiveSlits(self.scene_width/2,self.bar_height*i+padding)
             self.scene.addItem(temp_rect)
             self.scene.addItem(temp_slit)
 
-        fov = FieldOfView(TOTAL_HEIGHT_OF_BARS,x=xcenter_of_image/2,y=7)
+        fov = FieldOfView(x=xcenter_of_image/2,y=padding)
+        new_center = fov.boundingRect().center().x()
+        new_x = xcenter_of_image-new_center
+        fov.setPos(new_x,0)
         self.scene.addItem(fov)
 
         self.scene.setSceneRect(self.scene.itemsBoundingRect())
@@ -273,8 +278,8 @@ class interactiveSlitMask(QWidget):
         logger.info("slit_view: method change_slit_and_star called")
         #will get it in the form of {1:(position,star_names),...}
         self.position = list(pos.values())
-        magic_number = 7
         new_items = []
+        x_center = self.scene.itemsBoundingRect().center().x()
         slits_to_replace = [
             item for item in reversed(self.scene.items())
             if isinstance(item, QGraphicsItemGroup)
@@ -284,7 +289,8 @@ class interactiveSlitMask(QWidget):
                 self.scene.removeItem(item)
 
                 x_pos, bar_id, name = self.position[num]
-                new_item = interactiveSlits(x_pos, bar_id*magic_number+7, name) #7 is the margin at the top 
+                
+                new_item = interactiveSlits(x_center+x_pos, bar_id*self.bar_height+7, name) #7 is the margin at the top 
                 new_items.append(new_item)
             except:
                 continue
@@ -322,32 +328,31 @@ class WavelengthView(QWidget):
 
         #--------------------definitions-----------------------
         logger.info("wavelength_view: doing definitions")
-        scene_width = 480
-        scene_height = 520
+        scene_width = CSU_WIDTH * MM_TO_PIXEL
+        scene_height = CSU_HEIGHT * MM_TO_PIXEL
         self.scene = QGraphicsScene(0,0,scene_width,scene_height)
 
         xcenter_of_image = self.scene.width()/2
-        self.stars = []
 
         self.mask_name_title = QLabel(f'MASK NAME: None')
         self.center_title = QLabel(f'CENTER: None')
         self.pa_title = QLabel(f'PA: None')
         
-        # self.combobox.setContentsMargins(0,0,0,0)
-        
-
         initial_bar_width = 7
-        initial_bar_length = 480
+        bar_length = scene_width
+        self.bar_height = PLATE_SCALE*7.6
+        padding = 7
 
         for i in range(72):
-            temp_rect = interactiveBars(0,i*7+7,this_id=i,bar_width=initial_bar_width,bar_length=initial_bar_length)
-            temp_slit = interactiveSlits(scene_width/2,7*i+7)
+            temp_rect = interactiveBars(0,i*self.bar_height+padding,this_id=i,bar_width=initial_bar_width,bar_length=bar_length)
+            temp_slit = interactiveSlits(scene_width/2,self.bar_height*i+padding)
             self.scene.addItem(temp_rect)
             self.scene.addItem(temp_slit)
 
-        fov = FieldOfView(TOTAL_HEIGHT_OF_BARS,x=xcenter_of_image/2,y=7)
+        fov = FieldOfView(x=xcenter_of_image/2,y=padding)
         self.scene.addItem(fov)
 
+        self.scene.setSceneRect(self.scene.itemsBoundingRect())
         self.view = CustomGraphicsView(self.scene)
         #-------------------connections-----------------------
         logger.info("wavelength_view: establishing connections")

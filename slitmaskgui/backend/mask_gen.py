@@ -13,6 +13,7 @@ import json
 from astropy.coordinates import SkyCoord, Angle
 import astropy.units as u
 import numpy as np
+from collections import OrderedDict
 
 
 #for some reason I am splitting up everything into their own for s©tatements
@@ -99,7 +100,9 @@ class SlitMask:
             
         
     def return_mask(self):
-        return json.dumps(self.stars)
+        unique_stars = []
+        [unique_stars.append(x) for x in self.stars if x not in unique_stars]
+        return json.dumps(unique_stars)
     
     def make_mask(self):
         #will return a list that will be used by the csu to configure the slits 

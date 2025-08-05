@@ -6,7 +6,10 @@ A button at the bottom to save the mask, and one right next to it to save all th
 
 import json
 import os
+import numpy as np
 import logging
+from astropy.coordinates import SkyCoord,Angle
+import astropy.units as u
 from slitmaskgui.backend.star_list import StarList
 from PyQt6.QtCore import Qt, QAbstractTableModel,QSize, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -26,6 +29,11 @@ from PyQt6.QtWidgets import (
 
 )
 config_logger = logging.getLogger(__name__)
+
+PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
+CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
+CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
+MM_TO_PIXEL = 1
 
 class Button(QPushButton):
     def __init__(self,w,h,text):
@@ -114,6 +122,7 @@ class MaskConfigurationsWidget(QWidget):
     change_slit_image = pyqtSignal(dict)
     change_row_widget = pyqtSignal(list)
     reset_scene = pyqtSignal(bool)
+    update_image = pyqtSignal(np.ndarray)
     def __init__(self):
         super().__init__()
         
@@ -253,7 +262,8 @@ class MaskConfigurationsWidget(QWidget):
             )
             if file_path:
                 data = json.dumps(self.row_to_config_dict[row_num])
-                star_list = StarList(data,RA="00 00 00.00",Dec="+00 00 00.00",slit_width=0.7,auto_run=False)
+                ra, dec = self.get_center(data)
+                star_list = StarList(data,ra=ra,dec=dec,slit_width=0.7,auto_run=False)
                 mask_name = os.path.splitext(os.path.basename(file_path))
                 star_list.export_mask_config(file_path=file_path)
 
@@ -287,14 +297,32 @@ class MaskConfigurationsWidget(QWidget):
             row = self.model.get_row_num(self.table.selectedIndexes())
             config_logger.info(f"mask_configurations: row is selected function {row} {self.row_to_config_dict}")
             data = json.dumps(self.row_to_config_dict[row])
+            ra, dec = self.get_center(json.loads(data))
 
-            slit_mask = StarList(data,ra="00 00 00.00",dec="+00 00 00.00",slit_width=0.7,auto_run=False)
+            slit_mask = StarList(data,ra=ra,dec=dec,slit_width=0.7,auto_run=False)
             interactive_slit_mask = slit_mask.send_interactive_slit_list()
 
             self.change_slit_image.emit(interactive_slit_mask)
 
             self.change_data.emit(slit_mask.send_target_list())
             self.change_row_widget.emit(slit_mask.send_row_widget_list())
+            self.update_image.emit(slit_mask.generate_skyview())
+    
+    def get_center(self,star_data):
+        star = star_data[0]
+        #make first star into a coordinate
+        coord = SkyCoord(star["ra"],star["dec"], unit=(u.hourangle, u.deg), frame='icrs')
+        #calculate how far it is from the center in degrees
+        x_in_deg = Angle(star["x_mm"] / (CSU_WIDTH/2),unit=u.arcsec).to(u.deg)
+        y_in_deg = Angle(star["y_mm"] / (CSU_HEIGHT/2),unit=u.arcsec).to(u.deg)
+        #subtract the difference from the stars ra and dec
+        new_ra = Angle(coord.ra).to(u.deg)-x_in_deg
+        new_dec = Angle(coord.dec).to(u.deg)-y_in_deg
+        #format it back into hourangle degree
+        center_ra = Angle(new_ra).to_string(unit=u.hourangle, sep=' ', precision=2, pad=True)
+        center_dec = Angle(new_dec).to_string(unit=u.deg, sep=' ', precision=2, pad=True,alwayssign=True)
+        #return it
+        return center_ra,center_dec
 
         
 

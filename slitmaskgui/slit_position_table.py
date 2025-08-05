@@ -126,7 +126,7 @@ class SlitDisplay(QWidget):
         #------------------------------------------------------        
 
     def sizeHint(self):
-        return QSize(135,120)
+        return QSize(144,120)
     def connect_on(self,answer:bool):
         #---------------reconnect connections---------------
         if answer:

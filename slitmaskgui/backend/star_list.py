@@ -6,6 +6,7 @@ This will convert the Apparent RA and Dec to milimeters and give a position in m
 PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
 CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
 CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
+HIPS_CACHE = {} #not actual cache but it behaves similarly (reset when program finishes)
 
 
 from astropy.coordinates import SkyCoord, Angle
@@ -42,6 +43,7 @@ while that probably isn't right i'll just get something down for now
 """
 
 class StarList:
+
     #with auto run you can select if the json is complete or not already
     #this means that if you have a complete list of all the stars as if it rand thorough this class, then you can select auto run as false
     #then you can use the send functions without doing a bunch of computation
@@ -84,7 +86,7 @@ class StarList:
         total_pixels = 252 
         
         slit_dict = {
-            i: (240 + (obj["x_mm"] / CSU_WIDTH) * total_pixels, obj["bar_id"], obj["name"]) 
+            i: (obj["x_mm"], obj["bar_id"], obj["name"]) 
             for i, obj in enumerate(self.payload[:72])
             if "bar_id" in obj
             }
@@ -126,19 +128,31 @@ class StarList:
         return ra, dec
     
     def generate_skyview(self):
+        #current ratio of scene width to height is 0.9
         hips = 'CDS/P/DSS2/red'
-        field_of_view = 10#np.sqrt(5**2+10**2)
+        #scene height = 10 scene width = 9
+        width, height = 900, 1000
+        ra, dec = self.center.ra.deg*u.deg, self.center.dec.deg*u.deg
+        fov = np.sqrt(9**2+10**2) *u.arcmin
+        key = (hips, width, height, ra, dec, fov)
+        print("backend star list",key, HIPS_CACHE)
+        if key in HIPS_CACHE:
+            return HIPS_CACHE[key]
+
         hdulist = hips2fits.query(
             hips=hips,
-            width=1000, #in pixels
-            height=1000,
-            ra=self.center.ra.deg*u.deg,
-            dec=self.center.dec.deg*u.deg,
-            fov=field_of_view*u.arcmin, #random thing (will change to to the actual diagonal distance)
+            width=width, #in pixels
+            height=height,
+            ra=ra,
+            dec=dec,
+            fov=fov, #random thing (will change to to the actual diagonal distance)
             projection='TAN',
             format='fits'
         )
+
         data = hdulist[0].data
+        HIPS_CACHE[key] = data
+        print(HIPS_CACHE)
         return data
         
         
