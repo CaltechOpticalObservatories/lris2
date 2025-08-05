@@ -331,11 +331,12 @@ class MaskConfigurationsWidget(QWidget):
         else:
             config_logger.info(f'mask configurations: new data added but is unsaved')
             try:
-                self.is_connected(False)
+                
                 row_num = self.model.get_row_num(self.table.selectedIndexes())
                 self.model.beginResetModel()
                 self.model._data[row_num] = ["Unsaved",self.model._data[row_num][1]]
                 self.model.endResetModel()
+                self.is_connected(False)
                 self.table.selectRow(row_num)
                 self.is_connected(True)
             
