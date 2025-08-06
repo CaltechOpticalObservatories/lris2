@@ -7,17 +7,32 @@
 # from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QTransform
 # from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView
 
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import pyqtSignal, Qt, QPoint, QTimer, QItemSelectionModel
 from PyQt6.QtWidgets import (
     QTabWidget,
     QComboBox,
     QLabel,
     QVBoxLayout,
-    QWidget
+    QWidget,
+    QListView
 
 )
+class CustomComboBox(QComboBox):
+    def __init__(self):
+        super().__init__()
+        items = ['phot_bp_mean_mag', 'phot_g_mean_mag', 'phot_rp_mean_mag']
+        self.addItems(items)
 
+    def showPopup(self):
+        popup = self.view().window()
+        if popup.isVisible():
+            popup.hide() 
 
+        super().showPopup()
+
+        pos = self.mapToGlobal(QPoint(0, self.height()))
+        popup.move(pos)
+        popup.show()
 
 class TabBar(QTabWidget):
     waveview_change = pyqtSignal(int)
@@ -29,11 +44,7 @@ class TabBar(QTabWidget):
         self.sky_view = skyview
 
         #--------------defining comobox------------------
-        self.combobox = QComboBox()
-        self.combobox.addItem('phot_bp_mean_mag')
-        self.combobox.addItem('phot_g_mean_mag')
-        self.combobox.addItem('phot_rp_mean_mag')
-        self.combobox.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.combobox = CustomComboBox()
 
         #--------------defining tabs--------------
         self.addTab(self.interactive_slit_mask,"Slit Mask")
