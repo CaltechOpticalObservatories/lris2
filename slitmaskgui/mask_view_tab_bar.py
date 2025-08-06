@@ -11,7 +11,9 @@ from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtWidgets import (
     QTabWidget,
     QComboBox,
-    QLabel
+    QLabel,
+    QVBoxLayout,
+    QWidget
 
 )
 
@@ -31,6 +33,7 @@ class TabBar(QTabWidget):
         self.combobox.addItem('phot_bp_mean_mag')
         self.combobox.addItem('phot_g_mean_mag')
         self.combobox.addItem('phot_rp_mean_mag')
+        self.combobox.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
 
         #--------------defining tabs--------------
         self.addTab(self.interactive_slit_mask,"Slit Mask")
@@ -48,6 +51,7 @@ class TabBar(QTabWidget):
         self.tabBar().currentChanged.connect(self.wavetab_selected)
         self.combobox.currentIndexChanged.connect(self.send_to_view)
         # self.tabBar().currentChanged.connect()
+
     
     def wavetab_selected(self,selected):
         if selected == 1:

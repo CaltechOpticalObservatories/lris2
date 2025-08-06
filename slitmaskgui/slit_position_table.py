@@ -142,15 +142,15 @@ class SlitDisplay(QWidget):
         logger.info("slit_position_table: defining layout")
         
         main_layout = QVBoxLayout()
-        main_layout.setSpacing(0)
-        main_layout.setContentsMargins(0,0,0,0)
+        # main_layout.setSpacing(9)
+        main_layout.setContentsMargins(0,0,9,0)
         
         main_layout.addWidget(self.table)
         self.setLayout(main_layout)
         #------------------------------------------------------        
 
     def sizeHint(self):
-        return QSize(144,120)
+        return QSize(170,120)
     def connect_on(self,answer:bool):
         #---------------reconnect connections---------------
         if answer:

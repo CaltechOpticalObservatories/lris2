@@ -80,6 +80,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("LRIS-2 Slit Configuration Tool")
         self.setGeometry(100,100,1000,760)
         self.setMenuBar(MenuBar()) #sets the menu bar
+        self.update_theme()
         
         #----------------------------definitions---------------------------
         main_logger.info("app: doing definitions")
@@ -149,7 +150,7 @@ class MainWindow(QMainWindow):
         self.layoutH1.addWidget(self.mask_tab)
         # self.layoutH1.addWidget(self.combobox)
         self.layoutH1.setSpacing(0)
-        self.layoutH1.setContentsMargins(0,0,0,0)
+        self.layoutH1.setContentsMargins(9,9,9,9)
         widgetH1 = QWidget()
         widgetH1.setLayout(self.layoutH1)
 
@@ -162,10 +163,14 @@ class MainWindow(QMainWindow):
         main_splitter.addWidget(self.splitterV1)
         # main_splitter.setCollapsible(0,False)
         main_splitter.addWidget(self.splitterV2)
-        main_splitter.setContentsMargins(9,9,9,9)
 
         self.setCentralWidget(main_splitter)
-        #-------------------------------------------------------
+        self.setContentsMargins(9,9,9,9)
+
+        #--------------------------change theme-----------------------------
+        QApplication.instance().styleHints().colorSchemeChanged.connect(self.update_theme)
+
+
     @pyqtSlot(name="reset scene")
     def reset_scene(self):
         main_logger.info("app: scene is being reset")
@@ -201,17 +206,23 @@ class MainWindow(QMainWindow):
         self.layoutH1.addWidget(self.slit_position_table)
         self.layoutH1.addWidget(self.mask_tab)
         self.splitterV1.insertWidget(1, self.target_display)
+    
+    def update_theme(self):
+        theme = QApplication.instance().styleHints().colorScheme()
+        if theme == Qt.ColorScheme.Dark:
+            with open("slitmaskgui/dark_mode.qss", "r") as f:
+                self.setStyleSheet(f.read())
+        elif theme == Qt.ColorScheme.Light:
+            with open("slitmaskgui/light_mode.qss", "r") as f:
+                self.setStyleSheet(f.read())
+        else:
+            with open("slitmaskgui/dark_mode.qss", "r") as f:
+                self.setStyleSheet(f.read())
         
 
-    
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-
-    with open("slitmaskgui/styles.qss", "r") as f:
-        _style = f.read()
-    app.setStyleSheet(_style)
-    
 
     window = MainWindow()
     window.show()

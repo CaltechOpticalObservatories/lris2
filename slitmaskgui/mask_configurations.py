@@ -145,7 +145,7 @@ class MaskConfigurationsWidget(QWidget):
         )
 
         #--------------------------------Definitions---------------------
-        title = QLabel("MASK CONFIGURATIONS")
+        # title = QLabel("MASK CONFIGURATIONS")
 
         self.open_button = Button(80,30,"Open")
         self.save_button = Button(80,30,"Save")
@@ -169,7 +169,7 @@ class MaskConfigurationsWidget(QWidget):
         self.table.selectionModel().selectionChanged.connect(self.selected) #sends the row number for the selected item
 
         #-------------------layout-------------------
-        group_box = QGroupBox()
+        group_box = QGroupBox("MASK CONFIGURATIONS")
         main_layout = QVBoxLayout()
         group_layout = QVBoxLayout()
         top_hori_layout = QHBoxLayout()
@@ -178,30 +178,32 @@ class MaskConfigurationsWidget(QWidget):
         top_hori_layout.addWidget(self.open_button)
         top_hori_layout.addWidget(self.save_button)
         top_hori_layout.addWidget(self.close_button)
-        top_hori_layout.setSpacing(0)
+        top_hori_layout.setSpacing(9)
+        top_hori_layout.setContentsMargins(0,5,0,5)
 
         bot_hori_layout.addWidget(self.export_button)
         bot_hori_layout.addWidget(self.export_all_button)
-        bot_hori_layout.setSpacing(0)
+        bot_hori_layout.setSpacing(9)
+        bot_hori_layout.setContentsMargins(0,5,0,5)
 
         group_layout.addLayout(top_hori_layout)
         group_layout.addWidget(self.table)
         group_layout.addLayout(bot_hori_layout)
         group_layout.setSpacing(0)
-        group_layout.setContentsMargins(0,0,0,0)
+        group_layout.setContentsMargins(0,8,0,0)
 
         group_box.setLayout(group_layout)
         group_box.setContentsMargins(2,0,2,0)
         
-        main_layout.addWidget(title,alignment=Qt.AlignmentFlag.AlignHCenter)
+        # main_layout.addWidget(title,alignment=Qt.AlignmentFlag.AlignHCenter)
         main_layout.addWidget(group_box)
         main_layout.setSpacing(0)
-        main_layout.setContentsMargins(0,0,0,0)
+        main_layout.setContentsMargins(9,4,9,9)
 
         self.setLayout(main_layout)
         #------------------------------------------------
     def sizeHint(self):
-        return QSize(300,100)
+        return QSize(300,150)
     
     def is_connected(self,connect:bool):
         if connect:

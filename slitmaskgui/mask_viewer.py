@@ -44,6 +44,10 @@ MM_TO_PIXEL = 1 #this is a mm to pixel ratio, it is currently just made up
 
 logger = logging.getLogger(__name__)
 
+
+
+#got to add a "if dark mode then these are the colors"
+
 class interactiveBars(QGraphicsRectItem):
     
     def __init__(self,x,y,bar_length,bar_width,this_id):
@@ -54,8 +58,8 @@ class interactiveBars(QGraphicsRectItem):
         self.y_pos = y
         self.setRect(x,self.y_pos, self.length,self.width)
         self.id = this_id
-        self.setBrush = QBrush(Qt.GlobalColor.white)
-        self.setPen = QPen(Qt.GlobalColor.black).setWidth(1)
+        self.setBrush = QBrush(Qt.BrushStyle.NoBrush)
+        self.setPen = QPen(QColor.fromString("#6c7086")).setWidth(1)
         self.setFlags(self.GraphicsItemFlag.ItemIsSelectable)
 
 
@@ -65,11 +69,11 @@ class interactiveBars(QGraphicsRectItem):
     def paint(self, painter: QPainter, option, widget = None):
         if self.isSelected():
             #self.setBrush = QBrush(Qt.GlobalColor.blue)
-            painter.setBrush(QBrush(Qt.GlobalColor.cyan))
-            painter.setPen(QPen(QColor("black"), 1))
+            painter.setBrush(QBrush(QColor.fromString("#89b4fa")))
+            painter.setPen(QPen(QColor.fromString("#1e1e2e"), 0))
         else:
-            painter.setBrush(QBrush(Qt.GlobalColor.white))
-            painter.setPen(QPen(QColor("black"), 1))
+            painter.setBrush(QBrush(Qt.BrushStyle.NoBrush))
+            painter.setPen(QPen(QColor.fromString("#6c7086"), 0))
         painter.drawRect(self.rect())
     
     def send_size(self):
@@ -84,10 +88,10 @@ class FieldOfView(QGraphicsRectItem):
 
         self.setRect(x,y,self.width,self.height)
 
-        self.setPen(QPen(Qt.GlobalColor.darkGreen,4))
+        self.setPen(QPen(QColor.fromString("#a6e3a1"),4))
         self.setFlags(self.flags() & ~self.GraphicsItemFlag.ItemIsSelectable)
 
-        self.setOpacity(0.35)
+        self.setOpacity(0.5)
     def change_height(self):
         pass
     
@@ -102,13 +106,13 @@ class interactiveSlits(QGraphicsItemGroup):
         #default NONE next to lines that don't have a star
         self.x_pos = x
         self.y_pos = y
-        self.line = QGraphicsLineItem(self.x_pos,self.y_pos,self.x_pos,self.y_pos+7)
+        self.line = QGraphicsLineItem(self.x_pos,self.y_pos,self.x_pos,self.y_pos+CSU_HEIGHT/72)
         #self.line = QLineF(x,y,x,y+7)
-        self.line.setPen(QPen(Qt.GlobalColor.red, 2))
+        self.line.setPen(QPen(QColor.fromString("#eba0ac"), 2))
 
         self.star_name = name
         self.star = QGraphicsTextItem(self.star_name)
-        self.star.setDefaultTextColor(Qt.GlobalColor.red)
+        self.star.setDefaultTextColor(QColor.fromString("#eba0ac"))
         self.star.setFont(QFont("Arial",6))
         self.star.setPos(x+5,y-4)
         self.setFlags(self.flags() & ~self.GraphicsItemFlag.ItemIsSelectable)
@@ -119,7 +123,7 @@ class interactiveSlits(QGraphicsItemGroup):
     def get_y_value(self):
         return self.y_pos
     def get_bar_id(self):
-        return self.y_pos/7
+        return int(self.y_pos/(CSU_HEIGHT*MM_TO_PIXEL/72))
     def get_star_name(self):
         return self.star_name
 
@@ -169,13 +173,12 @@ class interactiveSlitMask(QWidget):
         self.center_title = QLabel(f'CENTER: None')
         self.pa_title = QLabel(f'PA: None')
         
-        initial_bar_width = 7
         bar_length = self.scene_width
-        self.bar_height = scene_height/72#PLATE_SCALE*7.6
-        padding = 7
+        self.bar_height = CSU_HEIGHT/72#PLATE_SCALE*8.6
+        padding = 0
 
         for i in range(72):
-            temp_rect = interactiveBars(0,i*self.bar_height+padding,this_id=i,bar_width=initial_bar_width,bar_length=bar_length)
+            temp_rect = interactiveBars(0,i*self.bar_height+padding,this_id=i,bar_width=self.bar_height,bar_length=bar_length)
             temp_slit = interactiveSlits(self.scene_width/2,self.bar_height*i+padding)
             self.scene.addItem(temp_rect)
             self.scene.addItem(temp_slit)
@@ -188,6 +191,7 @@ class interactiveSlitMask(QWidget):
 
         self.scene.setSceneRect(self.scene.itemsBoundingRect())
         self.view = CustomGraphicsView(self.scene)
+        self.view.setContentsMargins(0,0,0,0)
 
         #-------------------connections-----------------------
         logger.info("slit_view: establishing connections")
@@ -258,14 +262,15 @@ class interactiveSlitMask(QWidget):
                 self.connect_on(True)
                 
     def get_star_name_from_row(self):
-        row_list = [x.check_id() for x in self.scene.selectedItems()]
+        row_selected = [x.check_id() for x in self.scene.selectedItems()]
         selected_star = [
             item.get_star_name() for item in reversed(self.scene.items())
-            if isinstance(item, QGraphicsItemGroup) and item.get_bar_id()-1 in row_list
+            if isinstance(item, interactiveSlits)and item.get_bar_id()-1 in row_selected
         ]
-        if selected_star != []:
+        if selected_star:
             logger.info(f"slit_view: method get_star_name_from_row called, selected star: {selected_star[0]}")
             self.select_star.emit(selected_star[0])
+            
 
     def row_is_selected(self):
         if self.scene.selectedItems() != []:
@@ -290,7 +295,7 @@ class interactiveSlitMask(QWidget):
 
                 x_pos, bar_id, name = self.position[num]
                 
-                new_item = interactiveSlits(x_center+x_pos, bar_id*self.bar_height+7, name) #7 is the margin at the top 
+                new_item = interactiveSlits(x_center+x_pos, bar_id*self.bar_height, name) #7 is the margin at the top 
                 new_items.append(new_item)
             except:
                 continue

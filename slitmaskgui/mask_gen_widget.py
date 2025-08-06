@@ -72,7 +72,6 @@ class MaskGenWidget(QWidget):
         self.slit_width = QLineEdit("0.7")
         self.use_center_of_priority = QCheckBox("Use Center of Priority")
         run_button = QPushButton(text="Run")
-        title = QLabel("MASK GENERATION")
 
         #worry about the formatting of center_of_mask later
 
@@ -83,7 +82,7 @@ class MaskGenWidget(QWidget):
 
         #------------------------------------------layout-------------------------
         logger.info("mask_gen_widget: defining the layout")
-        group_box = QGroupBox()
+        group_box = QGroupBox("MASK GENERATION")
         main_layout = QVBoxLayout()
         secondary_layout = QFormLayout() #above import targets
         below_form_layout = QFormLayout() #below imput targets
@@ -93,6 +92,10 @@ class MaskGenWidget(QWidget):
         group_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         import_target_list_button_layout = QVBoxLayout()
         run_button_layout = QVBoxLayout()
+
+        secondary_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        below_form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+
 
         self.name_of_mask.setAlignment(Qt.AlignmentFlag.AlignTop)
         import_target_list_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
@@ -118,9 +121,7 @@ class MaskGenWidget(QWidget):
         group_box.setLayout(group_layout)
 
         
-        main_layout.addWidget(title,alignment=Qt.AlignmentFlag.AlignHCenter)
-        main_layout.setSpacing(0)
-        main_layout.setContentsMargins(0,0,0,0)
+        main_layout.setContentsMargins(9,4,9,9)
         main_layout.addWidget(group_box)
 
         self.setLayout(main_layout)
