@@ -13,7 +13,7 @@ from astropy.coordinates import SkyCoord, Angle
 import astropy.units as u
 import pandas as pd
 import numpy as np
-from slitmaskgui.input_targets import TargetList
+from slitmaskgui.backend.input_targets import TargetList
 from slitmaskgui.backend.mask_gen import SlitMask
 import json
 import os

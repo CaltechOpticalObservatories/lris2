@@ -1,5 +1,5 @@
 
-from slitmaskgui.input_targets import TargetList
+from slitmaskgui.backend.input_targets import TargetList
 from slitmaskgui.backend.star_list import StarList
 import re
 import logging
