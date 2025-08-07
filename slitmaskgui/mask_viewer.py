@@ -4,12 +4,9 @@ when you click the bar on the left then the image will display which row that is
 additionally It will also interact with the target list
 it will display where the slit is place and what stars will be shown
 """
-from astroquery.skyview import SkyView
-from astropy.coordinates import SkyCoord
-import astropy.units as u
 
 
-
+import matplotlib.pyplot as plt
 import logging
 import numpy as np
 from astroquery.gaia import Gaia
@@ -43,9 +40,13 @@ from PyQt6.QtWidgets import (
 PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
 CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
 CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
-TOTAL_HEIGHT_OF_BARS = 7*72
+MM_TO_PIXEL = 1 #this is a mm to pixel ratio, it is currently just made up
 
 logger = logging.getLogger(__name__)
+
+
+
+#got to add a "if dark mode then these are the colors"
 
 class interactiveBars(QGraphicsRectItem):
     
@@ -57,8 +58,8 @@ class interactiveBars(QGraphicsRectItem):
         self.y_pos = y
         self.setRect(x,self.y_pos, self.length,self.width)
         self.id = this_id
-        self.setBrush = QBrush(Qt.GlobalColor.white)
-        self.setPen = QPen(Qt.GlobalColor.black).setWidth(1)
+        self.setBrush = QBrush(Qt.BrushStyle.NoBrush)
+        self.setPen = QPen(QColor.fromString("#6c7086")).setWidth(1)
         self.setFlags(self.GraphicsItemFlag.ItemIsSelectable)
 
 
@@ -68,29 +69,29 @@ class interactiveBars(QGraphicsRectItem):
     def paint(self, painter: QPainter, option, widget = None):
         if self.isSelected():
             #self.setBrush = QBrush(Qt.GlobalColor.blue)
-            painter.setBrush(QBrush(Qt.GlobalColor.cyan))
-            painter.setPen(QPen(QColor("black"), 1))
+            painter.setBrush(QBrush(QColor.fromString("#89b4fa")))
+            painter.setPen(QPen(QColor.fromString("#1e1e2e"), 0))
         else:
-            painter.setBrush(QBrush(Qt.GlobalColor.white))
-            painter.setPen(QPen(QColor("black"), 1))
+            painter.setBrush(QBrush(Qt.BrushStyle.NoBrush))
+            painter.setPen(QPen(QColor.fromString("#6c7086"), 0))
         painter.drawRect(self.rect())
     
     def send_size(self):
         return (self.length,self.width)
 
 class FieldOfView(QGraphicsRectItem):
-    def __init__(self,image_height,x=0,y=0):
+    def __init__(self,height=CSU_HEIGHT*MM_TO_PIXEL,width=CSU_WIDTH*MM_TO_PIXEL,x=0,y=0):
         super().__init__()
 
-        self.height = image_height
-        self.ratio = CSU_WIDTH/CSU_HEIGHT #ratio of height to width 
+        self.height = height
+        self.width = width #ratio of height to width 
 
-        self.setRect(x,y,self.height*self.ratio,self.height)
+        self.setRect(x,y,self.width,self.height)
 
-        self.setPen(QPen(Qt.GlobalColor.darkGreen,4))
+        self.setPen(QPen(QColor.fromString("#a6e3a1"),4))
         self.setFlags(self.flags() & ~self.GraphicsItemFlag.ItemIsSelectable)
 
-        self.setOpacity(0.35)
+        self.setOpacity(0.5)
     def change_height(self):
         pass
     
@@ -105,13 +106,13 @@ class interactiveSlits(QGraphicsItemGroup):
         #default NONE next to lines that don't have a star
         self.x_pos = x
         self.y_pos = y
-        self.line = QGraphicsLineItem(self.x_pos,self.y_pos,self.x_pos,self.y_pos+7)
+        self.line = QGraphicsLineItem(self.x_pos,self.y_pos,self.x_pos,self.y_pos+CSU_HEIGHT/72)
         #self.line = QLineF(x,y,x,y+7)
-        self.line.setPen(QPen(Qt.GlobalColor.red, 2))
+        self.line.setPen(QPen(QColor.fromString("#eba0ac"), 2))
 
         self.star_name = name
         self.star = QGraphicsTextItem(self.star_name)
-        self.star.setDefaultTextColor(Qt.GlobalColor.red)
+        self.star.setDefaultTextColor(QColor.fromString("#eba0ac"))
         self.star.setFont(QFont("Arial",6))
         self.star.setPos(x+5,y-4)
         self.setFlags(self.flags() & ~self.GraphicsItemFlag.ItemIsSelectable)
@@ -122,7 +123,7 @@ class interactiveSlits(QGraphicsItemGroup):
     def get_y_value(self):
         return self.y_pos
     def get_bar_id(self):
-        return self.y_pos/7
+        return int(self.y_pos/(CSU_HEIGHT*MM_TO_PIXEL/72))
     def get_star_name(self):
         return self.star_name
 
@@ -162,30 +163,35 @@ class interactiveSlitMask(QWidget):
 
         #--------------------definitions-----------------------
         logger.info("slit_view: doing definitions")
-        scene_width = 480
-        scene_height = 520
-        self.scene = QGraphicsScene(0,0,scene_width,scene_height)
+        self.scene_width = (CSU_WIDTH+CSU_WIDTH/1.25) * MM_TO_PIXEL
+        scene_height = CSU_HEIGHT * MM_TO_PIXEL
+        self.scene = QGraphicsScene(0,0,self.scene_width,scene_height)
 
-        xcenter_of_image = self.scene.width()/2
+        xcenter_of_image = self.scene.sceneRect().center().x()
 
         self.mask_name_title = QLabel(f'MASK NAME: None')
         self.center_title = QLabel(f'CENTER: None')
         self.pa_title = QLabel(f'PA: None')
         
-        initial_bar_width = 7
-        initial_bar_length = 480
+        bar_length = self.scene_width
+        self.bar_height = CSU_HEIGHT/72#PLATE_SCALE*8.6
+        padding = 0
 
         for i in range(72):
-            temp_rect = interactiveBars(0,i*7+7,this_id=i,bar_width=initial_bar_width,bar_length=initial_bar_length)
-            temp_slit = interactiveSlits(scene_width/2,7*i+7)
+            temp_rect = interactiveBars(0,i*self.bar_height+padding,this_id=i,bar_width=self.bar_height,bar_length=bar_length)
+            temp_slit = interactiveSlits(self.scene_width/2,self.bar_height*i+padding)
             self.scene.addItem(temp_rect)
             self.scene.addItem(temp_slit)
 
-        fov = FieldOfView(TOTAL_HEIGHT_OF_BARS,x=xcenter_of_image/2,y=7)
+        fov = FieldOfView(x=xcenter_of_image/2,y=padding)
+        new_center = fov.boundingRect().center().x()
+        new_x = xcenter_of_image-new_center
+        fov.setPos(new_x,0)
         self.scene.addItem(fov)
 
         self.scene.setSceneRect(self.scene.itemsBoundingRect())
         self.view = CustomGraphicsView(self.scene)
+        self.view.setContentsMargins(0,0,0,0)
 
         #-------------------connections-----------------------
         logger.info("slit_view: establishing connections")
@@ -256,14 +262,15 @@ class interactiveSlitMask(QWidget):
                 self.connect_on(True)
                 
     def get_star_name_from_row(self):
-        row_list = [x.check_id() for x in self.scene.selectedItems()]
+        row_selected = [x.check_id() for x in self.scene.selectedItems()]
         selected_star = [
             item.get_star_name() for item in reversed(self.scene.items())
-            if isinstance(item, QGraphicsItemGroup) and item.get_bar_id()-1 in row_list
+            if isinstance(item, interactiveSlits)and item.get_bar_id()-1 in row_selected
         ]
-        if selected_star != []:
+        if selected_star:
             logger.info(f"slit_view: method get_star_name_from_row called, selected star: {selected_star[0]}")
             self.select_star.emit(selected_star[0])
+            
 
     def row_is_selected(self):
         if self.scene.selectedItems() != []:
@@ -276,8 +283,8 @@ class interactiveSlitMask(QWidget):
         logger.info("slit_view: method change_slit_and_star called")
         #will get it in the form of {1:(position,star_names),...}
         self.position = list(pos.values())
-        magic_number = 7
         new_items = []
+        x_center = self.scene.itemsBoundingRect().center().x()
         slits_to_replace = [
             item for item in reversed(self.scene.items())
             if isinstance(item, QGraphicsItemGroup)
@@ -287,7 +294,8 @@ class interactiveSlitMask(QWidget):
                 self.scene.removeItem(item)
 
                 x_pos, bar_id, name = self.position[num]
-                new_item = interactiveSlits(x_pos, bar_id*magic_number+7, name) #7 is the margin at the top 
+                
+                new_item = interactiveSlits(x_center+x_pos, bar_id*self.bar_height, name) #7 is the margin at the top 
                 new_items.append(new_item)
             except:
                 continue
@@ -298,6 +306,8 @@ class interactiveSlitMask(QWidget):
     @pyqtSlot(np.ndarray, name="update labels")
     def update_name_center_pa(self,info):
         mask_name, center, pa = info[0], info[1], info[2] #the format of info is [mask_name,center,pa]
+        if type(center) is tuple():
+            center = str(center[0])+str(center[1])
         self.mask_name_title.setText(f'MASK NAME: {mask_name}')
         self.center_title.setText(f'CENTER: {center}')
         self.pa_title.setText(f'PA: {pa}')
@@ -325,32 +335,31 @@ class WavelengthView(QWidget):
 
         #--------------------definitions-----------------------
         logger.info("wavelength_view: doing definitions")
-        scene_width = 480
-        scene_height = 520
+        scene_width = CSU_WIDTH * MM_TO_PIXEL
+        scene_height = CSU_HEIGHT * MM_TO_PIXEL
         self.scene = QGraphicsScene(0,0,scene_width,scene_height)
 
         xcenter_of_image = self.scene.width()/2
-        self.stars = []
 
         self.mask_name_title = QLabel(f'MASK NAME: None')
         self.center_title = QLabel(f'CENTER: None')
         self.pa_title = QLabel(f'PA: None')
         
-        # self.combobox.setContentsMargins(0,0,0,0)
-        
-
         initial_bar_width = 7
-        initial_bar_length = 480
+        bar_length = scene_width
+        self.bar_height = PLATE_SCALE*7.6
+        padding = 7
 
         for i in range(72):
-            temp_rect = interactiveBars(0,i*7+7,this_id=i,bar_width=initial_bar_width,bar_length=initial_bar_length)
-            temp_slit = interactiveSlits(scene_width/2,7*i+7)
+            temp_rect = interactiveBars(0,i*self.bar_height+padding,this_id=i,bar_width=initial_bar_width,bar_length=bar_length)
+            temp_slit = interactiveSlits(scene_width/2,self.bar_height*i+padding)
             self.scene.addItem(temp_rect)
             self.scene.addItem(temp_slit)
 
-        fov = FieldOfView(TOTAL_HEIGHT_OF_BARS,x=xcenter_of_image/2,y=7)
+        fov = FieldOfView(x=xcenter_of_image/2,y=padding)
         self.scene.addItem(fov)
 
+        self.scene.setSceneRect(self.scene.itemsBoundingRect())
         self.view = CustomGraphicsView(self.scene)
         #-------------------connections-----------------------
         logger.info("wavelength_view: establishing connections")
@@ -447,8 +456,3 @@ class WavelengthView(QWidget):
 
 # Define the coordinates (RA, Dec) - replace with your values
 
-class SkyImageView(QWidget):
-    def __init__(self):
-        super().__init__()
-        #eventually this will be an image of the sky but for now it will be just a scene with circles
-        pass

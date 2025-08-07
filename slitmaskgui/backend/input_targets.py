@@ -3,8 +3,6 @@ the file format is a starlist: https://www2.keck.hawaii.edu/observing/starlist.h
 
 '''
 
-import numpy as np
-import pandas as pd 
 import re
 import json
 
@@ -48,15 +46,12 @@ class TargetList:
                     else:
                         name, ra, dec, equinox = f"UntitledStar{untitled_count}", "Not Provided", "Not Provided", "Not Provided"
                         untitled_count += 1
-                    #we actually don't care about equinox to display it but it might be a good thing to keep in the list
+                    
                     search = re.search(r"vmag=(?P<vmag>.+\.\S+)",line)
                     priority_search = re.search(r"priority=(?P<priority>\S+)",line)
 
                     vmag = search.group("vmag") if search != None else "N/A"
                     priority = priority_search.group("priority") if priority_search != None else "0"
-
-                    #next step is to search for magnitude vmag
-                    #after that I have to call a function that will get the distance from center in ß
 
                     obj = {
                         "name": name,
@@ -68,11 +63,7 @@ class TargetList:
                     }
                     self.objects.append(obj)
 
-                    #change this list do be a list of celestial objects that can be used later not just for displaying lists. 
-                    #self.target_list.append([name,priority,vmag,ra,dec])
     def send_json(self):
         self.objects = json.dumps(self.objects)
         return self.objects
         
-    # def send_list(self):
-    #     return self.target_list

@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QHeaderView,
     
+    
 )
 logger = logging.getLogger(__name__)
 
@@ -100,8 +101,7 @@ class TargetDisplayWidget(QWidget):
         logger.info("target_list_widget: defining layout")
         main_layout = QVBoxLayout()
         # main_layout.addWidget(title)
-        main_layout.setSpacing(0)
-        main_layout.setContentsMargins(0,0,0,0)
+        main_layout.setContentsMargins(9,9,9,9)
 
         main_layout.addWidget(self.table)
         self.setLayout(main_layout)
@@ -136,7 +136,7 @@ class TargetDisplayWidget(QWidget):
     def select_corresponding(self,star): #everything will be done with the row widget
         self.connect_on(False)
         row = self.model.get_row(star)
-        if row:
+        if row in range(len(self.model._data)):
             logger.info(f'target_list_widget: method select_corresponding called: row {row}')
             self.table.selectRow(row)
         self.connect_on(True)

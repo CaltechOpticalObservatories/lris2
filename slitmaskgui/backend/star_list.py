@@ -6,16 +6,18 @@ This will convert the Apparent RA and Dec to milimeters and give a position in m
 PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
 CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
 CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
+HIPS_CACHE = {} #not actual cache but it behaves similarly (reset when program finishes)
 
 
 from astropy.coordinates import SkyCoord, Angle
 import astropy.units as u
 import pandas as pd
 import numpy as np
-from slitmaskgui.input_targets import TargetList
+from slitmaskgui.backend.input_targets import TargetList
 from slitmaskgui.backend.mask_gen import SlitMask
 import json
 import os
+from astroquery.hips2fits import hips2fits
 
 
 #Ra and Dec --> angle Degrees
@@ -50,7 +52,6 @@ class StarList:
         if use_center_of_priority:
             ra_coord, dec_coord =self.find_center_of_priority()
         self.center = SkyCoord(ra=ra_coord,dec=dec_coord,unit=(u.hourangle,u.deg))
-
         self.slit_width = slit_width
         self.pa = pa
 
@@ -84,7 +85,7 @@ class StarList:
         total_pixels = 252 
         
         slit_dict = {
-            i: (240 + (obj["x_mm"] / CSU_WIDTH) * total_pixels, obj["bar_id"], obj["name"]) 
+            i: (obj["x_mm"], obj["bar_id"], obj["name"]) 
             for i, obj in enumerate(self.payload[:72])
             if "bar_id" in obj
             }
@@ -99,7 +100,7 @@ class StarList:
     def send_row_widget_list(self):
         #the reason why the bar id is plus 1 is to transl
         sorted_row_list = sorted(
-            ([obj["bar_id"]+1, obj["x_mm"], self.slit_width] 
+            ([obj["bar_id"]+1, obj["x_mm"], obj["slit_width"]] 
             for obj in self.payload[:72] if "bar_id" in obj),
             key=lambda x: x[0]
             )
@@ -126,7 +127,30 @@ class StarList:
         return ra, dec
     
     def generate_skyview(self):
-        return "temp"
+        #current ratio of scene width to height is 0.9
+        hips = 'CDS/P/DSS2/red'
+        #scene height = 10 scene width = 9
+        width, height = 900, 1000
+        ra, dec = self.center.ra.deg*u.deg, self.center.dec.deg*u.deg
+        fov = np.sqrt(9**2+10**2) *u.arcmin
+        key = (hips, width, height, ra, dec, fov)
+        if key in HIPS_CACHE:
+            return HIPS_CACHE[key]
+
+        hdulist = hips2fits.query(
+            hips=hips,
+            width=width, #in pixels
+            height=height,
+            ra=ra,
+            dec=dec,
+            fov=fov, #random thing (will change to to the actual diagonal distance)
+            projection='TAN',
+            format='fits'
+        )
+
+        data = hdulist[0].data
+        HIPS_CACHE[key] = data
+        return data
         
         
 
