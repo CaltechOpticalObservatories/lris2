@@ -39,7 +39,7 @@ class TabBar(QTabWidget):
     def __init__(self,slitmask,waveview,skyview):
         super().__init__()
         #--------------defining widgets for tabs---------
-        self.wavelength_view = QLabel("Spectral view is currently under development")#waveview #currently waveview hasn't been developed
+        self.wavelength_view = waveview#QLabel("Spectral view is currently under development")#waveview #currently waveview hasn't been developed
         self.interactive_slit_mask = slitmask
         self.sky_view = skyview
 
@@ -55,8 +55,8 @@ class TabBar(QTabWidget):
         self.combobox.hide()
         # self.mask_tab.setCornerWidget(self.combobox) #this would add the widget to the corner (only want it when spectral view is selected)
         #------------------other---------------
-        self.wavelength_view.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.wavelength_view.setStyleSheet("font-size: 20px;")
+        # self.wavelength_view.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # self.wavelength_view.setStyleSheet("font-size: 20px;")
 
         #------------------connections------------
         self.tabBar().currentChanged.connect(self.wavetab_selected)
