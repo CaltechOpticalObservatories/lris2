@@ -104,13 +104,12 @@ class MainWindow(QMainWindow):
         self.target_display.selected_le_star.connect(self.interactive_slit_mask.get_row_from_star_name)
         self.interactive_slit_mask.select_star.connect(self.target_display.select_corresponding)
         self.wavelength_view.row_selected.connect(self.interactive_slit_mask.select_corresponding_row)
-        self.mask_tab.waveview_change.connect(self.wavelength_view.re_initialize_scene)
+        self.interactive_slit_mask.new_slit_positions.connect(self.mask_tab.initialize_spectral_view)
 
         mask_gen_widget.change_data.connect(self.target_display.change_data)
         mask_gen_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
         mask_gen_widget.change_row_widget.connect(self.slit_position_table.change_data)
         mask_gen_widget.send_mask_config.connect(mask_config_widget.update_table)
-        mask_gen_widget.change_wavelength_data.connect(self.wavelength_view.get_spectra_of_star)
 
         mask_config_widget.change_data.connect(self.target_display.change_data)
         mask_config_widget.change_row_widget.connect(self.slit_position_table.change_data)
@@ -218,6 +217,7 @@ class MainWindow(QMainWindow):
         else:
             with open("slitmaskgui/dark_mode.qss", "r") as f:
                 self.setStyleSheet(f.read())
+    
         
 
 

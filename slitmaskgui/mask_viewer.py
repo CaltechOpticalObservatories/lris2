@@ -5,7 +5,7 @@ additionally It will also interact with the target list
 it will display where the slit is place and what stars will be shown
 """
 
-import math
+from itertools import groupby
 import logging
 import numpy as np
 from astroquery.gaia import Gaia
@@ -14,8 +14,8 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 from astropy.wcs import WCS
 from astropy.io import fits
-from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal, QSize, QPointF
-from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QLinearGradient
+from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal, QSize, QPointF, QRectF
+from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QLinearGradient, QTransform
 from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
@@ -56,8 +56,6 @@ class interactiveBars(QGraphicsRectItem):
         self.has_gradient = has_gradient
         self.setRect(self.x_pos,self.y_pos, self.length,self.width)
         self.id = this_id
-        self.setBrush = QBrush(Qt.BrushStyle.NoBrush)
-        self.setPen = QPen(QColor.fromString("#6c7086")).setWidth(1)
         self.setFlags(self.GraphicsItemFlag.ItemIsSelectable)
 
 
@@ -70,7 +68,7 @@ class interactiveBars(QGraphicsRectItem):
             gradient = self.draw_with_gradient()
             painter.setBrush(QBrush(gradient))
             if self.isSelected():
-                painter.setPen(QPen(QColor.fromString("#1e1e2e"), 1))
+                painter.setPen(QPen(QColor.fromString("#89b4fa"), 1))
             else:
                 painter.setPen(QPen(QColor.fromString("#1e1e2e"), 0))
         elif self.isSelected():
@@ -142,6 +140,71 @@ class interactiveSlits(QGraphicsItemGroup):
         return int(self.y_pos/self.bar_height)
     def get_star_name(self):
         return self.star_name
+    
+class BracketLineObject(QGraphicsItemGroup):
+    
+    def __init__(self, x_pos_of_edge_of_bar, total_height_of_bars, x_pos_of_edge_of_name, y_position_of_name):
+        super().__init__()
+
+        self.bar_pos = x_pos_of_edge_of_bar
+        self.height = total_height_of_bars
+        self.x_name_pos = x_pos_of_edge_of_name
+        self.y_name_pos = y_position_of_name
+        
+        
+        self.bracket_width = 7
+        self.padding = 3
+        self.pen = QPen().setColor("white").setWidth(1).setStyle(Qt.PenStyle.DashLine)
+
+        if self.height:
+            self.make_bracket_and_line()
+        else:
+            self.make_line()
+
+        self.addToGroup()
+
+    
+    def make_bracket_and_line(self):
+        top_edge = QGraphicsLineItem(
+            self.bar_pos + self.padding,
+            self.y_name_pos - self.height/2,
+            self.bar_pos + self.padding + self.bracket_width,
+            self.y_name_pos - self.height/2,
+            )
+        bottom_edge = QGraphicsLineItem(
+            self.bar_pos + self.padding,
+            self.y_name_pos + self.height/2,
+            self.bar_pos + self.padding + self.bracket_width,
+            self.y_name_pos + self.height/2,
+            )
+        bracket_edge = QGraphicsLineItem(
+            self.bar_pos + self.padding + self.bracket_width,
+            self.y_name_pos - self.height/2,
+            self.bar_pos + self.padding + self.bracket_width,
+            self.y_name_pos + self.height/2,
+            )
+        main_line = QGraphicsLineItem(
+            self.bar_pos + self.padding + self.bracket_width,
+            self.y_name_pos,
+            self.x_name_pos - self.padding,
+            self.y_name_pos,
+            )
+        
+        item_list = [top_edge,bottom_edge,bracket_edge,main_line]
+
+        [item.setPen(self.pen) for item in item_list]
+        [self.addToGroup(item) for item in item_list]
+
+    def make_line(self):
+        main_line = QGraphicsLineItem(
+            self.bar_pos + self.padding,
+            self.y_name_pos,
+            self.x_name_pos - self.padding,
+            self.y_name_pos,
+            )
+        
+        main_line.setPen(self.pen)
+        self.addToGroup(main_line)
 
 class CustomGraphicsView(QGraphicsView):
     def __init__(self,scene):
@@ -173,6 +236,7 @@ class CustomGraphicsView(QGraphicsView):
 class interactiveSlitMask(QWidget):
     row_selected = pyqtSignal(int,name="row selected")
     select_star = pyqtSignal(str)
+    new_slit_positions = pyqtSignal(list)
     
     def __init__(self):
         super().__init__()
@@ -273,20 +337,22 @@ class interactiveSlitMask(QWidget):
         for i in range(len(all_stars)):
             if all_stars[i].get_star_name() == name:
                 bar_id = int(all_stars[i].get_bar_id())
-                print(bar_id, name)
                 self.connect_on(False)
                 all_bars[bar_id].setSelected(True)
                 self.connect_on(True)
                 
     def get_star_name_from_row(self):
-        row_selected = [x.check_id() for x in self.scene.selectedItems()]
-        selected_star = [
-            item.get_star_name() for item in reversed(self.scene.items())
-            if isinstance(item, interactiveSlits)and item.get_bar_id() in row_selected
-        ]
-        if selected_star:
-            logger.info(f"slit_view: method get_star_name_from_row called, selected star: {selected_star[0]}")
-            self.select_star.emit(selected_star[0])
+        try:
+            row_selected = [x.check_id() for x in self.scene.selectedItems()] 
+            selected_star = [
+                item.get_star_name() for item in reversed(self.scene.items())
+                if isinstance(item, interactiveSlits)and item.get_bar_id() in row_selected
+            ]
+            if selected_star:
+                logger.info(f"slit_view: method get_star_name_from_row called, selected star: {selected_star[0]}")
+                self.select_star.emit(selected_star[0])
+        except:
+            pass
             
 
     def row_is_selected(self):
@@ -321,6 +387,7 @@ class interactiveSlitMask(QWidget):
         #item_list.reverse()
         for item in new_items:
             self.scene.addItem(item)
+        self.emit_slit_positions(new_items,x_center)
         self.view = QGraphicsScene(self.scene)
     @pyqtSlot(np.ndarray, name="update labels")
     def update_name_center_pa(self,info):
@@ -330,47 +397,37 @@ class interactiveSlitMask(QWidget):
         self.mask_name_title.setText(f'MASK NAME: {mask_name}')
         self.center_title.setText(f'CENTER: {center}')
         self.pa_title.setText(f'PA: {pa}')
-
-
-"""
-all the connections will be handled through the main widget
-The tab widget will emit a signal on whether wavelengthview is in view or not (or which one is in view)
-depending of in the wavelengthview is in view or now will change if the slitmask view will send information to it
-all signals to outside will be handled through the slitmaskview
-"""
-
+    
+    def emit_slit_positions(self,slits,x_center):
+        slit_positions = [(x.x_pos,x.y_pos,x.star_name) for x in slits] #-(x_center-x.xpos) gets distance from center where left is negative
+        self.new_slit_positions.emit(slit_positions)
 
 """
 red and blue and 3 grisms for each
+
+currently have the center of the bar move to the place where the slit is, and 
 """
 class WavelengthView(QWidget):
     row_selected = pyqtSignal(int,name="row selected")
     
     def __init__(self):
         super().__init__()
-         #--------------------definitions-----------------------
-        logger.info("wave view: doing definitions")
-        self.scene_width = (CSU_WIDTH+CSU_WIDTH/1.25) * MM_TO_PIXEL
-        scene_height = CSU_HEIGHT * MM_TO_PIXEL
-        self.scene = QGraphicsScene(0,0,self.scene_width,scene_height)
-
-        # xcenter_of_image = self.scene.sceneRect().center().x()
-
-        self.mask_name_title = QLabel(f'MASK NAME: None')
-        self.center_title = QLabel(f'CENTER: None')
-        self.pa_title = QLabel(f'PA: None')
         
-        bar_length = self.scene_width
+        #--------------------definitions-----------------------
+        logger.info("wave view: doing definitions")
+        self.scene_width = (CSU_WIDTH+CSU_WIDTH/1.25) * MM_TO_PIXEL #this is the scene width of the slit display
+        self.scene_height = CSU_HEIGHT * MM_TO_PIXEL #this is the scene height of the slit display
+        self.scene = QGraphicsScene(0,0,self.scene_width,self.scene_height) 
+
+        xcenter_of_image = self.scene.sceneRect().center().x()
+        self.mask_name = None
         self.bar_height = CSU_HEIGHT/72#PLATE_SCALE*8.6
-        padding = 0
 
-        for i in range(72):
-            temp_rect = interactiveBars(0,i*self.bar_height+padding,this_id=i,bar_width=self.bar_height,bar_length=bar_length,has_gradient=True)
-            self.scene.addItem(temp_rect)
+        # Initializing the cached dict
+        self.cached_scene_dict = {}
 
-        self.scene.setSceneRect(self.scene.itemsBoundingRect())
-        self.view = CustomGraphicsView(self.scene)
-        self.view.setContentsMargins(0,0,0,0)
+        self.slit_positions = [(xcenter_of_image,self.bar_height*x, "NONE") for x in range(72)]
+        self.initialize_scene(0,angstrom_range=(3100,5500)) # Angstrom range currently a temp variable
 
         #-------------------connections-----------------------
         logger.info("wave view: establishing connections")
@@ -378,13 +435,9 @@ class WavelengthView(QWidget):
 
         #------------------------layout-----------------------
         logger.info("wave view: defining layout")
-        top_layout = QHBoxLayout()
+
         main_layout = QVBoxLayout()
 
-        top_layout.addWidget(self.mask_name_title,alignment=Qt.AlignmentFlag.AlignHCenter)
-        top_layout.addWidget(self.center_title,alignment=Qt.AlignmentFlag.AlignHCenter)
-        top_layout.addWidget(self.pa_title,alignment=Qt.AlignmentFlag.AlignHCenter)
-        main_layout.addLayout(top_layout)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
         main_layout.addWidget(self.view)
@@ -416,48 +469,131 @@ class WavelengthView(QWidget):
         self.connect_on(True)
 
     def send_row(self):
-        if len(self.scene.selectedItems()) >0:
+        try:
             row_num = self.scene.selectedItems()[0].check_id()
             self.row_selected.emit(row_num)
-
-    @pyqtSlot(list,name="wavelength data")
-    def get_spectra_of_star(self,ra_dec_list): #[bar_id,ra,dec]
-        self.spectra_dict = {}
-        for x in ra_dec_list:
-            bar_id = x[0]
-            ra = x[1]
-            dec = x[2] 
-            coord = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), frame='icrs')
-            #Currently not available
-            
-        self.re_initialize_scene(0)
-        #gets the flux of each
-    pyqtSlot(int,name="re-initializing scene")
-    def re_initialize_scene(self,index):
-        slit_spacing = 7
-        
-        try:
-            new_items = [
-                interactiveSlits(x=240, y=bar_id * slit_spacing + 7, name=str(np.float32(value[index])))
-                for bar_id, value in self.spectra_dict.items()
-            ]
-            [self.scene.removeItem(item) for item in reversed(self.scene.items()) if isinstance(item, QGraphicsItemGroup)]
-
         except:
-            return
-        
-        for item in new_items:
-            self.scene.addItem(item)
+            pass
 
-        self.view.setScene(self.scene)
+    def get_slit_positions(self,slit_positions,index,angstrom_range): #[(x_pos,y_pos)]
+        #I think this is being called twice and I don't know why
+        self.slit_positions = slit_positions
+        self.initialize_scene(index,angstrom_range=(3100,5500))
+
     
+    def make_new_bar(self, x_pos, y_pos, star_name, length = 100) -> QGraphicsRectItem:
 
-    @pyqtSlot(np.ndarray, name="update labels")
-    def update_name_center_pa(self,info):
-        mask_name, center, pa = info[0], info[1], info[2] #the format of info is [mask_name,center,pa]
-        self.mask_name_title.setText(f'MASK NAME: {mask_name}')
-        self.center_title.setText(f'CENTER: {center}')
-        self.pa_title.setText(f'PA: {pa}')
+        # Define the fov_width (fov_width subject to change from new data)
+        fov_width = CSU_WIDTH*MM_TO_PIXEL
+
+        # Calculate the x position of the edge of the bar
+        x_position = x_pos-(self.scene_width-fov_width)/2
+        x_position -= length/2 # map x to the left edge of the bar
+
+        # Define the bar
+        new_bar = interactiveBars(x_position,y_pos,this_id=star_name,bar_width=self.bar_height,bar_length=length,has_gradient=True)
+
+        return new_bar
+    
+    def concatenate_stars(self, slit_positions):
+        star_name_positions = [sublist[1:] for sublist in slit_positions]
+        star_name_positions.sort(key=lambda x:x[1])
+        name_positions = []
+        for name, group in groupby(star_name_positions, key=lambda x: x[1]):
+            group = list(group)
+            max_y_pos = max(group, key=lambda x: x[0])[0]
+            min_y_pos = min(group, key=lambda x: x[0])[0]
+            average_y_pos = (max_y_pos+min_y_pos)/2
+            name_positions.append((average_y_pos,name))
+
+        return name_positions
+
+
+    def make_star_text(self,x_pos, y_pos, text):
+
+        text_item = QGraphicsTextItem(text)
+        text_item.setPos(x_pos,y_pos - self.bar_height+1)
+        text_item.setFont(QFont("Arial",6))
+
+        return text_item
+    
+    def find_edge_of_bar(self,bar_items)-> list:
+
+        new_list = sorted(
+            [[bar.x_pos + bar.length, bar.y_pos, bar.id] for bar in bar_items],
+            key=lambda x: x[2]
+            )
+
+        new_bar_list = []
+        for name, group in groupby(new_list, key=lambda x: x[2]):
+            group = [sublist[:-1] for sublist in list(group)]
+            max_y_pos = max(group, key=lambda x: x[1])[1]
+            min_y_pos = min(group, key=lambda x: x[1])[1]
+            total_height_of_bars = max_y_pos-min_y_pos
+            new_bar_list.append((group[0][0],total_height_of_bars,name))
+
+        # it goes (right edge of bar, y position, name of star)
+        return new_bar_list
+    
+    def draw_line_between_text_and_bar(self, bar_positions, name_positions):
+        #draw a dotted line between the bar and the star name so you can better see what corresponds to what
+        #if its a group of bars draw a dotted bracket
+
+        # bar_postions = [(x_bar,y_bar,star_name),...]
+        # name_positions = [(y_pos,name),...]
+
+        line_list = []
+        information_list = []
+
+
+        # new_line = BracketLineObject(bar_positions[0])
+
+        pass
+
+    def initialize_scene(self, index: int, **kwargs): 
+        """
+        initializes scene of selected grism of not stored in cache
+        assumes index corresponds to Red low, red high blue, red high red, blue low, blue high blue, blue high red
+
+        Args:
+            index: the index of what box was selected (corresponds with the grism)
+        Kwargs:    
+        which_grism: name of the grism 
+        angstrom_range: wavelength range that will be covered
+        returns: 
+            None
+        """
+        if self.mask_name not in self.cached_scene_dict.keys():
+            self.cached_scene_dict[self.mask_name] = {}
+        if index not in self.cached_scene_dict[self.mask_name]:
+            new_scene = self.scene
+            [new_scene.removeItem(item) for item in new_scene.items()] #removes all items
+
+            angstrom_range = kwargs['angstrom_range']
+            bar_length = 50#(angstrom_range[1]-angstrom_range[0])/10
+
+            # ADD all the bars with slits
+            [new_scene.addItem(self.make_new_bar(x,y,name)) for x,y,name in self.slit_positions] 
+
+            # Add a rectangle representing the CCD camera FOV (is currently not accurate)
+            new_scene.addRect(QRectF(0,0,CSU_WIDTH*MM_TO_PIXEL,CSU_HEIGHT*MM_TO_PIXEL),QColor("white"),QColor(0,0,0,0))
+
+            # Add all the names of the stars on the side
+            scene_width = new_scene.itemsBoundingRect().width()
+            name_positions = self.concatenate_stars(self.slit_positions)
+            [new_scene.addItem(self.make_star_text(scene_width,y,text)) for y,text in name_positions]
+
+            # Prettify
+            all_bar_objects = [bar for bar in new_scene.items() if isinstance(bar, interactiveBars)]
+            new_list = self.find_edge_of_bar(all_bar_objects) #if the distance is 0 that means its one bar
+
+            self.cached_scene_dict[self.mask_name][index]=new_scene
+            self.cached_scene_dict[self.mask_name][index].setSceneRect(self.scene.itemsBoundingRect())
+        
+        # Changes the current scene to the scene at specified index
+        self.view = CustomGraphicsView(self.cached_scene_dict[self.mask_name][index])
+        self.view.setContentsMargins(0,0,0,0) 
+        
 
 
 
