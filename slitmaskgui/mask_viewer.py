@@ -143,25 +143,28 @@ class interactiveSlits(QGraphicsItemGroup):
     
 class BracketLineObject(QGraphicsItemGroup):
     
-    def __init__(self, x_pos_of_edge_of_bar, total_height_of_bars, x_pos_of_edge_of_name, y_position_of_name):
+    def __init__(self, x_pos_of_edge_of_bar, total_height_of_bars, x_pos_of_edge_of_name, y_position_of_name,bar_height):
         super().__init__()
 
         self.bar_pos = x_pos_of_edge_of_bar
         self.height = total_height_of_bars
         self.x_name_pos = x_pos_of_edge_of_name
-        self.y_name_pos = y_position_of_name
+        self.y_name_pos = y_position_of_name + bar_height/2
+
         
         
         self.bracket_width = 7
         self.padding = 3
-        self.pen = QPen().setColor("white").setWidth(1).setStyle(Qt.PenStyle.DashLine)
+        self.pen = QPen(QColor("white"))
+        self.pen.setWidth(0)
+        # self.pen.setStyle(Qt.PenStyle.DashLine)
+        multiplier = 2
+        self.pen.setDashPattern([2*multiplier,1*multiplier])
 
         if self.height:
             self.make_bracket_and_line()
         else:
             self.make_line()
-
-        self.addToGroup()
 
     
     def make_bracket_and_line(self):
@@ -186,7 +189,7 @@ class BracketLineObject(QGraphicsItemGroup):
         main_line = QGraphicsLineItem(
             self.bar_pos + self.padding + self.bracket_width,
             self.y_name_pos,
-            self.x_name_pos - self.padding,
+            self.x_name_pos, #maybe add padding
             self.y_name_pos,
             )
         
@@ -199,7 +202,7 @@ class BracketLineObject(QGraphicsItemGroup):
         main_line = QGraphicsLineItem(
             self.bar_pos + self.padding,
             self.y_name_pos,
-            self.x_name_pos - self.padding,
+            self.x_name_pos,
             self.y_name_pos,
             )
         
@@ -532,23 +535,28 @@ class WavelengthView(QWidget):
             total_height_of_bars = max_y_pos-min_y_pos
             new_bar_list.append((group[0][0],total_height_of_bars,name))
 
-        # it goes (right edge of bar, y position, name of star)
+        # it goes (right edge of bar, height, name of star)
         return new_bar_list
     
-    def draw_line_between_text_and_bar(self, bar_positions, name_positions):
+    def make_line_between_text_and_bar(self, bar_positions, name_positions,edge_of_name) -> list:
         #draw a dotted line between the bar and the star name so you can better see what corresponds to what
         #if its a group of bars draw a dotted bracket
 
-        # bar_postions = [(x_bar,y_bar,star_name),...]
+        # bar_postions = [(x_bar,height,star_name),...]
         # name_positions = [(y_pos,name),...]
+        # they have the same length
+        bars, names, name_edge = bar_positions, name_positions, edge_of_name
+        sorted_merged_list = sorted(bars + names, key=lambda x: x[-1])
 
-        line_list = []
         information_list = []
+        object_list = []
 
-
-        # new_line = BracketLineObject(bar_positions[0])
-
-        pass
+        for name, group in groupby(sorted_merged_list,key=lambda x: x[-1]):
+            group = [sublist[:-1] for sublist in list(group)]
+            # group = [(x_bar,height),(name_y_pos,)]
+            information_list.append([group[0][0],group[0][1],name_edge,group[1][0]])
+        [object_list.append(BracketLineObject(a,b,c,d,bar_height=self.bar_height)) for a,b,c,d in information_list]
+        return object_list
 
     def initialize_scene(self, index: int, **kwargs): 
         """
@@ -576,7 +584,10 @@ class WavelengthView(QWidget):
             [new_scene.addItem(self.make_new_bar(x,y,name)) for x,y,name in self.slit_positions] 
 
             # Add a rectangle representing the CCD camera FOV (is currently not accurate)
-            new_scene.addRect(QRectF(0,0,CSU_WIDTH*MM_TO_PIXEL,CSU_HEIGHT*MM_TO_PIXEL),QColor("white"),QColor(0,0,0,0))
+            camera_border = QGraphicsRectItem(0,0,CSU_WIDTH*MM_TO_PIXEL,CSU_HEIGHT*MM_TO_PIXEL)
+            camera_border.setPen(QPen(QColor.fromString("#a6e3a1"),4))
+            camera_border.setOpacity(0.5)
+            new_scene.addItem(camera_border)
 
             # Add all the names of the stars on the side
             scene_width = new_scene.itemsBoundingRect().width()
@@ -585,7 +596,9 @@ class WavelengthView(QWidget):
 
             # Prettify
             all_bar_objects = [bar for bar in new_scene.items() if isinstance(bar, interactiveBars)]
-            new_list = self.find_edge_of_bar(all_bar_objects) #if the distance is 0 that means its one bar
+            edge_of_bar_list = self.find_edge_of_bar(all_bar_objects) #if the distance is 0 that means its one bar
+            bracket_list = self.make_line_between_text_and_bar(edge_of_bar_list,name_positions,scene_width)
+            [new_scene.addItem(item) for item in bracket_list]
 
             self.cached_scene_dict[self.mask_name][index]=new_scene
             self.cached_scene_dict[self.mask_name][index].setSceneRect(self.scene.itemsBoundingRect())
