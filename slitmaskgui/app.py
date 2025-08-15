@@ -31,7 +31,7 @@ from slitmaskgui.mask_gen_widget import MaskGenWidget
 from slitmaskgui.menu_bar import MenuBar
 from slitmaskgui.mask_widgets.slitmask_view import interactiveSlitMask
 from slitmaskgui.mask_widgets.waveband_view import WavelengthView
-from slitmaskgui.sky_viewer import SkyImageView
+from slitmaskgui.mask_widgets.sky_viewer import SkyImageView
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
 from slitmaskgui.mask_widgets.mask_view_tab_bar import TabBar

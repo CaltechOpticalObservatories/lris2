@@ -10,8 +10,8 @@ from PyQt6.QtWidgets import (
     QGraphicsScene,
     QGraphicsRectItem,
     QGraphicsTextItem,
-
-
+    QHBoxLayout,
+    QLabel
 )
 
 #will have another thing that will dispaly all the stars in the sky at the time
@@ -49,6 +49,8 @@ class WavelengthView(QWidget):
         # Initializing the cached dict
         self.cached_scene_dict = {}
 
+        self.waveband_title = QLabel()
+        
         self.slit_positions = [(xcenter_of_image,self.bar_height*x, "NONE") for x in range(72)]
         self.initialize_scene(0,angstrom_range=(3100,5500)) # Angstrom range currently a temp variable
 
@@ -60,7 +62,12 @@ class WavelengthView(QWidget):
         logger.info("wave view: defining layout")
 
         main_layout = QVBoxLayout()
+        top_layout = QHBoxLayout()
 
+        self.waveband_title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        top_layout.addWidget(self.waveband_title)
+
+        main_layout.addLayout(top_layout)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0,0,0,0)
         main_layout.addWidget(self.view)
@@ -156,12 +163,10 @@ class WavelengthView(QWidget):
             new_bar_list.append((group[0][0],total_height_of_bars,name))
 
         # it goes (right edge of bar, height, name of star)
+        # IMPORTANT: if there is only one bar, total_height_of_bars will = 0
         return new_bar_list
     
     def make_line_between_text_and_bar(self, bar_positions, name_positions,edge_of_name) -> list:
-        #draw a dotted line between the bar and the star name so you can better see what corresponds to what
-        #if its a group of bars draw a dotted bracket
-
         # bar_postions = [(x_bar,height,star_name),...]
         # name_positions = [(y_pos,name),...]
         # they have the same length
@@ -177,6 +182,12 @@ class WavelengthView(QWidget):
             information_list.append([group[0][0],group[0][1],name_edge,group[1][0]])
         [object_list.append(BracketLineObject(a,b,c,d,bar_height=self.bar_height)) for a,b,c,d in information_list]
         return object_list
+
+    def update_angstrom_text(self,angstrom_range):
+        # Make text item
+        text = f"Waveband Range: {angstrom_range[0]} angstroms {chr(0x2013)} {angstrom_range[1]} angstroms"
+        self.waveband_title.setText(text)
+
 
     def initialize_scene(self, index: int, **kwargs): 
         """
@@ -214,16 +225,25 @@ class WavelengthView(QWidget):
             name_positions = self.concatenate_stars(self.slit_positions)
             [new_scene.addItem(self.make_star_text(scene_width,y,text)) for y,text in name_positions]
 
-            # Prettify
+            # Add lines and brackets to point from star name to bar
             all_bar_objects = [bar for bar in new_scene.items() if isinstance(bar, interactiveBars)]
-            edge_of_bar_list = self.find_edge_of_bar(all_bar_objects) #if the distance is 0 that means its one bar
+            edge_of_bar_list = self.find_edge_of_bar(all_bar_objects)
             bracket_list = self.make_line_between_text_and_bar(edge_of_bar_list,name_positions,scene_width)
             [new_scene.addItem(item) for item in bracket_list]
 
+            # Update waveband text
+            self.update_angstrom_text(angstrom_range)
+
+            # Add scene to dict
             self.cached_scene_dict[self.mask_name][index]=new_scene
             self.cached_scene_dict[self.mask_name][index].setSceneRect(self.scene.itemsBoundingRect())
         
         # Changes the current scene to the scene at specified index
         self.view = CustomGraphicsView(self.cached_scene_dict[self.mask_name][index])
         self.view.setContentsMargins(0,0,0,0) 
+    
+    pyqtSlot(list)
+    def update_mask_name(self,info):
+        self.mask_name = info[0]
+        print(self.mask_name)
         

@@ -142,7 +142,7 @@ class BracketLineObject(QGraphicsItemGroup):
         self.pen = QPen(QColor("white"))
         self.pen.setWidth(0)
         # self.pen.setStyle(Qt.PenStyle.DashLine)
-        multiplier = 2
+        multiplier = 3
         self.pen.setDashPattern([2*multiplier,1*multiplier])
 
         if self.height:
@@ -150,7 +150,6 @@ class BracketLineObject(QGraphicsItemGroup):
         else:
             self.make_line()
 
-    
     def make_bracket_and_line(self):
         top_edge = QGraphicsLineItem(
             self.bar_pos + self.padding,
