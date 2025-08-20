@@ -34,6 +34,7 @@ class SkyImageView(QWidget):
             color='grey'
         )
         self.canvas.draw()
+        
 
         layout = QHBoxLayout()
         layout.setSpacing(0)
@@ -44,6 +45,7 @@ class SkyImageView(QWidget):
         self.resize(self.sizeHint())
     pyqtSlot(np.ndarray)
     def show_image(self, data: np.ndarray):
+
         # Clear previous plot
         self.canvas.axes.clear()
         self.canvas.axes.imshow(data, origin='lower', cmap='gray')

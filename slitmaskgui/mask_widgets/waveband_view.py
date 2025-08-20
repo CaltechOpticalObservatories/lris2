@@ -62,7 +62,7 @@ class WavelengthView(QWidget):
         self.waveband_title = QLabel()
         
         self.slit_positions = [(xcenter_of_image,self.bar_height*x, "NONE") for x in range(72)]
-        self.initialize_scene(0,passband=(310,550)) # passband currently a temp variable
+        self.initialize_scene(passband=(310,550),which_grism='blue_low_res') # passband currently a temp variable
         self.view = CustomGraphicsView(self.scene)
 
         #-------------------connections-----------------------
@@ -116,10 +116,9 @@ class WavelengthView(QWidget):
         except:
             pass
 
-    def get_slit_positions(self,slit_positions,index,passband): #[(x_pos,y_pos)]
+    def get_slit_positions(self,slit_positions): #[(x_pos,y_pos)]
         #I think this is being called twice and I don't know why
         self.slit_positions = self.redefine_slit_positions(slit_positions)
-        self.initialize_scene(index,passband=passband)
 
     
     def make_new_bar(self, x_pos, y_pos, star_name, length = 100) -> QGraphicsRectItem:
@@ -187,20 +186,45 @@ class WavelengthView(QWidget):
 
     def update_angstrom_text(self,angstrom_range):
         # Make text item
-        text = f"Waveband Range: {angstrom_range[0]} angstroms {chr(0x2013)} {angstrom_range[1]} angstroms"
+        text = f"Passband: {angstrom_range[0]} nm to {angstrom_range[1]} nm"
         self.waveband_title.setText(text)
 
-    def calculate_bar_length(self,angstrom_range,which_grism='blue_low_res'):
+    def calculate_bar_length(self,angstrom_range,which_grism):
         #I should be able to tell from the angstrom range which grism is which but for now I will do this
         passband = (angstrom_range[0]/1000,angstrom_range[1]/1000) #conversion from nm to microns
 
         def blue_low_res(x):
-            return 276.61*x**3 - 424.64*x**2 + 413.46*x - 120.25 # this is the equation for the blue channel low resolution grism
-        
+            return 276.612*x**3 - 424.636*x**2 + 413.464*x - 120.251
+        def blue_high_blue(x):
+            return 1694.055*x**3 - 2185.377*x**2 + 1398.040*x - 303.935
+        def blue_high_red(x):
+            return 791.523*x**3 - 1338.208*x**2 + 1171.084*x - 348.142
+        def red_low_res(x):
+            return 21.979*x**3 - 60.775*x**2 + 183.657*x - 115.552
+        def red_high_blue(x):
+            return 117.366*x**3 - 273.597*x**2 + 461.561*x - 219.310
+        def red_high_red(x):
+            return 76.897*x**3 - 235.837*x**2 + 479.807*x - 292.794
+
         match which_grism:
             case 'blue_low_res':
                 low_end, high_end = map(blue_low_res, passband)
+                return high_end - low_end #this is the length of the bar
+            case 'blue_high_blue':
+                low_end, high_end = map(blue_high_blue, passband)
+                return high_end - low_end #this is the length of the bar
+            case 'blue_high_red':
+                low_end, high_end = map(blue_high_red, passband)
+                return high_end - low_end #this is the length of the bar
+            case 'red_low_res':
+                low_end, high_end = map(red_low_res, passband)
                 return (high_end - low_end) #this is the length of the bar
+            case 'red_high_blue':
+                low_end, high_end = map(red_high_blue, passband)
+                return high_end - low_end #this is the length of the bar
+            case 'red_high_red':
+                low_end, high_end = map(red_high_red, passband)
+                return high_end - low_end #this is the length of the bar
     
     def get_farthest_bar_edge(self,scene):
         bar_edge_list = [
@@ -218,7 +242,7 @@ class WavelengthView(QWidget):
         return new_pos
 
     
-    def initialize_scene(self, index: int, **kwargs): 
+    def initialize_scene(self, passband, which_grism): 
         """
         initializes scene of selected grism
         assumes index corresponds to Red low, red high blue, red high red, blue low, blue high blue, blue high red
@@ -235,9 +259,9 @@ class WavelengthView(QWidget):
         new_scene = self.scene
         [new_scene.removeItem(item) for item in new_scene.items()] #removes all items
 
-        passband_in_nm = kwargs['passband']
-        # which_grism = kwargs['which_grism']
-        bar_length = self.calculate_bar_length(passband_in_nm)
+        passband_in_nm = passband
+        grism = which_grism
+        bar_length = self.calculate_bar_length(passband_in_nm,grism)
 
         # ADD all the bars with slits
         [new_scene.addItem(self.make_new_bar(x,y,name,length=bar_length)) for x,y,name in self.slit_positions] 
@@ -261,7 +285,7 @@ class WavelengthView(QWidget):
         self.update_angstrom_text(passband_in_nm) #it is no longer the angstrom range
 
         new_scene.setSceneRect(new_scene.itemsBoundingRect())
-        # self.scene = new_scene
+        self.scene = new_scene
         self.view = CustomGraphicsView(new_scene)
         self.view.setContentsMargins(0,0,0,0)
 
