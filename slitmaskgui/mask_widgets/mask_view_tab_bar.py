@@ -31,13 +31,13 @@ class CustomComboBox(QComboBox):
 
         self.addItems(self.spectral_view_list)
 
-        self.angstrom_ranges = {
-            "red_low": (5500,10000), #low end, high end
-            "red_high_blue": (5500,7750), #this range may be incorrect
-            "red_high_red": (7750,10000), #also may be incorrect
-            "blue_low": (3100,5500), #low end, high end (I believe this is correct)
-            "blue_high_blue": (3100,4300), #may be incorrect
-            "blue_high_red": (4300,5500), #may be incorrect
+        self.passbands = { #this is all in nm
+            "red_low": (550,1000), #low end, high end
+            "red_high_blue": (550,775), 
+            "red_high_red": (775,1000),
+            "blue_low": (310,550), #low end, high end 
+            "blue_high_blue": (310,435),
+            "blue_high_red": (430,565), 
         }
 
     def showPopup(self):
@@ -52,10 +52,10 @@ class CustomComboBox(QComboBox):
         popup.show()
     
     
-    def return_angstrom_range_from_index(self,index) -> tuple:
-        keys = list(self.angstrom_ranges.keys())
+    def return_passband_from_index(self,index) -> tuple:
+        keys = list(self.passbands.keys())
         key = keys[index]
-        return self.angstrom_ranges[key]
+        return self.passbands[key]
 
 class TabBar(QTabWidget):
     waveview_change = pyqtSignal(int)
@@ -88,15 +88,16 @@ class TabBar(QTabWidget):
         else:
             self.combobox.hide()
     
-    def send_to_view(self,index):
+    def send_to_view(self):
         # I might make it so that I emit the index and a code so like Red low red is red low res red end grism as well as index
-        angstrom_range = self.combobox.return_angstrom_range_from_index(index)
-        self.wavelength_view.initialize_scene(index,angstrom_range=angstrom_range)
+        index = self.tabBar().currentIndex()
+        passband = self.combobox.return_passband_from_index(index)
+        self.wavelength_view.initialize_scene(index,passband=passband)
     
     pyqtSlot(list)
     def initialize_spectral_view(self, slit_positions):
         index = self.tabBar().currentIndex()
-        angstrom_range = self.combobox.return_angstrom_range_from_index(index)
-        self.wavelength_view.get_slit_positions(slit_positions,index,angstrom_range)
+        passband = self.combobox.return_passband_from_index(index)
+        self.wavelength_view.get_slit_positions(slit_positions,index,passband)
 
 

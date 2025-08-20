@@ -11,7 +11,8 @@ from PyQt6.QtWidgets import (
     QGraphicsRectItem,
     QGraphicsTextItem,
     QHBoxLayout,
-    QLabel
+    QLabel,
+    QGraphicsSceneResizeEvent
 )
 
 #will have another thing that will dispaly all the stars in the sky at the time
@@ -19,9 +20,12 @@ PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
 CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
 CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
 MM_TO_PIXEL = 1 #this is a mm to pixel ratio, it is currently just made up
+MAGNIFICATION_FACTOR = 7.35
+CCD_HEIGHT = 61.2 #in mm
+CCD_WIDTH = 61.2 #in mm
+
 
 logger = logging.getLogger(__name__)
-
 
 
 
@@ -38,13 +42,19 @@ class WavelengthView(QWidget):
         
         #--------------------definitions-----------------------
         logger.info("wave view: doing definitions")
-        self.scene_width = (CSU_WIDTH+CSU_WIDTH/1.25) * MM_TO_PIXEL #this is the scene width of the slit display
-        self.scene_height = CSU_HEIGHT * MM_TO_PIXEL #this is the scene height of the slit display
+        self.scene_width = CCD_WIDTH* MM_TO_PIXEL
+        self.scene_height = CCD_HEIGHT * MM_TO_PIXEL
+        
         self.scene = QGraphicsScene(0,0,self.scene_width,self.scene_height) 
 
+        #since this is being fed information from CSU, it automatically adjusts from CSU positions
+        #so initialize as CSU and it will change it 
+        #this is mostly for testing
+        self.CSU_dimensions = (CSU_HEIGHT,CSU_WIDTH)
         xcenter_of_image = self.scene.sceneRect().center().x()
+
         self.mask_name = None
-        self.bar_height = CSU_HEIGHT/72#PLATE_SCALE*8.6
+        self.bar_height = CCD_HEIGHT/72#PLATE_SCALE*8.6 #this could be wrong maybe use magnification factor
 
         # Initializing the cached dict
         self.cached_scene_dict = {}
@@ -52,7 +62,8 @@ class WavelengthView(QWidget):
         self.waveband_title = QLabel()
         
         self.slit_positions = [(xcenter_of_image,self.bar_height*x, "NONE") for x in range(72)]
-        self.initialize_scene(0,angstrom_range=(3100,5500)) # Angstrom range currently a temp variable
+        self.initialize_scene(0,passband=(310,550)) # passband currently a temp variable
+        self.view = CustomGraphicsView(self.scene)
 
         #-------------------connections-----------------------
         logger.info("wave view: establishing connections")
@@ -105,22 +116,14 @@ class WavelengthView(QWidget):
         except:
             pass
 
-    def get_slit_positions(self,slit_positions,index,angstrom_range): #[(x_pos,y_pos)]
+    def get_slit_positions(self,slit_positions,index,passband): #[(x_pos,y_pos)]
         #I think this is being called twice and I don't know why
-        self.slit_positions = slit_positions
-        self.initialize_scene(index,angstrom_range=(3100,5500))
+        self.slit_positions = self.redefine_slit_positions(slit_positions)
+        self.initialize_scene(index,passband=passband)
 
     
     def make_new_bar(self, x_pos, y_pos, star_name, length = 100) -> QGraphicsRectItem:
-
-        # Define the fov_width (fov_width subject to change from new data)
-        fov_width = CSU_WIDTH*MM_TO_PIXEL
-
-        # Calculate the x position of the edge of the bar
-        x_position = x_pos-(self.scene_width-fov_width)/2
-        x_position -= length/2 # map x to the left edge of the bar
-
-        # Define the bar
+        x_position = x_pos - length/2
         new_bar = interactiveBars(x_position,y_pos,this_id=star_name,bar_width=self.bar_height,bar_length=length,has_gradient=True)
 
         return new_bar
@@ -135,16 +138,14 @@ class WavelengthView(QWidget):
             min_y_pos = min(group, key=lambda x: x[0])[0]
             average_y_pos = (max_y_pos+min_y_pos)/2
             name_positions.append((average_y_pos,name))
-
+        #the y_position is about 5 bars off downwards
         return name_positions
-
 
     def make_star_text(self,x_pos, y_pos, text):
 
-        text_item = QGraphicsTextItem(text)
-        text_item.setPos(x_pos,y_pos - self.bar_height+1)
-        text_item.setFont(QFont("Arial",6))
-
+        text_item = SimpleTextItem(text)
+        offset = (text_item.boundingRect().width()/2,text_item.boundingRect().height()/2)
+        text_item.setPos(x_pos-offset[0]/2,y_pos-offset[1]+self.bar_height)
         return text_item
     
     def find_edge_of_bar(self,bar_items)-> list:
@@ -180,6 +181,7 @@ class WavelengthView(QWidget):
             group = [sublist[:-1] for sublist in list(group)]
             # group = [(x_bar,height),(name_y_pos,)]
             information_list.append([group[0][0],group[0][1],name_edge,group[1][0]])
+            #information_list = [[a=x_bar,b=height,c=name_edge,d=y_pos]]
         [object_list.append(BracketLineObject(a,b,c,d,bar_height=self.bar_height)) for a,b,c,d in information_list]
         return object_list
 
@@ -188,10 +190,37 @@ class WavelengthView(QWidget):
         text = f"Waveband Range: {angstrom_range[0]} angstroms {chr(0x2013)} {angstrom_range[1]} angstroms"
         self.waveband_title.setText(text)
 
+    def calculate_bar_length(self,angstrom_range,which_grism='blue_low_res'):
+        #I should be able to tell from the angstrom range which grism is which but for now I will do this
+        passband = (angstrom_range[0]/1000,angstrom_range[1]/1000) #conversion from nm to microns
 
+        def blue_low_res(x):
+            return 276.61*x**3 - 424.64*x**2 + 413.46*x - 120.25 # this is the equation for the blue channel low resolution grism
+        
+        match which_grism:
+            case 'blue_low_res':
+                low_end, high_end = map(blue_low_res, passband)
+                return (high_end - low_end) #this is the length of the bar
+    
+    def get_farthest_bar_edge(self,scene):
+        bar_edge_list = [
+            bar.boundingRect().right()
+            for bar in scene.items()
+            if isinstance(bar, interactiveBars)
+            ]
+        farther_edge = max(bar_edge_list)
+        return farther_edge + 1 # number is 0.5 + 0.5 from the bracket item in mask_objects (spacing and bracket width)
+        
+    
+    def redefine_slit_positions(self,slit_positions):
+        y_ratio = self.CSU_dimensions[0]/CCD_HEIGHT
+        new_pos = [(x/MAGNIFICATION_FACTOR,y/y_ratio, name) for x,y,name in slit_positions]
+        return new_pos
+
+    
     def initialize_scene(self, index: int, **kwargs): 
         """
-        initializes scene of selected grism of not stored in cache
+        initializes scene of selected grism
         assumes index corresponds to Red low, red high blue, red high red, blue low, blue high blue, blue high red
 
         Args:
@@ -202,47 +231,40 @@ class WavelengthView(QWidget):
         returns: 
             None
         """
-        if self.mask_name not in self.cached_scene_dict.keys():
-            self.cached_scene_dict[self.mask_name] = {}
-        if index not in self.cached_scene_dict[self.mask_name]:
-            new_scene = self.scene
-            [new_scene.removeItem(item) for item in new_scene.items()] #removes all items
 
-            angstrom_range = kwargs['angstrom_range']
-            bar_length = 50#(angstrom_range[1]-angstrom_range[0])/10
+        new_scene = self.scene
+        [new_scene.removeItem(item) for item in new_scene.items()] #removes all items
 
-            # ADD all the bars with slits
-            [new_scene.addItem(self.make_new_bar(x,y,name)) for x,y,name in self.slit_positions] 
+        passband_in_nm = kwargs['passband']
+        # which_grism = kwargs['which_grism']
+        bar_length = self.calculate_bar_length(passband_in_nm)
 
-            # Add a rectangle representing the CCD camera FOV (is currently not accurate)
-            camera_border = QGraphicsRectItem(0,0,CSU_WIDTH*MM_TO_PIXEL,CSU_HEIGHT*MM_TO_PIXEL)
-            camera_border.setPen(QPen(QColor.fromString("#a6e3a1"),4))
-            camera_border.setOpacity(0.5)
-            new_scene.addItem(camera_border)
+        # ADD all the bars with slits
+        [new_scene.addItem(self.make_new_bar(x,y,name,length=bar_length)) for x,y,name in self.slit_positions] 
 
-            # Add all the names of the stars on the side
-            scene_width = new_scene.itemsBoundingRect().width()
-            name_positions = self.concatenate_stars(self.slit_positions)
-            [new_scene.addItem(self.make_star_text(scene_width,y,text)) for y,text in name_positions]
+        # Add a rectangle representing the CCD camera FOV (is currently not accurate)
+        camera_border = FieldOfView(width=CCD_WIDTH*MM_TO_PIXEL,height=CCD_HEIGHT*MM_TO_PIXEL,x=0,y=0, thickness=0.5)
+        new_scene.addItem(camera_border)
 
-            # Add lines and brackets to point from star name to bar
-            all_bar_objects = [bar for bar in new_scene.items() if isinstance(bar, interactiveBars)]
-            edge_of_bar_list = self.find_edge_of_bar(all_bar_objects)
-            bracket_list = self.make_line_between_text_and_bar(edge_of_bar_list,name_positions,scene_width)
-            [new_scene.addItem(item) for item in bracket_list]
+        # Add all the names of the stars on the side
+        rightmost_bar_x = self.get_farthest_bar_edge(new_scene)
+        name_positions = self.concatenate_stars(self.slit_positions)
+        [new_scene.addItem(self.make_star_text(rightmost_bar_x,y,text)) for y,text in name_positions]
 
-            # Update waveband text
-            self.update_angstrom_text(angstrom_range)
+        # Add lines and brackets to point from star name to bar
+        all_bar_objects = [bar for bar in new_scene.items() if isinstance(bar, interactiveBars)]
+        edge_of_bar_list = self.find_edge_of_bar(all_bar_objects)
+        bracket_list = self.make_line_between_text_and_bar(edge_of_bar_list,name_positions,rightmost_bar_x)
+        [new_scene.addItem(item) for item in bracket_list]
 
-            # Add scene to dict
-            self.cached_scene_dict[self.mask_name][index]=new_scene
-            self.cached_scene_dict[self.mask_name][index].setSceneRect(self.scene.itemsBoundingRect())
-        
-        # Changes the current scene to the scene at specified index
-        self.view = CustomGraphicsView(self.cached_scene_dict[self.mask_name][index])
-        self.view.setContentsMargins(0,0,0,0) 
-    
-    pyqtSlot(list)
+        # Update waveband text
+        self.update_angstrom_text(passband_in_nm) #it is no longer the angstrom range
+
+        new_scene.setSceneRect(new_scene.itemsBoundingRect())
+        # self.scene = new_scene
+        self.view = CustomGraphicsView(new_scene)
+        self.view.setContentsMargins(0,0,0,0)
+
     def update_mask_name(self,info):
         self.mask_name = info[0]
         print(self.mask_name)

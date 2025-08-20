@@ -53,21 +53,6 @@ from PyQt6.QtWidgets import (
 main_logger = logging.getLogger()
 main_logger.info("starting logging")
 
-"""
-currently use center of priority doesn't work (don't know the problem will diagnose it at some later point)
-need to make it so that it doesn't randomly generate a starlist with random priority
-add more logging to all the functions
-"""
-
-"""
-Things to do before launch
-photo display of the stars
-use center of priority should work
-ability to modulate slit width
-actually use a starlist instead of generating your own
-add logging to everything
-ability to state max slit length
-"""
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -76,6 +61,7 @@ class MainWindow(QMainWindow):
         self.setGeometry(100,100,1000,760)
         self.setMenuBar(MenuBar()) #sets the menu bar
         self.update_theme()
+        
         
         #----------------------------definitions---------------------------
         main_logger.info("app: doing definitions")
@@ -89,7 +75,6 @@ class MainWindow(QMainWindow):
         self.wavelength_view = WavelengthView()
         self.sky_view = SkyImageView()
         self.mask_tab = TabBar(slitmask=self.interactive_slit_mask,waveview=self.wavelength_view,skyview=self.sky_view)
-        
 
         #---------------------------------connections-----------------------------
         main_logger.info("app: doing connections")
