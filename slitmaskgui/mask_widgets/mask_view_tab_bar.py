@@ -59,18 +59,20 @@ class CustomComboBox(QComboBox):
 
 class TabBar(QTabWidget):
     waveview_change = pyqtSignal(int)
-    def __init__(self,slitmask,waveview,skyview):
+    def __init__(self,slitmask_layout,waveview,skyview):
         super().__init__()
         #--------------defining widgets for tabs---------
-        self.wavelength_view = waveview#QLabel("Spectral view is currently under development")#waveview #currently waveview hasn't been developed
-        self.interactive_slit_mask = slitmask
+        self.wavelength_view = waveview
+        self.interactive_slit_mask = slitmask_layout.itemAt(0).widget()
+        self.slit_mask = QWidget()
+        self.slit_mask.setLayout(slitmask_layout)
         self.sky_view = skyview
 
         #--------------defining comobox------------------
         self.combobox = CustomComboBox()
 
         #--------------defining tabs--------------
-        self.addTab(self.interactive_slit_mask,"Slit Mask")
+        self.addTab(self.slit_mask,"Slit Mask")
         self.addTab(self.wavelength_view,"Spectral View")
         self.addTab(self.sky_view,"Sky View")
 

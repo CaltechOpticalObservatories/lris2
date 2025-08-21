@@ -135,6 +135,8 @@ class MaskConfigurationsWidget(QWidget):
     data_to_save_request = pyqtSignal(object)
     changes_have_been_saved = pyqtSignal(object)
     change_name_above_slit_mask = pyqtSignal(np.ndarray)
+
+    send_to_csu = pyqtSignal(object)
     def __init__(self):
         super().__init__()
         
@@ -368,6 +370,9 @@ class MaskConfigurationsWidget(QWidget):
             self.update_image.emit(slit_mask.generate_skyview())
             mask_name_info = np.array([str(name),str(str(ra)+str(dec)),str(pa)])
             self.change_name_above_slit_mask.emit(mask_name_info)
+
+            #define last used slitmask
+            self.last_used_slitmask = slit_mask.send_mask()
     
     def get_center(self,star_data):
         star = star_data[0]
@@ -384,6 +389,14 @@ class MaskConfigurationsWidget(QWidget):
         center_dec = Angle(new_dec).to_string(unit=u.deg, sep=' ', precision=2, pad=True,alwayssign=True)
         #return it
         return center_ra,center_dec
+    @pyqtSlot()
+    def emit_last_used_slitmask(self):
+        try:
+            self.send_to_csu.emit(self.last_used_slitmask)
+        except:
+            self.send_to_csu.emit("No slitmask found")
+            # pass #make a pop up that says oh you don't have anything configured
+
     
 
 

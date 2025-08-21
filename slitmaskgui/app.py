@@ -35,6 +35,9 @@ from slitmaskgui.mask_widgets.sky_viewer import SkyImageView
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
 from slitmaskgui.mask_widgets.mask_view_tab_bar import TabBar
+from slitmaskgui.configure_mode.mode_toggle_button import ShowControllerButton
+from slitmaskgui.configure_mode.mask_controller import MaskControllerWidget
+from slitmaskgui.configure_mode.csu_display_widget import CsuDisplauWidget
 from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtWidgets import (
     QApplication,
@@ -45,6 +48,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QSplitter,
     QTabWidget,
+    QStackedLayout
 
 
 )
@@ -68,13 +72,22 @@ class MainWindow(QMainWindow):
         
         mask_config_widget = MaskConfigurationsWidget()
         mask_gen_widget = MaskGenWidget()
+        mode_toggle_button = ShowControllerButton()
+        mask_controller_widget = MaskControllerWidget()
+        csu_display_widget = CsuDisplauWidget()
         
         self.target_display = TargetDisplayWidget()
         self.interactive_slit_mask = interactiveSlitMask()
         self.slit_position_table = SlitDisplay()
         self.wavelength_view = WavelengthView()
         self.sky_view = SkyImageView()
-        self.mask_tab = TabBar(slitmask=self.interactive_slit_mask,waveview=self.wavelength_view,skyview=self.sky_view)
+
+        #------------- stacked layout in mask_tab --------------------
+        self.slitmask_and_csu_display = QStackedLayout()
+        self.slitmask_and_csu_display.addWidget(self.interactive_slit_mask)
+        self.slitmask_and_csu_display.addWidget(csu_display_widget)
+
+        self.mask_tab = TabBar(slitmask_layout=self.slitmask_and_csu_display,waveview=self.wavelength_view,skyview=self.sky_view)
 
         #---------------------------------connections-----------------------------
         main_logger.info("app: doing connections")
@@ -103,6 +116,12 @@ class MainWindow(QMainWindow):
         mask_config_widget.data_to_save_request.connect(self.slit_position_table.data_saved)
         self.slit_position_table.data_changed.connect(mask_config_widget.save_data_to_mask)
 
+        #sending to csu connections
+        mode_toggle_button.connect_controller_with_config(mask_controller_widget,mask_config_widget)
+        mask_controller_widget.connect_controller_with_slitmask_display(mask_controller_widget,self.interactive_slit_mask)
+        mode_toggle_button.button.clicked.connect(mode_toggle_button.on_button_clicked)
+        mode_toggle_button.button.clicked.connect(self.switch_modes)
+
 
         #-----------------------------------layout-----------------------------
         main_logger.info("app: setting up layout")
@@ -111,6 +130,12 @@ class MainWindow(QMainWindow):
         main_splitter = QSplitter()
         self.splitterV2 = QSplitter()
         self.mask_viewer_main = QVBoxLayout()
+        self.stacked_layout = QStackedLayout()
+        switcher_widget = QWidget()
+
+        self.stacked_layout.addWidget(mask_gen_widget)
+        self.stacked_layout.addWidget(mask_controller_widget)
+        switcher_widget.setLayout(self.stacked_layout)
 
         self.interactive_slit_mask.setContentsMargins(0,0,0,0)
         self.slit_position_table.setContentsMargins(0,0,0,0)
@@ -119,9 +144,9 @@ class MainWindow(QMainWindow):
         mask_config_widget.setMinimumSize(1,1)
         mask_gen_widget.setMinimumSize(1,1)
 
-
         self.splitterV2.addWidget(mask_config_widget)
-        self.splitterV2.addWidget(mask_gen_widget)
+        self.splitterV2.addWidget(switcher_widget)
+        self.splitterV2.addWidget(mode_toggle_button)
         self.splitterV2.setOrientation(Qt.Orientation.Vertical)
         self.splitterV2.setContentsMargins(0,0,0,0)
 
@@ -197,6 +222,11 @@ class MainWindow(QMainWindow):
         else:
             with open("slitmaskgui/dark_mode.qss", "r") as f:
                 self.setStyleSheet(f.read())
+    
+    def switch_modes(self):
+        index = abs(self.stacked_layout.currentIndex()-1)
+        self.stacked_layout.setCurrentIndex(index)
+        self.slitmask_and_csu_display.setCurrentIndex(index)
     
         
 

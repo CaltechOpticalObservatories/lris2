@@ -75,7 +75,33 @@ class SimpleTextItem(QGraphicsTextItem):
     def update_theme(self):
         self.theme = get_theme()
     
+class SimpleBar(QGraphicsRectItem):
+    def __init__(self, left_side: bool, slit_width: float, x_position: float, bar_id: int):
+        super().__init__()
+        self.bar_length = 200 # I will fact check this
+        self.bar_height = 7 # I will change this later
 
+        self.slit_width = slit_width # needs to be in mm
+        self.x_pos = x_position
+        self.y_pos = bar_id * self.bar_height
+
+        """IMPORTANT: need to check if the csu does position in the right corner or left corner for slits
+        I am currently assuming left"""
+
+        #I might paint differently depending on themes
+        self.setBrush(QBrush(QColor("grey")))
+        self.setPen(QPen(QColor("black"),2))
+
+        if left_side:
+            self.left_side()
+        else:
+            self.right_side()
+
+    def left_side(self):
+        self.setRect(self.x_pos,self.y_pos, - self.bar_length, self.bar_height)
+    def right_side(self):
+        self.x_pos += self.slit_width
+        self.setRect(self.x_pos, self.y_pos, self.bar_length, self.bar_height)
 class interactiveBars(QGraphicsRectItem):
     
     def __init__(self,x,y,bar_length,bar_width,this_id,has_gradient=False):

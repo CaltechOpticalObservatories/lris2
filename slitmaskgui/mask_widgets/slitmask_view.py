@@ -33,6 +33,7 @@ class interactiveSlitMask(QWidget):
     row_selected = pyqtSignal(int,name="row selected")
     select_star = pyqtSignal(str)
     new_slit_positions = pyqtSignal(list)
+    connect_with_controller = pyqtSignal()
     
     def __init__(self):
         super().__init__()
@@ -101,6 +102,11 @@ class interactiveSlitMask(QWidget):
         else:
             self.scene.selectionChanged.disconnect(self.row_is_selected)
             self.scene.selectionChanged.disconnect(self.get_star_name_from_row)
+
+    def handle_configuration_mode(self):
+        print("slitmask connected with controller")
+        # self.change_slit_and_star()
+        self.connect_with_controller.emit()
     @pyqtSlot(int,name="row selected")
     def select_corresponding_row(self,row):
         logger.info("slit_view: method select_correspond_row called")
