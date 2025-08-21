@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
         
         mask_config_widget = MaskConfigurationsWidget()
         mask_gen_widget = MaskGenWidget()
-        mode_toggle_button = ShowControllerButton()
+        self.mode_toggle_button = ShowControllerButton()
         mask_controller_widget = MaskControllerWidget()
         csu_display_widget = CsuDisplauWidget()
         
@@ -117,10 +117,10 @@ class MainWindow(QMainWindow):
         self.slit_position_table.data_changed.connect(mask_config_widget.save_data_to_mask)
 
         #sending to csu connections
-        mode_toggle_button.connect_controller_with_config(mask_controller_widget,mask_config_widget)
+        self.mode_toggle_button.connect_controller_with_config(mask_controller_widget,mask_config_widget)
         mask_controller_widget.connect_controller_with_slitmask_display(mask_controller_widget,csu_display_widget)
-        mode_toggle_button.button.clicked.connect(mode_toggle_button.on_button_clicked)
-        mode_toggle_button.button.clicked.connect(self.switch_modes)
+        self.mode_toggle_button.button.clicked.connect(self.mode_toggle_button.on_button_clicked)
+        self.mode_toggle_button.button.clicked.connect(self.switch_modes)
 
 
         #-----------------------------------layout-----------------------------
@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
 
         self.splitterV2.addWidget(mask_config_widget)
         self.splitterV2.addWidget(switcher_widget)
-        self.splitterV2.addWidget(mode_toggle_button)
+        self.splitterV2.addWidget(self.mode_toggle_button)
         self.splitterV2.setOrientation(Qt.Orientation.Vertical)
         self.splitterV2.setContentsMargins(0,0,0,0)
 
@@ -224,6 +224,9 @@ class MainWindow(QMainWindow):
         index = abs(self.stacked_layout.currentIndex()-1)
         self.stacked_layout.setCurrentIndex(index)
         self.slitmask_and_csu_display.setCurrentIndex(index)
+        button_text = "Configuration Mode (ON)" if index == 1 else "Configuration Mode (OFF)"
+        self.mode_toggle_button.button.setText(button_text)
+        
     
         
 

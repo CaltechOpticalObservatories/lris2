@@ -16,11 +16,9 @@ class ShowControllerButton(QWidget):
     def __init__(self):
         super().__init__()
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
-        print(self.minimumSize())
-        self.button = QPushButton("Toggle Configure Mode")
+        self.button = QPushButton("Configuration Mode (OFF)")
         # self.button.clicked.connect(self.on_button_clicked)
         self.button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Maximum)
-        print(self.button.minimumSize())
 
 
         layout = QHBoxLayout()
@@ -44,7 +42,6 @@ class ShowControllerButton(QWidget):
     def on_button_clicked(self):
         #handle button click
         self.start_communication()
-        print("Configure mode toggle button was clicked!")
     
     
 
