@@ -79,7 +79,7 @@ class SimpleBar(QGraphicsRectItem):
     def __init__(self, left_side: bool, slit_width: float, x_position: float, bar_id: int):
         super().__init__()
         self.bar_length = 200 # I will fact check this
-        self.bar_height = 7 # I will change this later
+        self.bar_height = CSU_HEIGHT/72 # I will change this later
 
         self.slit_width = slit_width # needs to be in mm
         self.x_pos = x_position

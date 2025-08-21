@@ -3,7 +3,8 @@ from PyQt6.QtWidgets import (
     QGraphicsRectItem, QGraphicsScene, QGraphicsView, QGraphicsLayout
     )
 from PyQt6.QtGui import QColor, QPen, QBrush
-from slitmaskgui.mask_widgets.mask_objects import SimpleBar, FieldOfView
+from PyQt6.QtCore import pyqtSignal
+from slitmaskgui.mask_widgets.mask_objects import SimpleBar, FieldOfView, CustomGraphicsView
 
 PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
 CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
@@ -11,6 +12,7 @@ CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
 
 
 class CsuDisplauWidget(QWidget):
+    connect_with_controller = pyqtSignal()
     def __init__(self):
         super().__init__()
         """will recieve data as position, bar_id, width"""
@@ -19,8 +21,9 @@ class CsuDisplauWidget(QWidget):
 
         self.default_slit_width = 0.7 #
         self.scene = QGraphicsScene(0,0,CSU_WIDTH,CSU_HEIGHT)
+        self.scene.setSceneRect(self.scene.itemsBoundingRect())
 
-        self.view = QGraphicsView(self.scene)
+        self.view = CustomGraphicsView(self.scene)
         # -------------- set default layout numbers -------------
         default_layout_list = [[True, 0,CSU_WIDTH/2,x] for x in range(10)]
         [default_layout_list.append([False, 0, CSU_WIDTH/2,x]) for x in range(10)]
@@ -39,5 +42,9 @@ class CsuDisplauWidget(QWidget):
         self.scene.clear()
         bar_list = [SimpleBar(x[0],x[1],x[2],x[3]) for x in pos_list]
         [self.scene.addItem(bar) for bar in bar_list]
-        self.scene.addItem(FieldOfView()) # add green field of view
+        self.scene.addItem(FieldOfView(height=CSU_HEIGHT/72*10)) # add green field of view
+    def get_slits(self, slits):
+        print(slits)
+    def handle_configuration_mode(self):
+        self.connect_with_controller.emit()
 

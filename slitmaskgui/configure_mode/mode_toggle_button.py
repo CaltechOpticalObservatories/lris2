@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QPushButton, QWidget, QVBoxLayout, QDialog
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import QPushButton, QWidget, QVBoxLayout, QDialog, QSizePolicy, QHBoxLayout
+from PyQt6.QtCore import pyqtSignal, QSize
 from slitmaskgui.configure_mode.csu_worker import CSUWorkerThread
 from slitmaskgui.configure_mode.mask_controller import MaskControllerWidget
 from lris2csu.remote import CSURemote
@@ -15,13 +15,21 @@ class ShowControllerButton(QWidget):
     get_from_mask_config = pyqtSignal(object)
     def __init__(self):
         super().__init__()
-
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        print(self.minimumSize())
         self.button = QPushButton("Toggle Configure Mode")
         # self.button.clicked.connect(self.on_button_clicked)
+        self.button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Maximum)
+        print(self.button.minimumSize())
 
-        layout = QVBoxLayout()
+
+        layout = QHBoxLayout()
         layout.addWidget(self.button)
         self.setLayout(layout)
+    
+    def sizeHint(self):
+        return QSize(100, 60) 
+
     
     def connect_controller_with_config(self, mask_controller_class, mask_config_class): #change this to connect to specific class
         self.mask_class = mask_config_class

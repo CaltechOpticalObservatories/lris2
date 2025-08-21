@@ -118,7 +118,7 @@ class MainWindow(QMainWindow):
 
         #sending to csu connections
         mode_toggle_button.connect_controller_with_config(mask_controller_widget,mask_config_widget)
-        mask_controller_widget.connect_controller_with_slitmask_display(mask_controller_widget,self.interactive_slit_mask)
+        mask_controller_widget.connect_controller_with_slitmask_display(mask_controller_widget,csu_display_widget)
         mode_toggle_button.button.clicked.connect(mode_toggle_button.on_button_clicked)
         mode_toggle_button.button.clicked.connect(self.switch_modes)
 
@@ -150,22 +150,19 @@ class MainWindow(QMainWindow):
         self.splitterV2.setOrientation(Qt.Orientation.Vertical)
         self.splitterV2.setContentsMargins(0,0,0,0)
 
-        self.layoutH1.addWidget(self.slit_position_table)#temp_widget2)
+        self.layoutH1.addWidget(self.slit_position_table)
         self.layoutH1.addWidget(self.mask_tab)
-        # self.layoutH1.addWidget(self.combobox)
         self.layoutH1.setSpacing(0)
         self.layoutH1.setContentsMargins(9,9,9,9)
         widgetH1 = QWidget()
         widgetH1.setLayout(self.layoutH1)
 
         self.splitterV1.addWidget(widgetH1)
-        # self.splitterV1.setCollapsible(0,False)
         self.splitterV1.addWidget(self.target_display)
         self.splitterV1.setOrientation(Qt.Orientation.Vertical)
         self.splitterV1.setContentsMargins(0,0,0,0)
 
         main_splitter.addWidget(self.splitterV1)
-        # main_splitter.setCollapsible(0,False)
         main_splitter.addWidget(self.splitterV2)
 
         self.setCentralWidget(main_splitter)

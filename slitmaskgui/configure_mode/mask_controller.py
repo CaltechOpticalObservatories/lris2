@@ -25,11 +25,11 @@ class MaskControllerWidget(QWidget):
     connect_with_slitmask_display = pyqtSignal()
     def __init__(self):
         super().__init__()
-
         self.setSizePolicy(
-            QSizePolicy.Policy.Preferred,
-            QSizePolicy.Policy.Expanding
+            QSizePolicy.Policy.Ignored,
+            QSizePolicy.Policy.Ignored
         )
+
         #------------------------definitions----------------------------
         self.remote_label = QLabel("Registry:")
         self.remote_add = QLineEdit(registry)
@@ -45,7 +45,7 @@ class MaskControllerWidget(QWidget):
 
         self.bar_pairs = []
         #-----------------------------connections---------------------------
-        self.configure_button.clicked.connect(self.update_slit_configuration)
+        self.configure_button.clicked.connect(self.configure_slits)
         self.stop_button.clicked.connect(self.stop_process)
         self.calibrate_button.clicked.connect(self.calibrate)
         self.reset_button.clicked.connect(self.reset_configuration)
@@ -54,6 +54,8 @@ class MaskControllerWidget(QWidget):
 
         self.worker_thread.calibrate_signal.connect(self.handle_calibration_done)
         self.worker_thread.status_signal.connect(self.handle_status_updated)
+
+
         #------------------------------------------layout-------------------------
         logger.info("mask_gen_widget: defining the layout")
         group_box = QGroupBox("CONFIGURATION MODE")
@@ -68,7 +70,7 @@ class MaskControllerWidget(QWidget):
         group_layout.addWidget(self.reset_button)
         group_layout.addWidget(self.shutdown_button)
         group_layout.addWidget(self.status_button)
-
+        group_layout.addStretch(40)
         group_box.setLayout(group_layout)
 
         main_layout.setContentsMargins(9,4,9,9)
@@ -76,6 +78,12 @@ class MaskControllerWidget(QWidget):
 
         self.setLayout(main_layout)
         #-----------------------------------------------
+        #------------------------setting size hints for widgets------------------
+        uniform_size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        [
+            self.layout().itemAt(i).widget().setSizePolicy(uniform_size_policy)
+            for i in range(self.layout().count())
+        ]
     
     def sizeHint(self):
         return QSize(300,400)
@@ -86,31 +94,34 @@ class MaskControllerWidget(QWidget):
         self.connect_with_slitmask_display.connect(self.slitmask_display.handle_configuration_mode)
         self.slitmask_display.connect_with_controller.connect(self.controller_class.define_slits)
         
-
-    
-    def update_slitmask_display(self,pos_dict):
-        self.slitmask_display.change_slit_and_star(pos_dict) # should be pos_dict
     
     def define_slits(self,slits):
-        print("Communication successful")
         try:
             self.slits = slits[:10]
             self.slits = [(star["x_mm"],bar_id,star["slit_width"]) for bar_id,star in enumerate(self.slits)]
         except:
             print("no mask config found")
+
+    def configure_slits(self):
+        try:
+            self.c.configure(MaskConfig(self.slits), speed=6500)
+            self.slitmask_display.get_slits(self.slits)
+        except:
+            print("No slitmask found")
+        
     
-    def update_slit_configuration(self):
-        """Update slit configuration based on the selected dropdown option."""
-        # Clear existing bars
-        for bar_pair in self.bar_pairs:
-            self.scene.removeItem(bar_pair.left_rect)
-            self.scene.removeItem(bar_pair.right_rect)
+    # def update_slit_configuration(self):
+    #     """Update slit configuration based on the selected dropdown option."""
+    #     # Clear existing bars
+    #     for bar_pair in self.bar_pairs:
+    #         self.scene.removeItem(bar_pair.left_rect)
+    #         self.scene.removeItem(bar_pair.right_rect)
 
-        self.bar_pairs.clear()  # Clear the list of bar pairs
+    #     self.bar_pairs.clear()  # Clear the list of bar pairs
 
-        # Get the selected mask type from the dropdown
+    #     # Get the selected mask type from the dropdown
 
-        self.c.configure(MaskConfig(slits), speed=6500)
+    #     self.c.configure(MaskConfig(slits), speed=6500)
 
     def reset_configuration(self):
         """Reset the configuration to a default state."""
