@@ -44,7 +44,9 @@ class CsuDisplauWidget(QWidget):
         [self.scene.addItem(bar) for bar in bar_list]
         self.scene.addItem(FieldOfView(height=CSU_HEIGHT/72*10)) # add green field of view
     def get_slits(self, slits):
-        print(slits)
+        print("csu_display_widget.py get_slits",slits)
+        bar_list = [SimpleBar(True,s.width,s.x,s.id) for s in slits]
+        [bar_list.append(SimpleBar(False,s.width,s.x,s.id)) for s in slits]
     def handle_configuration_mode(self):
         self.connect_with_controller.emit()
 

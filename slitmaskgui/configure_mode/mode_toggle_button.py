@@ -8,7 +8,7 @@ from lris2csu.remote import CSURemote
 """
 will define in a better way later
 """
-remote = CSURemote('tcp://131.215.200.105:5571')
+# remote = CSURemote('tcp://131.215.200.105:5571')
 
 
 class ShowControllerButton(QWidget):

@@ -118,7 +118,7 @@ class MainWindow(QMainWindow):
 
         #sending to csu connections
         self.mode_toggle_button.connect_controller_with_config(mask_controller_widget,mask_config_widget)
-        mask_controller_widget.connect_controller_with_slitmask_display(mask_controller_widget,csu_display_widget)
+        mask_controller_widget.connect_controller_with_slitmask_display(csu_display_widget)
         self.mode_toggle_button.button.clicked.connect(self.mode_toggle_button.on_button_clicked)
         self.mode_toggle_button.button.clicked.connect(self.switch_modes)
 

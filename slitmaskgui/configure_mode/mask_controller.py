@@ -12,12 +12,13 @@ from lris2csu.slit import Slit, MaskConfig
 from logging import basicConfig, DEBUG, getLogger
 from slitmaskgui.configure_mode.csu_worker import CSUWorkerThread  # Import the worker thread
 
-basicConfig(level=DEBUG)
+
+# basicConfig(filename='mktl.log', format='%(asctime)s %(message)s', filemode='w', level=DEBUG)
 getLogger('mktl').setLevel(DEBUG)
 logger = getLogger('mktl')
 
 registry = 'tcp://131.215.200.105:5571'
-remote = CSURemote(registry)
+remote = CSURemote(registry_address=registry)
 PLATE_SCALE = 0.7272
 CSU_WIDTH = PLATE_SCALE*60*5
 
@@ -44,6 +45,7 @@ class MaskControllerWidget(QWidget):
         self.worker_thread = CSUWorkerThread(remote)
 
         self.bar_pairs = []
+        self.slits = 0
         #-----------------------------connections---------------------------
         self.configure_button.clicked.connect(self.configure_slits)
         self.stop_button.clicked.connect(self.stop_process)
@@ -88,27 +90,23 @@ class MaskControllerWidget(QWidget):
     def sizeHint(self):
         return QSize(300,400)
     
-    def connect_controller_with_slitmask_display(self, mask_controller_class, slitmask_display_class):
+    def connect_controller_with_slitmask_display(self, slitmask_display_class):
         self.slitmask_display = slitmask_display_class
-        self.controller_class = mask_controller_class
         self.connect_with_slitmask_display.connect(self.slitmask_display.handle_configuration_mode)
-        self.slitmask_display.connect_with_controller.connect(self.controller_class.define_slits)
+        self.slitmask_display.connect_with_controller.connect(self.define_slits)
         
     
     def define_slits(self,slits):
         try:
-            self.slits = slits[:10]
-            self.slits = [(star["x_mm"],bar_id,star["slit_width"]) for bar_id,star in enumerate(self.slits)]
+            self.slits = slits[:12]
+            self.slits = tuple([Slit(bar_id,CSU_WIDTH/2+star["x_mm"],star["slit_width"]) # CSU_WIDTH + star because star could be negative
+                        for bar_id,star in enumerate(self.slits)])
         except:
             print("no mask config found")
 
     def configure_slits(self):
-        try:
-            self.c.configure(MaskConfig(self.slits), speed=6500)
-            self.slitmask_display.get_slits(self.slits)
-        except:
-            print("No slitmask found")
-        
+        self.c.configure(MaskConfig(self.slits), speed=6500)
+    
     
     # def update_slit_configuration(self):
     #     """Update slit configuration based on the selected dropdown option."""
@@ -147,15 +145,7 @@ class MaskControllerWidget(QWidget):
             print("No slits received.")
             return
 
-        # Clear existing bars
-        for bar_pair in self.bar_pairs:
-            self.scene.removeItem(bar_pair.left_rect)
-            self.scene.removeItem(bar_pair.right_rect)
-
-        self.bar_pairs.clear()  # Clear the list of bar pairs
-
-        # Create new bar pairs based on the received slits
-        self.bar_pairs = [BarPair(self.scene, slit) for slit in slits]
+        self.slitmask_display.get_slits(slits)
 
         print("Scene updated with new slit configuration.")
 

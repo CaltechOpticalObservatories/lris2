@@ -54,7 +54,7 @@ class CSUWorkerThread(QThread):
 
     def _status(self, verbose=False):
         """Display the current status."""
-        response = self.c.status(verbose)
+        response = self.c.status()
         logger.debug(f"Status Response: {response}")
         slits = self.parse_response(response)
 
@@ -69,20 +69,20 @@ class CSUWorkerThread(QThread):
             self.log_message(f"Configuring slits with mask type: {mask_type}")
             self.update_slit_configuration(mask_type)
 
-    def update_slit_configuration(self, mask_type: str):
-        """Update slit configuration based on the selected mask type."""
-        # Define slit configurations based on the mask type
-        if mask_type == "Stair Mask":
-            slits = tuple(Slit(i, 130 + i * 10 - 6 * 10, 20) for i in range(12))
-        elif mask_type == "N-Stair Mask":
-            slits = tuple(Slit(i, 130 - i * 10 + 6 * 10, 20) for i in range(12))
-        elif mask_type == "Central Mask":
-            slits = tuple(Slit(i, 130, 30) for i in range(12))
-        elif mask_type == "Window Mask":
-            slits = tuple(Slit(i, 130 / 2 + (i % 2) * 120, 20) for i in range(12))
+    # def update_slit_configuration(self, mask_type: str):
+    #     """Update slit configuration based on the selected mask type."""
+    #     # Define slit configurations based on the mask type
+    #     if mask_type == "Stair Mask":
+    #         slits = tuple(Slit(i, 130 + i * 10 - 6 * 10, 20) for i in range(12))
+    #     elif mask_type == "N-Stair Mask":
+    #         slits = tuple(Slit(i, 130 - i * 10 + 6 * 10, 20) for i in range(12))
+    #     elif mask_type == "Central Mask":
+    #         slits = tuple(Slit(i, 130, 30) for i in range(12))
+    #     elif mask_type == "Window Mask":
+    #         slits = tuple(Slit(i, 130 / 2 + (i % 2) * 120, 20) for i in range(12))
 
-        # Now call the configure method
-        self.configure_csu(slits)
+    #     # Now call the configure method
+    #     self.configure_csu(slits)
 
     def configure_csu(self, slits):
         """Call the CSU's configure method with the slits."""
