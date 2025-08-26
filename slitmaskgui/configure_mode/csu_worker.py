@@ -13,7 +13,7 @@ logger = getLogger('mktl')
 class CSUWorkerThread(QThread):
     # Define signals to send results back to the main thread
     reset_signal = pyqtSignal()
-    calibrate_signal = pyqtSignal(str)  # Calibration response
+    calibrate_signal = pyqtSignal(object)  # Calibration response
     status_signal = pyqtSignal(list)    # List of slits
     stop_signal = pyqtSignal()
     slit_config_updated_signal = pyqtSignal()
@@ -22,6 +22,10 @@ class CSUWorkerThread(QThread):
         super().__init__()
         self.c = c
         self.task = None
+        self.slits = None
+    
+    def __repr__(self):
+        return f'{self.slits}'
 
     def set_task(self, task: str):
         """Set the current task (calibrate, status, etc.)."""
@@ -52,16 +56,15 @@ class CSUWorkerThread(QThread):
         # Emit calibration response
         self.calibrate_signal.emit(response)
 
-    def _status(self, verbose=False):
+    def _status(self):
         """Display the current status."""
         response = self.c.status()
         logger.debug(f"Status Response: {response}")
-        slits = self.parse_response(response)
+        self.slits = self.parse_response(response)
 
         # Emit slits list
-        if slits:
-            self.status_signal.emit(slits)
-
+        if self.slits:
+            self.status_signal.emit(self.slits)
     def _configure_slits(self):
         """Configure the CSU with the selected slit configuration."""
         mask_type = self.task_data.get("mask_type")  # Assuming task_data contains the mask_type

@@ -1,10 +1,10 @@
 from PyQt6.QtWidgets import (
     QPushButton, QWidget, QVBoxLayout, QDialog, QLabel,
-    QGraphicsRectItem, QGraphicsScene, QGraphicsView, QGraphicsLayout
+    QGraphicsRectItem, QGraphicsScene, QGraphicsView, QGraphicsLayout,
     )
 from PyQt6.QtGui import QColor, QPen, QBrush
-from PyQt6.QtCore import pyqtSignal
-from slitmaskgui.mask_widgets.mask_objects import SimpleBar, FieldOfView, CustomGraphicsView
+from PyQt6.QtCore import pyqtSignal, QPropertyAnimation, QParallelAnimationGroup, QEasingCurve
+from slitmaskgui.mask_widgets.mask_objects import SimpleBarPair, FieldOfView, CustomGraphicsView
 
 PLATE_SCALE = 0.7272 #(mm/arcsecond) on the sky
 CSU_HEIGHT = PLATE_SCALE*60*10 #height of csu in mm (height is 10 arcmin)
@@ -25,8 +25,7 @@ class CsuDisplauWidget(QWidget):
 
         self.view = CustomGraphicsView(self.scene)
         # -------------- set default layout numbers -------------
-        default_layout_list = [[True, 0,CSU_WIDTH/2,x] for x in range(10)]
-        [default_layout_list.append([False, 0, CSU_WIDTH/2,x]) for x in range(10)]
+        default_layout_list = [[0,CSU_WIDTH/2,x,True] for x in range(12)] + [[0,CSU_WIDTH/2,x,False] for x in range(12)]
 
         # -------------- layout ------------------
         main_layout = QVBoxLayout()
@@ -40,13 +39,37 @@ class CsuDisplauWidget(QWidget):
     
     def set_layout(self,pos_list):
         self.scene.clear()
-        bar_list = [SimpleBar(x[0],x[1],x[2],x[3]) for x in pos_list]
+        bar_list = [SimpleBarPair(x[0],x[1],x[2],x[3]) for x in pos_list]
         [self.scene.addItem(bar) for bar in bar_list]
-        self.scene.addItem(FieldOfView(height=CSU_HEIGHT/72*10)) # add green field of view
+        self.scene.addItem(FieldOfView(height=CSU_HEIGHT/72*12)) # add green field of view
+        self.scene.setSceneRect(self.scene.itemsBoundingRect())
+        self.view = CustomGraphicsView(self.scene)
+
     def get_slits(self, slits):
-        print("csu_display_widget.py get_slits",slits)
-        bar_list = [SimpleBar(True,s.width,s.x,s.id) for s in slits]
-        [bar_list.append(SimpleBar(False,s.width,s.x,s.id)) for s in slits]
+        print("csu_display_widget.py get_slits")
+        bar_list = [SimpleBarPair(s.width/PLATE_SCALE,s.x,s.id,left_side=True) for s in slits]
+        bar_list += [SimpleBarPair(s.width/PLATE_SCALE,s.x,s.id,left_side=False) for s in slits]
+        print("get slits before aniating bars")
+        try:
+            current_bars = [item for item in self.scene.items() if isinstance(item, SimpleBarPair)]
+            self.animate_bars(previous_bars=current_bars,future_bars=bar_list)
+        except:
+            pass
+
     def handle_configuration_mode(self):
         self.connect_with_controller.emit()
+    def animate_bars(self, previous_bars: list, future_bars: list):
+        self.anim_group = QParallelAnimationGroup()
+        for prev, future in zip(previous_bars, future_bars):
+            anim = QPropertyAnimation(prev, b"pos_anim")
+            anim.setDuration(1500)
+            anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
+            anim.setEndValue(future.get_pos())  # assuming future_bars[i] has correct pos
+            
+            self.anim_group.addAnimation(anim)
+        self.anim_group.start()
+        # self.update_layout(future_bars)
+        self.scene.setSceneRect(self.scene.itemsBoundingRect())
+        self.view = CustomGraphicsView(self.scene)
+        
 

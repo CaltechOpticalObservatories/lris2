@@ -1,6 +1,6 @@
 
 import logging
-from PyQt6.QtCore import Qt, QPointF
+from PyQt6.QtCore import Qt, QPointF, pyqtProperty, QRectF
 from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QLinearGradient
 from PyQt6.QtWidgets import (
     QGraphicsView,
@@ -9,7 +9,8 @@ from PyQt6.QtWidgets import (
     QGraphicsTextItem,
     QGraphicsItemGroup,
     QSizePolicy,
-    QApplication
+    QApplication,
+    QGraphicsObject
 
 
 )
@@ -75,8 +76,8 @@ class SimpleTextItem(QGraphicsTextItem):
     def update_theme(self):
         self.theme = get_theme()
     
-class SimpleBar(QGraphicsRectItem):
-    def __init__(self, left_side: bool, slit_width: float, x_position: float, bar_id: int):
+class SimpleBarPair(QGraphicsObject):
+    def __init__(self, slit_width: float, x_position: float, bar_id: int, left_side: bool = True):
         super().__init__()
         self.bar_length = 200 # I will fact check this
         self.bar_height = CSU_HEIGHT/72 # I will change this later
@@ -84,24 +85,43 @@ class SimpleBar(QGraphicsRectItem):
         self.slit_width = slit_width # needs to be in mm
         self.x_pos = x_position
         self.y_pos = bar_id * self.bar_height
-
-        """IMPORTANT: need to check if the csu does position in the right corner or left corner for slits
-        I am currently assuming left"""
+        self.theme = get_theme()
+        self.side = left_side
+        self.setPos(self.x_pos,self.y_pos)
 
         #I might paint differently depending on themes
-        self.setBrush(QBrush(QColor("grey")))
-        self.setPen(QPen(QColor("black"),2))
 
-        if left_side:
-            self.left_side()
+        QApplication.instance().styleHints().colorSchemeChanged.connect(self.update_theme)
+    def update_theme(self):
+        self.theme = get_theme()
+        # self.setPen(QPen(QColor.fromString(self.theme['green']),self.thickness))
+    def paint(self, painter: QPainter, option, widget = None):
+        painter.setBrush(QBrush(QColor.fromString(self.theme['overlay_2'])))
+        painter.setPen(QPen(QColor.fromString(self.theme['overlay_0']), 1))
+        if self.side:
+            painter.drawRect(self.left_side())
         else:
-            self.right_side()
-
+            painter.drawRect(self.right_side())
     def left_side(self):
-        self.setRect(self.x_pos,self.y_pos, - self.bar_length, self.bar_height)
+        rect_item = QRectF(0,0, - self.bar_length, self.bar_height)
+        return rect_item
     def right_side(self):
-        self.x_pos += self.slit_width
-        self.setRect(self.x_pos, self.y_pos, self.bar_length, self.bar_height)
+        rect_item = QRectF(self.slit_width,0, self.bar_length, self.bar_height)
+        return rect_item
+    def boundingRect(self):
+        if self.side:
+            return self.left_side()
+        else:
+            return self.right_side()
+        
+    def get_pos(self):
+        return self.pos()
+    def set_pos(self, pos: QPointF):
+        self.setPos(pos)
+
+    pos_anim = pyqtProperty(QPointF, fget=get_pos, fset=set_pos)
+    
+
 class interactiveBars(QGraphicsRectItem):
     
     def __init__(self,x,y,bar_length,bar_width,this_id,has_gradient=False):

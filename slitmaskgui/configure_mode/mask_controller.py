@@ -2,18 +2,20 @@ import sys
 from typing import Tuple
 from PyQt6.QtWidgets import ( QVBoxLayout, QGraphicsView, QGraphicsScene,
     QComboBox, QPushButton, QHBoxLayout, QSplitter, QDialog, QSizePolicy,
-    QWidget, QGroupBox, QLabel, QLineEdit
+    QWidget, QGroupBox, QLabel, QLineEdit, QDialogButtonBox
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer
 from PyQt6.QtGui import QPainter
 from lris2csu.remote import CSURemote
 from lris2csu.slit import Slit, MaskConfig
+import time
 
 from logging import basicConfig, DEBUG, getLogger
 from slitmaskgui.configure_mode.csu_worker import CSUWorkerThread  # Import the worker thread
 
 
 # basicConfig(filename='mktl.log', format='%(asctime)s %(message)s', filemode='w', level=DEBUG)
+basicConfig(level=DEBUG)
 getLogger('mktl').setLevel(DEBUG)
 logger = getLogger('mktl')
 
@@ -21,6 +23,27 @@ registry = 'tcp://131.215.200.105:5571'
 remote = CSURemote(registry_address=registry)
 PLATE_SCALE = 0.7272
 CSU_WIDTH = PLATE_SCALE*60*5
+
+
+class ErrorWidget(QDialog):
+    def __init__(self,dialog_text):
+        super().__init__()
+        self.setWindowTitle("ERROR")
+        layout = QVBoxLayout()
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setWindowFlags(
+            self.windowFlags() |
+            Qt.WindowType.WindowStaysOnTopHint
+        )
+        
+        self.label = QLabel(dialog_text)
+        buttons = QDialogButtonBox.StandardButton.Ok
+        button_box = QDialogButtonBox(buttons)
+        button_box.accepted.connect(self.accept)
+        layout.addWidget(self.label)
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+
 
 class MaskControllerWidget(QWidget):
     connect_with_slitmask_display = pyqtSignal()
@@ -94,45 +117,58 @@ class MaskControllerWidget(QWidget):
         self.slitmask_display = slitmask_display_class
         self.connect_with_slitmask_display.connect(self.slitmask_display.handle_configuration_mode)
         self.slitmask_display.connect_with_controller.connect(self.define_slits)
-        
-    
+
     def define_slits(self,slits):
         try:
             self.slits = slits[:12]
-            self.slits = tuple([Slit(bar_id,CSU_WIDTH/2+star["x_mm"],star["slit_width"]) # CSU_WIDTH + star because star could be negative
+            self.slits = tuple([Slit(bar_id,CSU_WIDTH/2+star["x_mm"],float(star["slit_width"])) # CSU_WIDTH + star because star could be negative
                         for bar_id,star in enumerate(self.slits)])
         except:
             print("no mask config found")
 
     def configure_slits(self):
-        self.c.configure(MaskConfig(self.slits), speed=6500)
+        try:
+            self.get_status_of_moving_bars()
+            self.c.configure(MaskConfig(self.slits), speed=6500)
+            
+        except AttributeError as e:
+            text = """Generate a Mask Configuration before configuring CSU"""
+            self.error_widget = ErrorWidget(text)
+            self.error_widget.show()
+            if self.error_widget.exec() == QDialog.DialogCode.Accepted:
+                pass
+        except TimeoutError as e:
+            text = f"{e}"
+            self.error_widget = ErrorWidget(text)
+            self.error_widget.show()
     
-    
-    # def update_slit_configuration(self):
-    #     """Update slit configuration based on the selected dropdown option."""
-    #     # Clear existing bars
-    #     for bar_pair in self.bar_pairs:
-    #         self.scene.removeItem(bar_pair.left_rect)
-    #         self.scene.removeItem(bar_pair.right_rect)
+    def get_status_of_moving_bars(self):
+        # Something with Qtimer becuase I don't think it freezes the system
+        # Every lets say 3 seconds query what the status is and then update it
+        # Have to check if the status is the same between queries so we don't have unecessary 
 
-    #     self.bar_pairs.clear()  # Clear the list of bar pairs
-
-    #     # Get the selected mask type from the dropdown
-
-    #     self.c.configure(MaskConfig(slits), speed=6500)
+        # extra_thread = Qthreadclass(self.worker_thread) #then have it do what is below and you can use time.sleep()
+            
+        pass
 
     def reset_configuration(self):
         """Reset the configuration to a default state."""
         # Reset to "Stair Mask"
         print("Resetting CSU...")
         # self.update_slit_configuration()
-        self.c.reset()
+        try:
+            self.c.reset()
+        except TimeoutError as e:
+            text = f"{e}"
+            self.error_widget = ErrorWidget(text)
+            self.error_widget.show()
 
     def calibrate(self):
         """Start the calibration process in the worker thread."""
         print("Starting calibration in worker thread...")
         self.worker_thread.set_task("calibrate")
         self.worker_thread.start()
+        
 
     def handle_calibration_done(self, response):
         """Handle calibration completion."""
@@ -185,3 +221,5 @@ class MaskControllerWidget(QWidget):
             error_message = f"Error parsing response: {e}"
             print(error_message)
             return None
+    def animate_bars(self):
+        pass
