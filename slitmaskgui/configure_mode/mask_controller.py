@@ -132,7 +132,7 @@ class MaskControllerWidget(QWidget):
     def define_slits(self,slits):
         try:
             self.slits = slits[:12]
-            self.slits = tuple([Slit(bar_id,CSU_WIDTH/2+star["x_mm"],float(star["slit_width"])) # CSU_WIDTH + star because star could be negative
+            self.slits = tuple([Slit(bar_id,CSU_WIDTH/2+star["x_mm"],float(star["slit_width"])/PLATE_SCALE) # CSU_WIDTH + star because star could be negative
                         for bar_id,star in enumerate(self.slits)])
         except:
             print("no mask config found")
@@ -171,7 +171,8 @@ class MaskControllerWidget(QWidget):
         print("Resetting CSU...")
         # self.update_slit_configuration()
         try:
-            self.c.reset()
+            response = self.c.reset()
+            print(f'reset config {response}')
         except TimeoutError as e:
             text = f"{e}"
             self.error_widget = ErrorWidget(text)
@@ -206,8 +207,8 @@ class MaskControllerWidget(QWidget):
         # Display error in the UI, e.g., using a dialog
     
     def handle_config_update(self,response):
-        print(f'config done maybe {response}')
-        self.timer.setInterval(2000)
+        print(f'Configuration started: {response}')
+        self.timer.setInterval(750)
         self.timer.start()
 
 
@@ -224,11 +225,13 @@ class MaskControllerWidget(QWidget):
     def stop_process(self):
         """Stop the process by sending the stop command to CSURemote."""
         print("Stopping the process...")
-        self.c.stop()
+        response = self.c.stop()
+        print(f"stop process {response}")
         try:
             self.timer.stop()
         except:
             pass #timer already stopped
+    
 
     def parse_response(self, response):
         """Parse the response to extract the mask data."""

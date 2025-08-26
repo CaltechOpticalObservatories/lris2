@@ -86,7 +86,7 @@ class SimpleBarPair(QGraphicsObject):
         self.bar_height = DEMO_HEIGHT/12 # I will change this later
 
         self.slit_width = slit_width # needs to be in mm
-        self.x_pos = x_position
+        self.x_pos = x_position - self.slit_width/2
         self.y_pos = bar_id * self.bar_height
         self.theme = get_theme()
         self.side = left_side

@@ -115,7 +115,7 @@ class SlitDisplay(QWidget):
     highlight_other = pyqtSignal(int,name="row selected") #change name to match that in the interactive slit mask
     select_star = pyqtSignal(int)
     data_changed = pyqtSignal(list) #it will have a bool as the first part of the list
-    tell_unsaved = pyqtSignal(object)
+    tell_unsaved = pyqtSignal()
     def __init__(self,data=default_slit_display_list):
         super().__init__()
 
@@ -155,8 +155,10 @@ class SlitDisplay(QWidget):
         #---------------reconnect connections---------------
         if answer:
             self.table.selectionModel().selectionChanged.connect(self.row_selected)
+            self.model.dataChanged.connect(self.slit_width_changed)
         else:
             self.table.selectionModel().selectionChanged.disconnect(self.row_selected)
+            self.model.dataChanged.disconnect(self.slit_width_changed)
     
     @pyqtSlot(list,name="input slit positions")
     def change_data(self,data):
@@ -211,7 +213,7 @@ class SlitDisplay(QWidget):
             self.changed_data_list[1][bar_id]=value
         else:
             pass #will add all the changed data in a loop
-        self.tell_unsaved.emit(None) #doesn't have to be a bool or really anything just need to signal
+        self.tell_unsaved.emit() 
     pyqtSlot(object)
     def data_saved(self):
         list_copy = self.changed_data_list

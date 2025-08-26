@@ -261,7 +261,6 @@ class MaskConfigurationsWidget(QWidget):
                 if bar_id in data[1]:
                     x["slit_width"] = data[1][bar_id]
             self.update_table(row=row_num)
-        
 
     def close_button_clicked(self,item):
         #this will delete the item from the list and the information that goes along with it
