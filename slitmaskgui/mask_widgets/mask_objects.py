@@ -56,6 +56,9 @@ CSU_WIDTH = PLATE_SCALE*60*5 #width of the csu in mm (widgth is 5 arcmin)
 MM_TO_PIXEL = 1 #this is a mm to pixel ratio, it is currently just made up
 CCD_HEIGHT = 61.2 #in mm
 CCD_WIDTH = 61.2 #in mm
+DEMO_WIDTH = 260
+DEMO_HEIGHT = 75
+
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +82,8 @@ class SimpleTextItem(QGraphicsTextItem):
 class SimpleBarPair(QGraphicsObject):
     def __init__(self, slit_width: float, x_position: float, bar_id: int, left_side: bool = True):
         super().__init__()
-        self.bar_length = 200 # I will fact check this
-        self.bar_height = CSU_HEIGHT/72 # I will change this later
+        self.bar_length = DEMO_WIDTH # I will fact check this
+        self.bar_height = DEMO_HEIGHT/12 # I will change this later
 
         self.slit_width = slit_width # needs to be in mm
         self.x_pos = x_position
@@ -88,7 +91,6 @@ class SimpleBarPair(QGraphicsObject):
         self.theme = get_theme()
         self.side = left_side
         self.setPos(self.x_pos,self.y_pos)
-
         #I might paint differently depending on themes
 
         QApplication.instance().styleHints().colorSchemeChanged.connect(self.update_theme)
@@ -113,7 +115,38 @@ class SimpleBarPair(QGraphicsObject):
             return self.left_side()
         else:
             return self.right_side()
-        
+    def get_pos(self):
+        return QPointF(self.x(), self.slit_width)
+    def set_pos(self, pos: QPointF):
+        self.setX(pos.x())
+        self.slit_width = pos.y()
+
+    pos_anim = pyqtProperty(QPointF, fget=get_pos, fset=set_pos)
+
+class MoveableFieldOfView(QGraphicsObject):
+    def __init__(self,height=DEMO_HEIGHT,width=DEMO_WIDTH,x=0,y=0,thickness = 4):
+        super().__init__()
+
+        self.theme = get_theme()
+        self.width = width
+        self.height = height
+
+        self.setPos(x,y)
+        self.thickness = thickness
+
+        # self.setOpacity(0.5)
+        QApplication.instance().styleHints().colorSchemeChanged.connect(self.update_theme)
+    def paint(self, painter: QPainter, option, widget = None):
+        painter.setPen(QPen(QColor.fromString(self.theme['green']),self.thickness))
+        painter.drawRect(self.rect())
+    def rect(self):
+        rect_item = QRectF(0,0, self.width, self.height)
+        return rect_item
+    def update_theme(self):
+        self.theme = get_theme()
+        self.setPen(QPen(QColor.fromString(self.theme['green']),self.thickness))
+    def boundingRect(self):
+        return self.rect()
     def get_pos(self):
         return self.pos()
     def set_pos(self, pos: QPointF):

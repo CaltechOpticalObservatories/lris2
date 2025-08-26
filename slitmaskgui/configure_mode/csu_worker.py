@@ -16,7 +16,7 @@ class CSUWorkerThread(QThread):
     calibrate_signal = pyqtSignal(object)  # Calibration response
     status_signal = pyqtSignal(list)    # List of slits
     stop_signal = pyqtSignal()
-    slit_config_updated_signal = pyqtSignal()
+    slit_config_updated_signal = pyqtSignal(object)
 
     def __init__(self, c: CSURemote):
         super().__init__()
@@ -25,7 +25,14 @@ class CSUWorkerThread(QThread):
         self.slits = None
     
     def __repr__(self):
-        return f'{self.slits}'
+        repr_list = []
+        for slit in self.slits:
+            new_slit = slit
+            new_slit.x = f'{slit.x:.2f}'
+            new_slit.width = f'{slit.width:.2f}'
+            repr_list.append(new_slit)
+
+        return f'{repr_list}'
 
     def set_task(self, task: str):
         """Set the current task (calibrate, status, etc.)."""
@@ -38,7 +45,8 @@ class CSUWorkerThread(QThread):
         elif self.task == "status":
             self._status()
         elif self.task == "configure":
-            self._configure_slits()
+            # self.configure_csu()
+            pass
 
     def reset_configuration(self):
         """Reset the configuration to a default state."""
@@ -72,26 +80,12 @@ class CSUWorkerThread(QThread):
             self.log_message(f"Configuring slits with mask type: {mask_type}")
             self.update_slit_configuration(mask_type)
 
-    # def update_slit_configuration(self, mask_type: str):
-    #     """Update slit configuration based on the selected mask type."""
-    #     # Define slit configurations based on the mask type
-    #     if mask_type == "Stair Mask":
-    #         slits = tuple(Slit(i, 130 + i * 10 - 6 * 10, 20) for i in range(12))
-    #     elif mask_type == "N-Stair Mask":
-    #         slits = tuple(Slit(i, 130 - i * 10 + 6 * 10, 20) for i in range(12))
-    #     elif mask_type == "Central Mask":
-    #         slits = tuple(Slit(i, 130, 30) for i in range(12))
-    #     elif mask_type == "Window Mask":
-    #         slits = tuple(Slit(i, 130 / 2 + (i % 2) * 120, 20) for i in range(12))
-
-    #     # Now call the configure method
-    #     self.configure_csu(slits)
-
     def configure_csu(self, slits):
         """Call the CSU's configure method with the slits."""
-        self.c.configure(MaskConfig(slits), speed=6500)
-        self.slit_config_updated_signal.emit()  # Emit a signal indicating the configuration has been updated
-        self.log_message("Slit configuration updated successfully.")
+        response = self.c.configure(MaskConfig(slits), speed=6500)
+        self.slit_config_updated_signal.emit(response)  # Emit a signal indicating the configuration has been updated
+        print("Slit configuration updated successfully.")
+        # self.log_message("Slit configuration updated successfully.")
 
     def stop_process(self):
         """Stop the process and emit stop signal."""

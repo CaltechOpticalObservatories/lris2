@@ -2,9 +2,9 @@ import sys
 from typing import Tuple
 from PyQt6.QtWidgets import ( QVBoxLayout, QGraphicsView, QGraphicsScene,
     QComboBox, QPushButton, QHBoxLayout, QSplitter, QDialog, QSizePolicy,
-    QWidget, QGroupBox, QLabel, QLineEdit, QDialogButtonBox
+    QWidget, QGroupBox, QLabel, QLineEdit, QDialogButtonBox,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QThreadPool
 from PyQt6.QtGui import QPainter
 from lris2csu.remote import CSURemote
 from lris2csu.slit import Slit, MaskConfig
@@ -23,6 +23,8 @@ registry = 'tcp://131.215.200.105:5571'
 remote = CSURemote(registry_address=registry)
 PLATE_SCALE = 0.7272
 CSU_WIDTH = PLATE_SCALE*60*5
+
+publish_socket = "tcp://131.215.200.105:5559"
 
 
 class ErrorWidget(QDialog):
@@ -66,6 +68,7 @@ class MaskControllerWidget(QWidget):
 
         self.c = remote
         self.worker_thread = CSUWorkerThread(remote)
+        
 
         self.bar_pairs = []
         self.slits = 0
@@ -79,6 +82,7 @@ class MaskControllerWidget(QWidget):
 
         self.worker_thread.calibrate_signal.connect(self.handle_calibration_done)
         self.worker_thread.status_signal.connect(self.handle_status_updated)
+        self.worker_thread.slit_config_updated_signal.connect(self.handle_config_update)
 
 
         #------------------------------------------layout-------------------------
@@ -102,7 +106,13 @@ class MaskControllerWidget(QWidget):
         main_layout.addWidget(group_box)
 
         self.setLayout(main_layout)
-        #-----------------------------------------------
+        #--------------------- Timer & Threadpool --------------------------
+        self.timer = QTimer()
+        self.timer.setInterval(1500)
+        self.timer.timeout.connect(self.still_run)
+        self.timer_counter = 0
+        self.total_counts = 10
+        self.old_config = None
         #------------------------setting size hints for widgets------------------
         uniform_size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         [
@@ -117,6 +127,7 @@ class MaskControllerWidget(QWidget):
         self.slitmask_display = slitmask_display_class
         self.connect_with_slitmask_display.connect(self.slitmask_display.handle_configuration_mode)
         self.slitmask_display.connect_with_controller.connect(self.define_slits)
+        
 
     def define_slits(self,slits):
         try:
@@ -128,11 +139,10 @@ class MaskControllerWidget(QWidget):
 
     def configure_slits(self):
         try:
-            self.get_status_of_moving_bars()
-            self.c.configure(MaskConfig(self.slits), speed=6500)
-            
+            self.worker_thread.set_task("configure")
+            self.worker_thread.configure_csu(self.slits)
         except AttributeError as e:
-            text = """Generate a Mask Configuration before configuring CSU"""
+            text = f"{e}\nGenerate a Mask Configuration before configuring CSU"
             self.error_widget = ErrorWidget(text)
             self.error_widget.show()
             if self.error_widget.exec() == QDialog.DialogCode.Accepted:
@@ -141,15 +151,19 @@ class MaskControllerWidget(QWidget):
             text = f"{e}"
             self.error_widget = ErrorWidget(text)
             self.error_widget.show()
-    
-    def get_status_of_moving_bars(self):
-        # Something with Qtimer becuase I don't think it freezes the system
-        # Every lets say 3 seconds query what the status is and then update it
-        # Have to check if the status is the same between queries so we don't have unecessary 
+    def still_run(self):
+        self.current_config = repr(self.worker_thread)
+        self.timer_counter +=1
+        self.show_status()
+        
+        if self.current_config == self.old_config:
+            self.timer.stop()
+            self.timer_counter = 0
 
-        # extra_thread = Qthreadclass(self.worker_thread) #then have it do what is below and you can use time.sleep()
-            
-        pass
+        self.old_config = self.current_config
+        # if self.timer_counter >= self.total_counts:
+        #     self.timer.stop()
+        #     self.timer_counter = 0
 
     def reset_configuration(self):
         """Reset the configuration to a default state."""
@@ -168,11 +182,12 @@ class MaskControllerWidget(QWidget):
         print("Starting calibration in worker thread...")
         self.worker_thread.set_task("calibrate")
         self.worker_thread.start()
-        
 
     def handle_calibration_done(self, response):
         """Handle calibration completion."""
         print(f"Calibration completed: {response}")
+        self.timer.setInterval(1000)
+        self.timer.start()
         # Update UI accordingly, e.g., show a message or update a label
 
     def handle_status_updated(self, slits):
@@ -189,10 +204,15 @@ class MaskControllerWidget(QWidget):
         """Handle error in the worker thread."""
         print(f"Error occurred: {error_message}")
         # Display error in the UI, e.g., using a dialog
+    
+    def handle_config_update(self,response):
+        print(f'config done maybe {response}')
+        self.timer.setInterval(2000)
+        self.timer.start()
+
 
     def shutdown(self):
         """Shutdown the application."""
-        self.quit()
         self.c.shutdown()
 
     def show_status(self):
@@ -205,6 +225,10 @@ class MaskControllerWidget(QWidget):
         """Stop the process by sending the stop command to CSURemote."""
         print("Stopping the process...")
         self.c.stop()
+        try:
+            self.timer.stop()
+        except:
+            pass #timer already stopped
 
     def parse_response(self, response):
         """Parse the response to extract the mask data."""
@@ -221,5 +245,3 @@ class MaskControllerWidget(QWidget):
             error_message = f"Error parsing response: {e}"
             print(error_message)
             return None
-    def animate_bars(self):
-        pass
