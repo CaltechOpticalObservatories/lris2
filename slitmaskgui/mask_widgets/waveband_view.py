@@ -122,12 +122,21 @@ class WavelengthView(QWidget):
 
     
     def make_new_bar(self, x_pos, y_pos, star_name, length = 100) -> QGraphicsRectItem:
+        
         x_position = x_pos - length/2
         new_bar = interactiveBars(x_position,y_pos,this_id=star_name,bar_width=self.bar_height,bar_length=length,has_gradient=True)
 
         return new_bar
     
-    def concatenate_stars(self, slit_positions):
+    def concatenate_stars(self, slit_positions) -> list:
+        """
+        Concatenates the positions of the star_name text
+
+        Args:
+            slit_positions: the positions of the slits on the slitmask (also contains the name of the star)
+        Returns:
+            List of all the names that will be displayed and the y_position of those names
+        """
         star_name_positions = [sublist[1:] for sublist in slit_positions]
         star_name_positions.sort(key=lambda x:x[1])
         name_positions = []
@@ -137,10 +146,10 @@ class WavelengthView(QWidget):
             min_y_pos = min(group, key=lambda x: x[0])[0]
             average_y_pos = (max_y_pos+min_y_pos)/2
             name_positions.append((average_y_pos,name))
-        #the y_position is about 5 bars off downwards
         return name_positions
 
     def make_star_text(self,x_pos, y_pos, text):
+        """ Makes a text item given an x_position, y_position, and the text to be displayed """
 
         text_item = SimpleTextItem(text)
         offset = (text_item.boundingRect().width()/2,text_item.boundingRect().height()/2)
@@ -148,6 +157,16 @@ class WavelengthView(QWidget):
         return text_item
     
     def find_edge_of_bar(self,bar_items)-> list:
+        """
+        groups bars of same length and x position into a list containing info on
+        which star the bars correspond to, the right edge of the bar, and the total height of the bars
+
+        Args:
+            bar_items: list of all the bars
+        Returns:
+            list of information formatted like [(right edge of bar, height, name of star),...]
+            IMPORTANT: if there is only one bar, total_height_of_bars will = 0
+        """
 
         new_list = sorted(
             [[bar.x_pos + bar.length, bar.y_pos, bar.id] for bar in bar_items],
@@ -162,14 +181,19 @@ class WavelengthView(QWidget):
             total_height_of_bars = max_y_pos-min_y_pos
             new_bar_list.append((group[0][0],total_height_of_bars,name))
 
-        # it goes (right edge of bar, height, name of star)
-        # IMPORTANT: if there is only one bar, total_height_of_bars will = 0
         return new_bar_list
     
     def make_line_between_text_and_bar(self, bar_positions, name_positions,edge_of_name) -> list:
-        # bar_postions = [(x_bar,height,star_name),...]
-        # name_positions = [(y_pos,name),...]
-        # they have the same length
+        """
+        makes a line with a bracket that connects the star names on the right side with
+        the corresponding wavebands in the middle
+        
+        Args: 
+            bar_positions: positions of wavebands formatted like [(x_bar,height,star_name),...]
+            name_positions: positions of the start names formatted like [(y_pos,name),...]
+        Returns:
+            List of all the bracket line objects
+        """
         bars, names, name_edge = bar_positions, name_positions, edge_of_name
         sorted_merged_list = sorted(bars + names, key=lambda x: x[-1])
 
@@ -180,18 +204,27 @@ class WavelengthView(QWidget):
             group = [sublist[:-1] for sublist in list(group)]
             # group = [(x_bar,height),(name_y_pos,)]
             information_list.append([group[0][0],group[0][1],name_edge,group[1][0]])
-            #information_list = [[a=x_bar,b=height,c=name_edge,d=y_pos]]
+            # information_list = [[a=x_bar,b=height,c=name_edge,d=y_pos]]
         [object_list.append(BracketLineObject(a,b,c,d,bar_height=self.bar_height)) for a,b,c,d in information_list]
         return object_list
 
-    def update_angstrom_text(self,angstrom_range):
-        # Make text item
-        text = f"Passband: {angstrom_range[0]} nm to {angstrom_range[1]} nm"
+    def update_angstrom_text(self,waveband_range):
+        """ Updates the text of the passband to ensure it is accurate with the desired display """
+        text = f"Passband: {waveband_range[0]} nm to {waveband_range[1]} nm"
         self.waveband_title.setText(text)
 
-    def calculate_bar_length(self,angstrom_range,which_grism):
-        #I should be able to tell from the angstrom range which grism is which but for now I will do this
-        passband = (angstrom_range[0]/1000,angstrom_range[1]/1000) #conversion from nm to microns
+    def calculate_bar_length(self,waveband_range,which_grism):
+        """
+        calculates how long the waveband will be for the selected grism
+
+        Args:
+            waveband_range: the range of the waveband in nm
+            which_grism: a string of the selected grism 
+        Returns:
+            length of the bar depending on selected grism
+        """
+
+        passband = (waveband_range[0]/1000,waveband_range[1]/1000) #conversion from nm to microns
 
         def blue_low_res(x):
             return 276.612*x**3 - 424.636*x**2 + 413.464*x - 120.251
@@ -227,6 +260,7 @@ class WavelengthView(QWidget):
                 return high_end - low_end #this is the length of the bar
     
     def get_farthest_bar_edge(self,scene):
+        """ Locates the bar furthest to the right and returns the right edge x position of that bar """
         bar_edge_list = [
             bar.boundingRect().right()
             for bar in scene.items()
@@ -237,6 +271,8 @@ class WavelengthView(QWidget):
         
     
     def redefine_slit_positions(self,slit_positions):
+        """ Converts the slit positions that were defined for the CSU 
+            into the corresponding position on the CCD """
         y_ratio = self.CSU_dimensions[0]/CCD_HEIGHT
         new_pos = [(x/MAGNIFICATION_FACTOR,y/y_ratio, name) for x,y,name in slit_positions]
         return new_pos
@@ -251,7 +287,7 @@ class WavelengthView(QWidget):
             index: the index of what box was selected (corresponds with the grism)
         Kwargs:    
         which_grism: name of the grism 
-        angstrom_range: wavelength range that will be covered
+        waveband_range: wavelength range that will be covered
         returns: 
             None
         """
