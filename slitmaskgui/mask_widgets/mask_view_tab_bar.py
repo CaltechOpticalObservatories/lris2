@@ -32,10 +32,10 @@ class CustomComboBox(QComboBox):
         self.addItems(self.spectral_view_list)
 
         self.passbands = { #this is all in nm
-            "red_low": (550,1000), #low end, high end
+            "red_low_res": (550,1000), #low end, high end
             "red_high_blue": (550,775), 
             "red_high_red": (775,1000),
-            "blue_low": (310,550), #low end, high end 
+            "blue_low_res": (310,550), #low end, high end 
             "blue_high_blue": (310,435),
             "blue_high_red": (430,565), 
         }
@@ -90,16 +90,17 @@ class TabBar(QTabWidget):
         else:
             self.combobox.hide()
     
-    def send_to_view(self):
+    def send_to_view(self,index):
         # I might make it so that I emit the index and a code so like Red low red is red low res red end grism as well as index
-        index = self.tabBar().currentIndex()
         passband = self.combobox.return_passband_from_index(index)
-        self.wavelength_view.initialize_scene(index,passband=passband)
+        key_list = list(self.combobox.passbands.keys())
+        grism = key_list[index]
+        self.wavelength_view.initialize_scene(passband=passband,which_grism=grism)
     
     pyqtSlot(list)
     def initialize_spectral_view(self, slit_positions):
-        index = self.tabBar().currentIndex()
-        passband = self.combobox.return_passband_from_index(index)
-        self.wavelength_view.get_slit_positions(slit_positions,index,passband)
+        index = self.combobox.currentIndex()
+        self.wavelength_view.get_slit_positions(slit_positions)
+        self.send_to_view(index)
 
 

@@ -2,6 +2,7 @@ from astroquery.gaia import Gaia
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import random
+import numpy as np
 
 
 def query_gaia_starlist_rect(ra_center, dec_center, width_arcmin=5, height_arcmin=10, n_stars=100, output_file='gaia_starlist.txt'):
@@ -24,22 +25,31 @@ def query_gaia_starlist_rect(ra_center, dec_center, width_arcmin=5, height_arcmi
             sign, dec_d, dec_m, dec_s = coord.dec.signed_dms
             dec_d = sign * dec_d
 
-            line = f"{name:<15} {int(ra_h):02d} {int(ra_m):02d} {ra_s:05.2f} {int(dec_d):+03d} {int(dec_m):02d} {abs(dec_s):04.1f} 2000.0 vmag={row['phot_g_mean_mag']:.2f} priority={random.randint(1,2000)}\n"
+            parallax = row['parallax']  # in mas
+            app_mag = row['phot_g_mean_mag']
+
+            if parallax > 0:
+                distance_pc = 1000.0 / parallax
+                abs_mag = app_mag - 5 * (np.log10(distance_pc) - 1)
+            else:
+                abs_mag = float(0)
+
+            line = f"{name:<15} {int(ra_h):02d} {int(ra_m):02d} {ra_s:05.2f} {int(dec_d):+03d} {int(dec_m):02d} {abs(dec_s):04.1f} 2000.0 vmag={row['phot_g_mean_mag']:.2f} priority={abs_mag:.2f}\n"
             f.write(line)
     # Output center info
     print("Starlist Generated")
 
 
 # Example call — replace RA/Dec with your actual center
-run = False
+run = True 
 if run:
-    ra = "00 00 00.00"
-    dec = "+00 00 00.00"
+    ra = "10 20 10.00"
+    dec = "-10 04 00.10"
     query_gaia_starlist_rect(
         ra_center=ra,              # RA in degrees
         dec_center=dec,               # Dec in degrees
         width_arcmin=5,
         height_arcmin=10,
         n_stars=104,
-        output_file='center_coord_starlist.txt'
+        output_file='gaia_starlist.txt'
     )
