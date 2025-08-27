@@ -5,6 +5,7 @@ This function will instruct the csu
 from PyQt6.QtCore import QThread, pyqtSignal
 from lris2csu.remote import CSURemote
 from lris2csu.slit import Slit, MaskConfig
+from slitmaskgui.mask_widgets.mask_objects import ErrorWidget
 from logging import getLogger
 
 # Setup logging
@@ -22,7 +23,7 @@ class CSUWorkerThread(QThread):
         super().__init__()
         self.c = c
         self.task = None
-        self.slits = None
+        self.slits = []
     
     def __repr__(self):
         try:
@@ -49,38 +50,35 @@ class CSUWorkerThread(QThread):
         elif self.task == "configure":
             # self.configure_csu()
             pass
-
-    def reset_configuration(self):
-        """Reset the configuration to a default state."""
-        self.log_message("Resetting CSU...")
-        response = self.c.reset()
-        # Emit reset signal after reset
-        self.reset_signal.emit(response)
+    def update_slits(self,slits):
+        self.slits = slits
 
     def _calibrate(self):
         """Calibrate the CSU."""
         print("Calibrating CSU...")
-        response = self.c.calibrate()  # Capture the response
-        logger.debug(f"Calibration Response: {response}")
+        try:
+            response = self.c.calibrate()  # Capture the response
+            logger.debug(f"Calibration Response: {response}")
+        except TimeoutError as e:
+            logger.debug(f"Calibration Response: {e}")
+            print(f"Calibration Response: {e}")
 
         # Emit calibration response
         self.calibrate_signal.emit(response)
 
     def _status(self):
         """Display the current status."""
-        response = self.c.status()
-        logger.debug(f"Status Response: {response}")
-        self.slits = self.parse_response(response)
-
+        try:
+            response = self.c.status()
+            self.slits = self.parse_response(response)
+            logger.debug(f"Status Response: {response}")
+        except TimeoutError as e:
+            logger.debug(f"Status Response: {e}")
+            print(f'Status Response: {e}')
+        
         # Emit slits list
         if self.slits:
             self.status_signal.emit(self.slits)
-    def _configure_slits(self):
-        """Configure the CSU with the selected slit configuration."""
-        mask_type = self.task_data.get("mask_type")  # Assuming task_data contains the mask_type
-        if mask_type:
-            self.log_message(f"Configuring slits with mask type: {mask_type}")
-            self.update_slit_configuration(mask_type)
 
     def configure_csu(self, slits):
         """Call the CSU's configure method with the slits."""
@@ -88,13 +86,6 @@ class CSUWorkerThread(QThread):
         response = self.c.configure(MaskConfig(slits), speed=6500)
         self.slit_config_updated_signal.emit(response)  # Emit a signal indicating the configuration has been updated
         # self.log_message("Slit configuration updated successfully.")
-
-    def stop_process(self):
-        """Stop the process and emit stop signal."""
-        self.log_message("Stopping the process...")
-        response = self.c.stop()
-        # Emit stop signal
-        self.stop_signal.emit(response)
 
     def parse_response(self, response):
         """Parse the response to extract the mask data."""

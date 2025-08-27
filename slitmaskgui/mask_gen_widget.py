@@ -1,6 +1,7 @@
 
 from slitmaskgui.backend.input_targets import TargetList
 from slitmaskgui.backend.star_list import StarList
+from slitmaskgui.mask_widgets.mask_objects import ErrorWidget
 import re
 import logging
 import numpy as np
@@ -28,25 +29,6 @@ from PyQt6.QtWidgets import (
 
 #need to add another class to load parameters from a text file
 logger = logging.getLogger(__name__)
-
-class ErrorWidget(QDialog):
-    def __init__(self,dialog_text):
-        super().__init__()
-        self.setWindowTitle("ERROR")
-        layout = QVBoxLayout()
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
-        self.setWindowFlags(
-            self.windowFlags() |
-            Qt.WindowType.WindowStaysOnTopHint
-        )
-        
-        self.label = QLabel(dialog_text)
-        buttons = QDialogButtonBox.StandardButton.Ok
-        button_box = QDialogButtonBox(buttons)
-        button_box.accepted.connect(self.accept)
-        layout.addWidget(self.label)
-        layout.addWidget(button_box)
-        self.setLayout(layout)
 
 class MaskGenWidget(QWidget):
     change_data = pyqtSignal(list)

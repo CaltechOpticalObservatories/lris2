@@ -316,7 +316,6 @@ class MaskConfigurationsWidget(QWidget):
         #mask_name.json and will be saved in that directory
         row_num = self.model.get_row_num(self.table.selectedIndexes())
 
-    pyqtSlot(name="update_table")
     def update_table(self,info=None,row=None):
         #the first if statement is for opening a mask file and making a mask in the gui which will be automatically added
         config_logger.info(f"mask configurations: start of update table function {self.row_to_config_dict}")
@@ -329,11 +328,13 @@ class MaskConfigurationsWidget(QWidget):
             row_num = self.model.get_num_rows() -1
             self.row_to_config_dict.update({row_num: mask_info})
             self.table.selectRow(row_num)
-        elif row:
+        elif row or row == 0:
             config_logger.info(f"mask configurations: changes have been saved to {self.model._data[row][1]}")
             self.model.beginResetModel()
             self.model._data[row] = ["Saved",self.model._data[row][1]]
             self.model.endResetModel()
+            self.table.selectRow(row)
+            self.emit_last_used_slitmask() #this might be emitting the signal twice because the selected function also emits the signal
         else:
             config_logger.info(f'mask configurations: new data added but is unsaved')
             try:
@@ -348,7 +349,7 @@ class MaskConfigurationsWidget(QWidget):
                 config_logger.info(f'mask configurations: there are no rows')
         config_logger.info(f"mask configurations: end of update table function {self.row_to_config_dict}")
         # when a mask configuration is run, this will save the data in a list
-    @pyqtSlot(name="selected file path")
+    # @pyqtSlot(name="selected file path")
     def selected(self):
         #will update the slit mask depending on which item is selected
         if len(self.row_to_config_dict) >0:
@@ -372,6 +373,7 @@ class MaskConfigurationsWidget(QWidget):
 
             #define last used slitmask
             self.last_used_slitmask = slit_mask.send_mask()
+            self.emit_last_used_slitmask()
     
     def get_center(self,star_data):
         star = star_data[0]
@@ -388,7 +390,7 @@ class MaskConfigurationsWidget(QWidget):
         center_dec = Angle(new_dec).to_string(unit=u.deg, sep=' ', precision=2, pad=True,alwayssign=True)
         #return it
         return center_ra,center_dec
-    @pyqtSlot()
+    
     def emit_last_used_slitmask(self):
         try:
             self.send_to_csu.emit(self.last_used_slitmask)

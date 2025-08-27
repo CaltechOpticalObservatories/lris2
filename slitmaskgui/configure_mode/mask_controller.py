@@ -8,6 +8,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QThreadPool
 from PyQt6.QtGui import QPainter
 from lris2csu.remote import CSURemote
 from lris2csu.slit import Slit, MaskConfig
+from slitmaskgui.mask_widgets.mask_objects import ErrorWidget
 import time
 
 from logging import basicConfig, DEBUG, getLogger
@@ -27,24 +28,10 @@ CSU_WIDTH = PLATE_SCALE*60*5
 publish_socket = "tcp://131.215.200.105:5559"
 
 
-class ErrorWidget(QDialog):
-    def __init__(self,dialog_text):
-        super().__init__()
-        self.setWindowTitle("ERROR")
-        layout = QVBoxLayout()
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
-        self.setWindowFlags(
-            self.windowFlags() |
-            Qt.WindowType.WindowStaysOnTopHint
-        )
-        
-        self.label = QLabel(dialog_text)
-        buttons = QDialogButtonBox.StandardButton.Ok
-        button_box = QDialogButtonBox(buttons)
-        button_box.accepted.connect(self.accept)
-        layout.addWidget(self.label)
-        layout.addWidget(button_box)
-        self.setLayout(layout)
+def timeout_function(self, e):
+    text = f"{e}\nMake sure you are connected to the CSU"
+    self.error_widget = ErrorWidget(text)
+    self.error_widget.show()
 
 
 class MaskControllerWidget(QWidget):
@@ -67,8 +54,7 @@ class MaskControllerWidget(QWidget):
         self.status_button = QPushButton("Status")
 
         self.c = remote
-        self.worker_thread = CSUWorkerThread(remote)
-        
+        self.worker_thread = CSUWorkerThread(remote) 
 
         self.bar_pairs = []
         self.slits = 0
@@ -110,8 +96,6 @@ class MaskControllerWidget(QWidget):
         self.timer = QTimer()
         self.timer.setInterval(1500)
         self.timer.timeout.connect(self.still_run)
-        self.timer_counter = 0
-        self.total_counts = 10
         self.old_config = None
         #------------------------setting size hints for widgets------------------
         uniform_size_policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -145,20 +129,14 @@ class MaskControllerWidget(QWidget):
             text = f"{e}\nGenerate a Mask Configuration before configuring CSU"
             self.error_widget = ErrorWidget(text)
             self.error_widget.show()
-            if self.error_widget.exec() == QDialog.DialogCode.Accepted:
-                pass
         except TimeoutError as e:
-            text = f"{e}"
-            self.error_widget = ErrorWidget(text)
-            self.error_widget.show()
+            timeout_function(self, e)
     def still_run(self):
         self.current_config = repr(self.worker_thread)
-        self.timer_counter +=1
         self.show_status()
         
         if self.current_config == self.old_config:
             self.timer.stop()
-            self.timer_counter = 0
 
         self.old_config = self.current_config
         # if self.timer_counter >= self.total_counts:
@@ -172,11 +150,10 @@ class MaskControllerWidget(QWidget):
         # self.update_slit_configuration()
         try:
             response = self.c.reset()
-            print(f'reset config {response}')
         except TimeoutError as e:
-            text = f"{e}"
-            self.error_widget = ErrorWidget(text)
-            self.error_widget.show()
+            timeout_function(self, e)
+            response = e
+        print(f'reset config {response}')
 
     def calibrate(self):
         """Start the calibration process in the worker thread."""
@@ -194,7 +171,7 @@ class MaskControllerWidget(QWidget):
     def handle_status_updated(self, slits):
         """Update GUI with slits returned from CSUWorkerThread."""
         if not slits:
-            print("No slits received.")
+            print("No slits received.") 
             return
 
         self.slitmask_display.get_slits(slits)
@@ -214,7 +191,10 @@ class MaskControllerWidget(QWidget):
 
     def shutdown(self):
         """Shutdown the application."""
-        self.c.shutdown()
+        try:
+            self.c.shutdown()
+        except TimeoutError as e:
+            timeout_function(self, e)
 
     def show_status(self):
         """Request slit status from worker thread."""
@@ -225,7 +205,11 @@ class MaskControllerWidget(QWidget):
     def stop_process(self):
         """Stop the process by sending the stop command to CSURemote."""
         print("Stopping the process...")
-        response = self.c.stop()
+        try:
+            response = self.c.stop()
+        except TimeoutError as e:
+            timeout_function(self, e)
+            response = e
         print(f"stop process {response}")
         try:
             self.timer.stop()
@@ -233,18 +217,18 @@ class MaskControllerWidget(QWidget):
             pass #timer already stopped
     
 
-    def parse_response(self, response):
-        """Parse the response to extract the mask data."""
-        try:
-            # Access the last element of the response to get the MaskConfig object
-            mask_config = response[-1]  # Using dot notation instead of dictionary access
-            slits = mask_config.slits
-            log_message = f"Extracted MaskConfig: {mask_config}"
-            print(log_message)
-            print(f"Slits: {slits}")
-            return slits
-        except (IndexError, AttributeError) as e:
-            # Handle cases where the structure is not as expected
-            error_message = f"Error parsing response: {e}"
-            print(error_message)
-            return None
+    # def parse_response(self, response):
+    #     """Parse the response to extract the mask data."""
+    #     try:
+    #         # Access the last element of the response to get the MaskConfig object
+    #         mask_config = response[-1]  # Using dot notation instead of dictionary access
+    #         slits = mask_config.slits
+    #         log_message = f"Extracted MaskConfig: {mask_config}"
+    #         print(log_message)
+    #         print(f"Slits: {slits}")
+    #         return slits
+    #     except (IndexError, AttributeError) as e:
+    #         # Handle cases where the structure is not as expected
+    #         error_message = f"Error parsing response: {e}"
+    #         print(error_message)
+    #         return None

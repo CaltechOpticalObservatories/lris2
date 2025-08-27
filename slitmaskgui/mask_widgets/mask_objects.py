@@ -10,7 +10,11 @@ from PyQt6.QtWidgets import (
     QGraphicsItemGroup,
     QSizePolicy,
     QApplication,
-    QGraphicsObject
+    QGraphicsObject,
+    QVBoxLayout,
+    QDialogButtonBox,
+    QLabel,
+    QDialog
 
 
 )
@@ -63,8 +67,24 @@ DEMO_HEIGHT = 75
 logger = logging.getLogger(__name__)
 
 
-
-#got to add a "if dark mode then these are the colors"
+class ErrorWidget(QDialog):
+    def __init__(self,dialog_text):
+        super().__init__()
+        self.setWindowTitle("ERROR")
+        layout = QVBoxLayout()
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setWindowFlags(
+            self.windowFlags() |
+            Qt.WindowType.WindowStaysOnTopHint
+        )
+        
+        self.label = QLabel(dialog_text)
+        buttons = QDialogButtonBox.StandardButton.Ok
+        button_box = QDialogButtonBox(buttons)
+        button_box.accepted.connect(self.accept)
+        layout.addWidget(self.label)
+        layout.addWidget(button_box)
+        self.setLayout(layout)
 
 class SimpleTextItem(QGraphicsTextItem):
     def __init__(self,text):

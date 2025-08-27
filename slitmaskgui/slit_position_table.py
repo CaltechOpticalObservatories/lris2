@@ -159,8 +159,7 @@ class SlitDisplay(QWidget):
         else:
             self.table.selectionModel().selectionChanged.disconnect(self.row_selected)
             self.model.dataChanged.disconnect(self.slit_width_changed)
-    
-    @pyqtSlot(list,name="input slit positions")
+
     def change_data(self,data):
         logger.info("slit_position_table: change_data function called, changing data")
         if data:
@@ -180,8 +179,6 @@ class SlitDisplay(QWidget):
 
         self.highlight_other.emit(corresponding_row-1)
 
-
-    @pyqtSlot(int,name="other row selected")
     def select_corresponding(self,bar_id):
         logger.info("slit_position_table: method select_corresponding is called, selected corresponding row from slit mask view")
         self.connect_on(False)
@@ -214,7 +211,7 @@ class SlitDisplay(QWidget):
         else:
             pass #will add all the changed data in a loop
         self.tell_unsaved.emit() 
-    pyqtSlot(object)
+
     def data_saved(self):
         list_copy = self.changed_data_list
         self.changed_data_list = [False,{}]
