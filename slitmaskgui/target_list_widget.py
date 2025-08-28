@@ -1,14 +1,12 @@
 
 #from inputTargets import TargetList
 import logging
-from slitmaskgui.menu_bar import MenuBar
 from PyQt6.QtCore import Qt, QAbstractTableModel, pyqtSlot, QSize, pyqtSignal
 import itertools
 from PyQt6.QtWidgets import (
     QWidget,
     QTableView,
     QVBoxLayout,
-    QLabel,
     QSizePolicy,
     QHeaderView,
     

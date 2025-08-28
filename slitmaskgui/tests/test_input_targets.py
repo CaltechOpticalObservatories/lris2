@@ -1,4 +1,4 @@
-from slitmaskgui.input_targets import TargetList
+from slitmaskgui.backend.input_targets import TargetList
 import pytest
 
 #third one should return an error, fourth one shouldn't return error but must_have wont be read

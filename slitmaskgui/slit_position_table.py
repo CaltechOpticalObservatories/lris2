@@ -7,16 +7,13 @@ interactive image and highlight the corresponding star in the target list table
 from slitmaskgui.menu_bar import MenuBar
 import logging
 import itertools
-from PyQt6.QtCore import Qt, QAbstractTableModel, pyqtSlot, pyqtSignal, QSize
+from PyQt6.QtCore import Qt, QAbstractTableModel, pyqtSignal, QSize
 from PyQt6.QtWidgets import (
     QWidget,
     QTableView,
     QVBoxLayout,
-    QTableWidget,
     QSizePolicy,
-    QLabel,
     QHeaderView,
-    QFrame,
     QAbstractScrollArea,
 
 

@@ -5,25 +5,20 @@ from slitmaskgui.mask_widgets.mask_objects import ErrorWidget
 import re
 import logging
 import numpy as np
-from PyQt6.QtCore import QObject, pyqtSignal, Qt, QSize
+from PyQt6.QtCore import pyqtSignal, Qt, QSize
 from PyQt6.QtWidgets import (
     QFileDialog,
     QVBoxLayout,
     QWidget,
     QPushButton,
-    QStackedLayout,
     QLineEdit,
     QFormLayout,
     QGroupBox,
-    QBoxLayout,
     QSizePolicy,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
-    QLayout,
     QCheckBox,
     QDialog,
-    QDialogButtonBox
     
 )
 

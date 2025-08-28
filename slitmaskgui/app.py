@@ -16,7 +16,6 @@ just take that and display that instead of through my awful input targets functi
 
 #just importing everything for now. When on the final stages I will not import what I don't need
 import sys
-import random
 import logging
 logging.basicConfig(
     filename="main.log",

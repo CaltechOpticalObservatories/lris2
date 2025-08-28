@@ -164,7 +164,6 @@ class MoveableFieldOfView(QGraphicsObject):
         return rect_item
     def update_theme(self):
         self.theme = get_theme()
-        self.setPen(QPen(QColor.fromString(self.theme['green']),self.thickness))
     def boundingRect(self):
         return self.rect()
     def get_pos(self):

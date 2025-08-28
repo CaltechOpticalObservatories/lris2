@@ -11,14 +11,11 @@ import logging
 from astropy.coordinates import SkyCoord,Angle
 import astropy.units as u
 from slitmaskgui.backend.star_list import StarList
-from PyQt6.QtCore import Qt, QAbstractTableModel,QSize, QModelIndex, pyqtSlot, pyqtSignal
+from PyQt6.QtCore import Qt, QAbstractTableModel,QSize, QModelIndex, pyqtSignal
 from PyQt6.QtWidgets import (
-    QApplication,
-    QMainWindow,
     QVBoxLayout,
     QHBoxLayout,
     QWidget,
-    QLabel,
     QPushButton,
     QGroupBox,
     QTableView,
@@ -305,13 +302,16 @@ class MaskConfigurationsWidget(QWidget):
         self.table.selectRow(row)
     
     def update_table_to_unsaved(self):
-        config_logger.info(f'mask configurations: new data added but is unsaved')
-        current_row = self.model.get_row_num(self.table.selectedIndexes())
-        index = self.model.index(current_row,0)
-        self.model.setData(index, "Unsaved", Qt.ItemDataRole.DisplayRole)
-        self.connect_signalers()
-        self.table.selectRow(current_row)
-        self.disconnect_signalers()
+        try:
+            config_logger.info(f'mask configurations: new data added but is unsaved')
+            current_row = self.model.get_row_num(self.table.selectedIndexes())
+            index = self.model.index(current_row,0)
+            self.model.setData(index, "Unsaved", Qt.ItemDataRole.DisplayRole)
+            self.connect_signalers()
+            self.table.selectRow(current_row)
+            self.disconnect_signalers()
+        except TypeError as e:
+            config_logger.info(f'Mask Configuration Widget: {e}')
 
     def selected(self):
         if len(self.row_to_config_dict) > 0:
@@ -331,8 +331,7 @@ class MaskConfigurationsWidget(QWidget):
             self.update_image.emit(slit_mask.generate_skyview())
             mask_name_info = np.array([str(name),str(str(ra)+str(dec)),str(pa)])
             self.change_name_above_slit_mask.emit(mask_name_info)
-
-            #define last used slitmask
+            
             self.last_used_slitmask = slit_mask.send_mask()
             self.emit_last_used_slitmask()
     
