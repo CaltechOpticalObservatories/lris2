@@ -109,9 +109,9 @@ class TargetDisplayWidget(QWidget):
 
     def sizeHint(self):
         return QSize(700,100)
-    def connect_on(self,answer:bool):
+    def toggle_connection(self,connect:bool):
         #---------------reconnect connections---------------
-        if answer:
+        if connect:
             self.table.selectionModel().selectionChanged.connect(self.selected_star)
         else:
             self.table.selectionModel().selectionChanged.disconnect(self.selected_star)
@@ -134,12 +134,12 @@ class TargetDisplayWidget(QWidget):
 
     @pyqtSlot(str)
     def select_corresponding(self,star): #everything will be done with the row widget
-        self.connect_on(False)
+        self.toggle_connection(False)
         row = self.model.get_row(star)
         if row in range(len(self.model._data)):
             logger.info(f'target_list_widget: method select_corresponding called: row {row}')
             self.table.selectRow(row)
-        self.connect_on(True)
+        self.toggle_connection(True)
 
 
 

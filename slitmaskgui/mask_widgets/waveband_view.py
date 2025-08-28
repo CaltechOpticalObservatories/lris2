@@ -88,9 +88,9 @@ class WavelengthView(QWidget):
     def sizeHint(self):
         return QSize(650,620)
     
-    def connect_on(self,answer:bool):
+    def toggle_connection(self,connect:bool):
         #---------------reconnect connections---------------
-        if answer:
+        if connect:
             self.scene.selectionChanged.connect(self.send_row)
         else:
             self.scene.selectionChanged.disconnect(self.send_row)
@@ -101,13 +101,13 @@ class WavelengthView(QWidget):
             item for item in reversed(self.scene.items())
             if isinstance(item, QGraphicsRectItem)
         ]
-        self.connect_on(False)
+        self.toggle_connection(False)
         self.scene.clearSelection()
         # 
         if 0 <= row <len(all_bars):
             self.row_num = row
             all_bars[self.row_num].setSelected(True)
-        self.connect_on(True)
+        self.toggle_connection(True)
 
     def send_row(self):
         try:

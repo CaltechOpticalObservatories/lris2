@@ -93,9 +93,9 @@ class interactiveSlitMask(QWidget):
         #-------------------------------------------
     def sizeHint(self):
         return QSize(550,620)
-    def connect_on(self,answer:bool):
+    def toggle_connection(self,connect:bool):
         #---------------reconnect connections---------------
-        if answer:
+        if connect:
             self.scene.selectionChanged.connect(self.row_is_selected)
             self.scene.selectionChanged.connect(self.get_star_name_from_row)
         else:
@@ -113,11 +113,11 @@ class interactiveSlitMask(QWidget):
         ]
         
         self.scene.clearSelection()
-        # self.connect_on(False)
+        # self.toggle_connection(False)
         if 0 <= row <len(all_bars):
             self.row_num = row
             all_bars[self.row_num].setSelected(True)
-        # self.connect_on(True)
+        # self.toggle_connection(True)
 
     @pyqtSlot(str)
     def get_row_from_star_name(self,name):
@@ -135,9 +135,9 @@ class interactiveSlitMask(QWidget):
         for i in range(len(all_stars)):
             if all_stars[i].get_star_name() == name:
                 bar_id = int(all_stars[i].get_bar_id())
-                self.connect_on(False)
+                self.toggle_connection(False)
                 all_bars[bar_id].setSelected(True)
-                self.connect_on(True)
+                self.toggle_connection(True)
                 
     def get_star_name_from_row(self):
         try:
