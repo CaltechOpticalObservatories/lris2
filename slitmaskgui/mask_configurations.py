@@ -22,8 +22,6 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QHeaderView,
     QFileDialog,
-
-
 )
 config_logger = logging.getLogger(__name__)
 
@@ -49,17 +47,11 @@ class TableModel(QAbstractTableModel):
 
     def headerData(self, section, orientation, role = ...):
         if role == Qt.ItemDataRole.DisplayRole:
-            #should add something about whether its vertical or horizontal
             if orientation == Qt.Orientation.Horizontal:
-                
                 return self.headers[section]
-                
             if orientation == Qt.Orientation.Vertical:
                 return None
-        
-        
         return super().headerData(section, orientation, role)
-
 
     def data(self, index, role):
         if role == Qt.ItemDataRole.DisplayRole:
@@ -78,6 +70,7 @@ class TableModel(QAbstractTableModel):
 
     def get_num_rows(self):
         return len(self._data)
+    
     def get_row_num(self,index):
         if len(index) > 0:
             return index[0].row()
@@ -85,6 +78,7 @@ class TableModel(QAbstractTableModel):
 
     def rowCount(self, index):
         return len(self._data)
+    
     def columnCount(self, index):
         return 2
     
@@ -100,7 +94,6 @@ class CustomTableView(QTableView):
         super().__init__()
         self.verticalHeader().hide()
         self.verticalHeader().setDefaultSectionSize(0)
-        #self.setEditTriggers(QTableView.EditTrigger.DoubleClicked)
 
         self.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.setSelectionMode(QTableView.SelectionMode.SingleSelection)
@@ -112,7 +105,7 @@ class CustomTableView(QTableView):
     def setModel(self, model):
         super().setModel(model)
         self.setResizeMode()
-        return 2
+        return 2 # I don't know what this does at all
     
     
     
@@ -244,7 +237,7 @@ class MaskConfigurationsWidget(QWidget):
                     config["slit_width"] = new_data[config["bar_id"]]
             self.update_table_to_saved(row_num)
 
-    def close_button_clicked(self,item):
+    def close_button_clicked(self):
         config_logger.info(f"mask configurations: start of close button function {self.row_to_config_dict}")
         row_num = self.model.get_row_num(self.table.selectedIndexes())
         if row_num is None:
@@ -273,10 +266,11 @@ class MaskConfigurationsWidget(QWidget):
                 f"{name}",
                 "JSON Files (*.json)"
             )
+            print("file_path_done")
             if file_path:
-                data = json.dumps(self.row_to_config_dict[row_num])
+                data = self.row_to_config_dict[row_num]
                 ra, dec = self.get_center(data)
-                star_list = StarList(data,ra=ra,dec=dec,slit_width=0.7,auto_run=False)
+                star_list = StarList(json.dumps(data),ra=ra,dec=dec,slit_width=0.7,auto_run=False)
                 star_list.export_mask_config(file_path=file_path)
         except TypeError as e:
             print(f'{e}\nNo mask configurations found')

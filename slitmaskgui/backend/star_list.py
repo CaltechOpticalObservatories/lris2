@@ -46,7 +46,7 @@ class StarList:
     #with auto run you can select if the json is complete or not already
     #this means that if you have a complete list of all the stars as if it rand thorough this class, then you can select auto run as false
     #then you can use the send functions without doing a bunch of computation
-    def __init__(self,payload,ra,dec,slit_width=0,pa=0,auto_run=True,use_center_of_priority=False): 
+    def __init__(self,payload,ra=0,dec=0,slit_width=0,pa=0,auto_run=True,use_center_of_priority=False): 
         self.payload = json.loads(payload)
         ra_coord,dec_coord = ra, dec
         if use_center_of_priority:
@@ -61,36 +61,26 @@ class StarList:
     
     def calc_mask(self,all_stars): 
         slit_mask = SlitMask(all_stars,center=self.center, slit_width= self.slit_width, pa= self.pa)
-            
         return json.loads(slit_mask.return_mask())
 
     def export_mask_config(self,file_path):
-        # file_path = f'{os.getcwd()}/{mask_name}.json'
         with open(file_path,'w') as f:
             json.dump(self.payload,f,indent=4)
-        # return file_path
+
     def send_mask(self, mask_name="untitled"):
         return self.payload
     
-
     def send_target_list(self):
         return [[x["name"],x["priority"],x["vmag"],x["ra"],x["dec"],x["center distance"]] for x in self.payload]
 
-
     def send_interactive_slit_list(self):
-        #have to convert it to dict {bar_num:(position,star_name)}
-        #imma just act rn like all the stars are in sequential order
-        #I am going to have an optimize function that actually gets the right amount of stars with good positions
-        #its going to also order them by bar
-        total_pixels = 252 
-        
         slit_dict = {
             i: (obj["x_mm"], obj["bar_id"], obj["name"]) 
             for i, obj in enumerate(self.payload[:72])
             if "bar_id" in obj
             }
-
         return slit_dict
+    
     def send_list_for_wavelength(self):
         old_ra_dec_list = [[x["bar_id"],x["ra"],x["dec"]]for x in self.payload]
         ra_dec_list =[]
@@ -98,13 +88,13 @@ class StarList:
         return ra_dec_list
     
     def send_row_widget_list(self):
-        #the reason why the bar id is plus 1 is to transl
         sorted_row_list = sorted(
             ([obj["bar_id"]+1, obj["x_mm"], obj["slit_width"]] 
             for obj in self.payload[:72] if "bar_id" in obj),
             key=lambda x: x[0]
             )
         return sorted_row_list
+    
     def find_center_of_priority(self):
         """              ∑ coordinates * priority
         CoP coordinate = ------------------------
