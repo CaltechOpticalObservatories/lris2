@@ -56,14 +56,12 @@ class WavelengthView(QWidget):
         self.mask_name = None
         self.bar_height = CCD_HEIGHT/72#PLATE_SCALE*8.6 #this could be wrong maybe use magnification factor
 
-        # Initializing the cached dict
-        self.cached_scene_dict = {}
-
         self.waveband_title = QLabel()
         
         self.slit_positions = [(xcenter_of_image,self.bar_height*x, "NONE") for x in range(72)]
         self.initialize_scene(passband=(310,550),which_grism='blue_low_res') # passband currently a temp variable
         self.view = CustomGraphicsView(self.scene)
+        self.view.setContentsMargins(0,0,0,0)
 
         #-------------------connections-----------------------
         logger.info("wave view: establishing connections")
@@ -208,56 +206,41 @@ class WavelengthView(QWidget):
         [object_list.append(BracketLineObject(a,b,c,d,bar_height=self.bar_height)) for a,b,c,d in information_list]
         return object_list
 
-    def update_angstrom_text(self,waveband_range):
+    def update_passband_text(self,passband):
         """ Updates the text of the passband to ensure it is accurate with the desired display """
-        text = f"Passband: {waveband_range[0]} nm to {waveband_range[1]} nm"
+        text = f"Passband: {passband[0]} nm to {passband[1]} nm"
         self.waveband_title.setText(text)
 
-    def calculate_bar_length(self,waveband_range,which_grism):
+    def calculate_bar_length(self,pb: tuple ,which_grism:str ) -> float:
+        passband = pb
         """
         calculates how long the waveband will be for the selected grism
 
         Args:
-            waveband_range: the range of the waveband in nm
+            passband: the range of the waveband in nm
             which_grism: a string of the selected grism 
         Returns:
             length of the bar depending on selected grism
         """
 
-        passband = (waveband_range[0]/1000,waveband_range[1]/1000) #conversion from nm to microns
+        x_low, x_high = passband[0]/1000, passband[1]/1000  #conversion from nm to microns
 
-        def blue_low_res(x):
-            return 276.612*x**3 - 424.636*x**2 + 413.464*x - 120.251
-        def blue_high_blue(x):
-            return 1694.055*x**3 - 2185.377*x**2 + 1398.040*x - 303.935
-        def blue_high_red(x):
-            return 791.523*x**3 - 1338.208*x**2 + 1171.084*x - 348.142
-        def red_low_res(x):
-            return 21.979*x**3 - 60.775*x**2 + 183.657*x - 115.552
-        def red_high_blue(x):
-            return 117.366*x**3 - 273.597*x**2 + 461.561*x - 219.310
-        def red_high_red(x):
-            return 76.897*x**3 - 235.837*x**2 + 479.807*x - 292.794
+        def compute_passband_endpoints(a: float, b: float, c: float, d: float, x: float) -> float:
+            return a * x**3 + b * x**2 + c * x + d
 
-        match which_grism:
-            case 'blue_low_res':
-                low_end, high_end = map(blue_low_res, passband)
-                return high_end - low_end #this is the length of the bar
-            case 'blue_high_blue':
-                low_end, high_end = map(blue_high_blue, passband)
-                return high_end - low_end #this is the length of the bar
-            case 'blue_high_red':
-                low_end, high_end = map(blue_high_red, passband)
-                return high_end - low_end #this is the length of the bar
-            case 'red_low_res':
-                low_end, high_end = map(red_low_res, passband)
-                return (high_end - low_end) #this is the length of the bar
-            case 'red_high_blue':
-                low_end, high_end = map(red_high_blue, passband)
-                return high_end - low_end #this is the length of the bar
-            case 'red_high_red':
-                low_end, high_end = map(red_high_red, passband)
-                return high_end - low_end #this is the length of the bar
+        coefficients = {
+            "blue_low_res":   (276.612,  -424.636,  413.464, -120.251),
+            "blue_high_blue": (1694.055, -2185.377, 1398.040, -303.935),
+            "blue_high_red":  (791.523,  -1338.208, 1171.084, -348.142),
+            "red_low_res":    (21.979,   -60.775,   183.657,  -115.552),
+            "red_high_blue":  (117.366,  -273.597,  461.561,  -219.310),
+            "red_high_red":   (76.897,   -235.837,  479.807,  -292.794),
+        }
+        
+        a, b, c, d = coefficients[which_grism]
+        low_end = compute_passband_endpoints(a, b, c, d, x_low)
+        high_end = compute_passband_endpoints(a, b, c, d, x_high)
+        return max(0.0, high_end - low_end)
     
     def get_farthest_bar_edge(self,scene):
         """ Locates the bar furthest to the right and returns the right edge x position of that bar """
@@ -287,7 +270,7 @@ class WavelengthView(QWidget):
             index: the index of what box was selected (corresponds with the grism)
         Kwargs:    
         which_grism: name of the grism 
-        waveband_range: wavelength range that will be covered
+        passband: wavelength range that will be covered
         returns: 
             None
         """
@@ -318,12 +301,10 @@ class WavelengthView(QWidget):
         [new_scene.addItem(item) for item in bracket_list]
 
         # Update waveband text
-        self.update_angstrom_text(passband_in_nm) #it is no longer the angstrom range
+        self.update_passband_text(passband_in_nm)
 
         new_scene.setSceneRect(new_scene.itemsBoundingRect())
         self.scene = new_scene
-        self.view = CustomGraphicsView(new_scene)
-        self.view.setContentsMargins(0,0,0,0)
 
     def update_mask_name(self,info):
         self.mask_name = info[0]

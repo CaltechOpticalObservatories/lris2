@@ -41,7 +41,7 @@ def query_gaia_starlist_rect(ra_center, dec_center, width_arcmin=5, height_arcmi
 
 
 # Example call — replace RA/Dec with your actual center
-run = True 
+run = False  
 if run:
     ra = "10 20 10.00"
     dec = "-10 04 00.10"
