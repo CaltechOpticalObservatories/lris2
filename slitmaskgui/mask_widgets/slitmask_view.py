@@ -99,8 +99,12 @@ class interactiveSlitMask(QWidget):
             self.scene.selectionChanged.connect(self.row_is_selected)
             self.scene.selectionChanged.connect(self.get_star_name_from_row)
         else:
-            self.scene.selectionChanged.disconnect(self.row_is_selected)
-            self.scene.selectionChanged.disconnect(self.get_star_name_from_row)
+            try:
+                self.scene.selectionChanged.disconnect(self.row_is_selected)
+                self.scene.selectionChanged.disconnect(self.get_star_name_from_row)
+            except:
+                print("slitmask view disconnect failed")
+                pass
     @pyqtSlot(int,name="row selected")
     def select_corresponding_row(self,row):
         logger.info("slit_view: method select_correspond_row called")
