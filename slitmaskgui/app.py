@@ -29,7 +29,8 @@ logging.basicConfig(
 from slitmaskgui.target_list_widget import TargetDisplayWidget
 from slitmaskgui.mask_gen_widget import MaskGenWidget
 from slitmaskgui.menu_bar import MenuBar
-from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView, SkyImageView
+from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView
+from slitmaskgui.sky_viewer import SkyImageView
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
 from slitmaskgui.mask_view_tab_bar import TabBar
@@ -79,6 +80,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("LRIS-2 Slit Configuration Tool")
         self.setGeometry(100,100,1000,760)
         self.setMenuBar(MenuBar()) #sets the menu bar
+        self.update_theme()
         
         #----------------------------definitions---------------------------
         main_logger.info("app: doing definitions")
@@ -108,14 +110,19 @@ class MainWindow(QMainWindow):
         mask_gen_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
         mask_gen_widget.change_row_widget.connect(self.slit_position_table.change_data)
         mask_gen_widget.send_mask_config.connect(mask_config_widget.update_table)
-        mask_gen_widget.change_mask_name.connect(self.interactive_slit_mask.update_name_center_pa)
         mask_gen_widget.change_wavelength_data.connect(self.wavelength_view.get_spectra_of_star)
-        mask_gen_widget.update_image.connect(self.sky_view.show_image)
 
         mask_config_widget.change_data.connect(self.target_display.change_data)
         mask_config_widget.change_row_widget.connect(self.slit_position_table.change_data)
         mask_config_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
         mask_config_widget.reset_scene.connect(self.reset_scene)
+        mask_config_widget.update_image.connect(self.sky_view.show_image)
+        mask_config_widget.change_name_above_slit_mask.connect(self.interactive_slit_mask.update_name_center_pa)
+
+        #if the data is changed connections
+        self.slit_position_table.tell_unsaved.connect(mask_config_widget.update_table)
+        mask_config_widget.data_to_save_request.connect(self.slit_position_table.data_saved)
+        self.slit_position_table.data_changed.connect(mask_config_widget.save_data_to_mask)
 
 
         #-----------------------------------layout-----------------------------
@@ -143,7 +150,7 @@ class MainWindow(QMainWindow):
         self.layoutH1.addWidget(self.mask_tab)
         # self.layoutH1.addWidget(self.combobox)
         self.layoutH1.setSpacing(0)
-        self.layoutH1.setContentsMargins(0,0,0,0)
+        self.layoutH1.setContentsMargins(9,9,9,9)
         widgetH1 = QWidget()
         widgetH1.setLayout(self.layoutH1)
 
@@ -156,10 +163,14 @@ class MainWindow(QMainWindow):
         main_splitter.addWidget(self.splitterV1)
         # main_splitter.setCollapsible(0,False)
         main_splitter.addWidget(self.splitterV2)
-        main_splitter.setContentsMargins(9,9,9,9)
 
         self.setCentralWidget(main_splitter)
-        #-------------------------------------------------------
+        self.setContentsMargins(9,9,9,9)
+
+        #--------------------------change theme-----------------------------
+        QApplication.instance().styleHints().colorSchemeChanged.connect(self.update_theme)
+
+
     @pyqtSlot(name="reset scene")
     def reset_scene(self):
         main_logger.info("app: scene is being reset")
@@ -195,17 +206,23 @@ class MainWindow(QMainWindow):
         self.layoutH1.addWidget(self.slit_position_table)
         self.layoutH1.addWidget(self.mask_tab)
         self.splitterV1.insertWidget(1, self.target_display)
+    
+    def update_theme(self):
+        theme = QApplication.instance().styleHints().colorScheme()
+        if theme == Qt.ColorScheme.Dark:
+            with open("slitmaskgui/dark_mode.qss", "r") as f:
+                self.setStyleSheet(f.read())
+        elif theme == Qt.ColorScheme.Light:
+            with open("slitmaskgui/light_mode.qss", "r") as f:
+                self.setStyleSheet(f.read())
+        else:
+            with open("slitmaskgui/dark_mode.qss", "r") as f:
+                self.setStyleSheet(f.read())
         
 
-    
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-
-    with open("slitmaskgui/styles.qss", "r") as f:
-        _style = f.read()
-    app.setStyleSheet(_style)
-    
 
     window = MainWindow()
     window.show()

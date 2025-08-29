@@ -53,10 +53,31 @@ class TableModel(QAbstractTableModel):
         return len(self._data)
 
     def columnCount(self, index):
-        return len(self._data[0])
+        try:
+            return len(self._data[0])
+        except:
+            return 0
     
     def get_bar_id(self, row):
         return self._data[row][0]
+    
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.ItemFlag.ItemIsEnabled
+        if index.column() >1:
+            return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEditable
+        else:
+            return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+    
+    def setData(self, index, value, role = ...):
+        if role == Qt.ItemDataRole.EditRole:
+            # Set the value into the frame.
+            self._data[index.row()][index.column()] = value
+            self.dataChanged.emit(index, index)
+            return True
+
+        return False
+        # return super().setData(index, value, role)
     
 class CustomTableView(QTableView):
     def __init__(self):
@@ -79,8 +100,6 @@ class CustomTableView(QTableView):
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
 
-        
-
     def event(self, event):
         return super().event(event)
         #what I will do in the future is make it so that if even == doublemousepress event that you can edit the data in the cell
@@ -95,6 +114,8 @@ default_slit_display_list = [[i+1,0.00,width] for i in range(72)]
 class SlitDisplay(QWidget):
     highlight_other = pyqtSignal(int,name="row selected") #change name to match that in the interactive slit mask
     select_star = pyqtSignal(int)
+    data_changed = pyqtSignal(list) #it will have a bool as the first part of the list
+    tell_unsaved = pyqtSignal(object)
     def __init__(self,data=default_slit_display_list):
         super().__init__()
 
@@ -109,24 +130,27 @@ class SlitDisplay(QWidget):
         self.table = CustomTableView()
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
+        self.changed_data_list = [False,{}]
 
         #--------------------------connections-----------------------
         logger.info("slit_position_table: doing conections")
         self.table.selectionModel().selectionChanged.connect(self.row_selected)
+        self.model.dataChanged.connect(self.slit_width_changed)
+
 
         #----------------------------layout----------------------
         logger.info("slit_position_table: defining layout")
         
         main_layout = QVBoxLayout()
-        main_layout.setSpacing(0)
-        main_layout.setContentsMargins(0,0,0,0)
+        # main_layout.setSpacing(9)
+        main_layout.setContentsMargins(0,0,9,0)
         
         main_layout.addWidget(self.table)
         self.setLayout(main_layout)
         #------------------------------------------------------        
 
     def sizeHint(self):
-        return QSize(135,120)
+        return QSize(170,120)
     def connect_on(self,answer:bool):
         #---------------reconnect connections---------------
         if answer:
@@ -137,13 +161,14 @@ class SlitDisplay(QWidget):
     @pyqtSlot(list,name="input slit positions")
     def change_data(self,data):
         logger.info("slit_position_table: change_data function called, changing data")
-        self.model.beginResetModel()
-        replacement = list(x for x,_ in itertools.groupby(data))
-        self.model._data = replacement
-        self.data = replacement
-        self.model.endResetModel()
-        self.table.resizeColumnsToContents()
-        self.table.resize(self.table.sizeHint())
+        if data:
+            self.model.beginResetModel()
+            replacement = list(x for x,_ in itertools.groupby(data))
+            self.model._data = replacement
+            self.data = replacement
+            self.model.endResetModel()
+            self.table.resizeColumnsToContents()
+            self.table.resize(self.table.sizeHint())
 
     
     def row_selected(self):
@@ -169,4 +194,27 @@ class SlitDisplay(QWidget):
             #this means that the bar does not have a slit on it
             pass
         self.connect_on(True)
+    
+    def slit_width_changed(self,index1,index2):
+        #essentially, if the data was changed, this would be set to true and the rest of the program would know the data is changed
+        #so the config would set the state to be unsaved
+        #once the mask config has been saved everything else will update
+        #it will also say what has been changed
+        index_1, index_2 = index1, index2
+        self.changed_data_list[0]=True
+
+        #if index_1 and index_2 do not equal each other then multiple lines of data have been changed
+        #I won't worry about that right now
+        if index_1 == index_2:
+            value = self.model.data(index_2,Qt.ItemDataRole.DisplayRole)
+            bar_id = self.model.get_bar_id(index_2.row())
+            self.changed_data_list[1][bar_id]=value
+        else:
+            pass #will add all the changed data in a loop
+        self.tell_unsaved.emit(None) #doesn't have to be a bool or really anything just need to signal
+    pyqtSlot(object)
+    def data_saved(self):
+        list_copy = self.changed_data_list
+        self.changed_data_list = [False,{}]
+        self.data_changed.emit(list_copy)
  

@@ -13,6 +13,7 @@ import json
 from astropy.coordinates import SkyCoord, Angle
 import astropy.units as u
 import numpy as np
+from collections import OrderedDict
 
 
 #for some reason I am splitting up everything into their own for s©tatements
@@ -23,30 +24,27 @@ class SlitMask:
         self.center = center
         self.slit_width = slit_width
         self.pa = pa
+        self.add_slit_width()
         self.calc_y_pos()
         self.calc_bar_id()
         self.optimize()
         self.lengthen_slits(max_slit_length)
+    
+    def add_slit_width(self):
+        for obj in self.stars:
+            obj["slit_width"] = self.slit_width
 
     def calc_y_pos(self):
-        print(self.center)
         for obj in self.stars:
             star = SkyCoord(obj["ra"], obj["dec"], unit=(u.hourangle, u.deg), frame='icrs')
             separation = self.center.separation(star)
             obj["center distance"] = separation.to(u.arcmin).value  # float is implicit in .value
-
-            # Wrap RA difference to [-180, 180) degrees and convert to arcsec
             
             delta_ra = (star.ra - self.center.ra).wrap_at(180 * u.deg).to(u.arcsec)
 
-            # Dec difference in arcsec (no wrap needed for Dec)
             delta_dec = (star.dec - self.center.dec).to(u.arcsec)
-
-            # Correct RA offset for spherical projection
             delta_ra_proj = delta_ra * np.cos(self.center.dec.radian)
-            print(delta_ra_proj)
 
-            # Convert to mm using plate scale
             x_mm = delta_ra_proj.value * PLATE_SCALE
             y_mm = delta_dec.value * PLATE_SCALE
 
@@ -107,7 +105,9 @@ class SlitMask:
             
         
     def return_mask(self):
-        return json.dumps(self.stars)
+        unique_stars = []
+        [unique_stars.append(x) for x in self.stars if x not in unique_stars]
+        return json.dumps(unique_stars)
     
     def make_mask(self):
         #will return a list that will be used by the csu to configure the slits 

@@ -7,31 +7,44 @@
 # from PyQt6.QtGui import QBrush, QPen, QPainter, QColor, QFont, QTransform
 # from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView
 
-from PyQt6.QtCore import pyqtSignal
-
+from PyQt6.QtCore import pyqtSignal, Qt, QPoint, QTimer, QItemSelectionModel
 from PyQt6.QtWidgets import (
     QTabWidget,
     QComboBox,
-    QLabel
+    QLabel,
+    QVBoxLayout,
+    QWidget,
+    QListView
 
 )
+class CustomComboBox(QComboBox):
+    def __init__(self):
+        super().__init__()
+        items = ['phot_bp_mean_mag', 'phot_g_mean_mag', 'phot_rp_mean_mag']
+        self.addItems(items)
 
+    def showPopup(self):
+        popup = self.view().window()
+        if popup.isVisible():
+            popup.hide() 
 
+        super().showPopup()
+
+        pos = self.mapToGlobal(QPoint(0, self.height()))
+        popup.move(pos)
+        popup.show()
 
 class TabBar(QTabWidget):
     waveview_change = pyqtSignal(int)
     def __init__(self,slitmask,waveview,skyview):
         super().__init__()
         #--------------defining widgets for tabs---------
-        self.wavelength_view = waveview #currently waveview hasn't been developed
+        self.wavelength_view = QLabel("Spectral view is currently under development")#waveview #currently waveview hasn't been developed
         self.interactive_slit_mask = slitmask
         self.sky_view = skyview
 
         #--------------defining comobox------------------
-        self.combobox = QComboBox()
-        self.combobox.addItem('phot_bp_mean_mag')
-        self.combobox.addItem('phot_g_mean_mag')
-        self.combobox.addItem('phot_rp_mean_mag')
+        self.combobox = CustomComboBox()
 
         #--------------defining tabs--------------
         self.addTab(self.interactive_slit_mask,"Slit Mask")
@@ -41,11 +54,15 @@ class TabBar(QTabWidget):
         self.setCornerWidget(self.combobox)
         self.combobox.hide()
         # self.mask_tab.setCornerWidget(self.combobox) #this would add the widget to the corner (only want it when spectral view is selected)
+        #------------------other---------------
+        self.wavelength_view.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.wavelength_view.setStyleSheet("font-size: 20px;")
 
         #------------------connections------------
         self.tabBar().currentChanged.connect(self.wavetab_selected)
         self.combobox.currentIndexChanged.connect(self.send_to_view)
         # self.tabBar().currentChanged.connect()
+
     
     def wavetab_selected(self,selected):
         if selected == 1:

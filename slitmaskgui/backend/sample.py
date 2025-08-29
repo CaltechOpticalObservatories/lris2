@@ -29,4 +29,17 @@ def query_gaia_starlist_rect(ra_center, dec_center, width_arcmin=5, height_arcmi
     # Output center info
     print("Starlist Generated")
 
+
 # Example call — replace RA/Dec with your actual center
+run = False
+if run:
+    ra = "00 42 44.00"
+    dec = "+41 16 09.00"
+    query_gaia_starlist_rect(
+        ra_center=ra,              # RA in degrees
+        dec_center=dec,               # Dec in degrees
+        width_arcmin=5,
+        height_arcmin=10,
+        n_stars=104,
+        output_file='andromeda_galaxy.txt'
+    )

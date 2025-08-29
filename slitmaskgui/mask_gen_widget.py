@@ -1,7 +1,6 @@
 
-from slitmaskgui.input_targets import TargetList
+from slitmaskgui.backend.input_targets import TargetList
 from slitmaskgui.backend.star_list import StarList
-from slitmaskgui.backend.sample import query_gaia_starlist_rect
 import re
 import logging
 import numpy as np
@@ -21,12 +20,33 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLayout,
-    QCheckBox
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox
     
 )
 
 #need to add another class to load parameters from a text file
 logger = logging.getLogger(__name__)
+
+class ErrorWidget(QDialog):
+    def __init__(self,dialog_text):
+        super().__init__()
+        self.setWindowTitle("ERROR")
+        layout = QVBoxLayout()
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setWindowFlags(
+            self.windowFlags() |
+            Qt.WindowType.WindowStaysOnTopHint
+        )
+        
+        self.label = QLabel(dialog_text)
+        buttons = QDialogButtonBox.StandardButton.Ok
+        button_box = QDialogButtonBox(buttons)
+        button_box.accepted.connect(self.accept)
+        layout.addWidget(self.label)
+        layout.addWidget(button_box)
+        self.setLayout(layout)
 
 class MaskGenWidget(QWidget):
     change_data = pyqtSignal(list)
@@ -35,7 +55,7 @@ class MaskGenWidget(QWidget):
     send_mask_config = pyqtSignal(list)
     change_mask_name = pyqtSignal(np.ndarray)
     change_wavelength_data = pyqtSignal(list)
-    update_image = pyqtSignal(str) #will change type later
+    update_image = pyqtSignal(np.ndarray) #will change type later
     def __init__(self):
         super().__init__()
 
@@ -52,7 +72,6 @@ class MaskGenWidget(QWidget):
         self.slit_width = QLineEdit("0.7")
         self.use_center_of_priority = QCheckBox("Use Center of Priority")
         run_button = QPushButton(text="Run")
-        title = QLabel("MASK GENERATION")
 
         #worry about the formatting of center_of_mask later
 
@@ -63,7 +82,7 @@ class MaskGenWidget(QWidget):
 
         #------------------------------------------layout-------------------------
         logger.info("mask_gen_widget: defining the layout")
-        group_box = QGroupBox()
+        group_box = QGroupBox("MASK GENERATION")
         main_layout = QVBoxLayout()
         secondary_layout = QFormLayout() #above import targets
         below_form_layout = QFormLayout() #below imput targets
@@ -73,6 +92,10 @@ class MaskGenWidget(QWidget):
         group_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         import_target_list_button_layout = QVBoxLayout()
         run_button_layout = QVBoxLayout()
+
+        secondary_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        below_form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+
 
         self.name_of_mask.setAlignment(Qt.AlignmentFlag.AlignTop)
         import_target_list_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
@@ -98,9 +121,7 @@ class MaskGenWidget(QWidget):
         group_box.setLayout(group_layout)
 
         
-        main_layout.addWidget(title,alignment=Qt.AlignmentFlag.AlignHCenter)
-        main_layout.setSpacing(0)
-        main_layout.setContentsMargins(0,0,0,0)
+        main_layout.setContentsMargins(9,4,9,9)
         main_layout.addWidget(group_box)
 
         self.setLayout(main_layout)
@@ -136,17 +157,7 @@ class MaskGenWidget(QWidget):
         width = self.slit_width.text()
         mask_name = self.name_of_mask.text()
         pa = 0
-
-        #---------------------------------------------------------
-        logger.info("mask_gen_widget: generating starlist file")
-        query_gaia_starlist_rect(
-            ra_center=ra,              # RA in degrees
-            dec_center=dec,               # Dec in degrees
-            width_arcmin=5,
-            height_arcmin=10,
-            n_stars=104,
-            output_file='gaia_starlist.txt'
-            )
+        
 
         #--------------------------run mask gen --------------------------
         logger.info("mask_gen_widget: running mask gen")
@@ -159,18 +170,26 @@ class MaskGenWidget(QWidget):
         slit_mask = StarList(target_list.send_json(),ra,dec,slit_width=width,use_center_of_priority=self.use_center_of_priority.isChecked())
         interactive_slit_mask = slit_mask.send_interactive_slit_list()
 
-        self.change_slit_image.emit(interactive_slit_mask)
+        if interactive_slit_mask:
+            self.change_slit_image.emit(interactive_slit_mask)
 
-        self.change_data.emit(slit_mask.send_target_list())
-        self.change_row_widget.emit(slit_mask.send_row_widget_list())
+            self.change_data.emit(slit_mask.send_target_list())
+            self.change_row_widget.emit(slit_mask.send_row_widget_list())
 
-        logger.info("mask_gen_widget: sending mask config to mask_configurations")
-        self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
-        mask_name_info = np.array([str(mask_name),str(center),str(pa)])
-        self.change_mask_name.emit(mask_name_info)
-        self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
-        self.update_image.emit(slit_mask.generate_skyview())
+            logger.info("mask_gen_widget: sending mask config to mask_configurations")
+            self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
+            self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
+            # self.update_image.emit(slit_mask.generate_skyview())
         #--------------------------------------------------------------------------
+        else:
+            self.error_catching()
+
+    def error_catching(self):
+        text = """The center you have selected is too far away from the list of stars. \nMaybe try selecting \"use center of priority\" or typing in a closer center"""
+        self.error_widget = ErrorWidget(text)
+        self.error_widget.show()
+        if self.error_widget.exec() == QDialog.DialogCode.Accepted:
+            pass
 
 
 
