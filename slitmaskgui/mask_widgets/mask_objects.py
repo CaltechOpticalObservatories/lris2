@@ -259,12 +259,10 @@ class interactiveSlits(QGraphicsItemGroup):
         #will have default lines down the middle
         #default NONE next to lines that don't have a star
         self.theme = get_theme()
+        self.setPos(x,y)
 
-        self.x_pos = x
-        self.y_pos = y
         self.bar_height = round(CSU_HEIGHT/72*MM_TO_PIXEL) #without round it = 6.06 which causes some errors
-        self.line = QGraphicsLineItem(self.x_pos,self.y_pos,self.x_pos,self.y_pos+self.bar_height)
-        #self.line = QLineF(x,y,x,y+7)
+        self.line = QGraphicsLineItem(x,y,x,y+self.bar_height)
         self.line.setPen(QPen(QColor.fromString(self.theme['maroon']), 2))
 
         self.star_name = name

@@ -75,8 +75,8 @@ class StarList:
 
     def send_interactive_slit_list(self):
         slit_dict = {
-            i: (obj["x_mm"], obj["bar_id"], obj["name"]) 
-            for i, obj in enumerate(self.payload[:72])
+            obj["bar_id"]: (obj["x_mm"], obj["name"]) 
+            for obj in self.payload[:72]
             if "bar_id" in obj
             }
         return slit_dict

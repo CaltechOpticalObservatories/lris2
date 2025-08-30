@@ -99,13 +99,13 @@ class MainWindow(QMainWindow):
         self.interactive_slit_mask.new_slit_positions.connect(self.mask_tab.initialize_spectral_view)
 
         mask_gen_widget.change_data.connect(self.target_display.change_data)
-        mask_gen_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
+        mask_gen_widget.change_slit_image.connect(self.interactive_slit_mask.update_slit_and_star)
         mask_gen_widget.change_row_widget.connect(self.slit_position_table.change_data)
         mask_gen_widget.send_mask_config.connect(mask_config_widget.initialize_configuration)
 
         mask_config_widget.change_data.connect(self.target_display.change_data)
         mask_config_widget.change_row_widget.connect(self.slit_position_table.change_data)
-        mask_config_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
+        mask_config_widget.change_slit_image.connect(self.interactive_slit_mask.update_slit_and_star)
         mask_config_widget.reset_scene.connect(self.reset_scene)
         mask_config_widget.update_image.connect(self.sky_view.show_image)
         mask_config_widget.change_name_above_slit_mask.connect(self.interactive_slit_mask.update_name_center_pa)

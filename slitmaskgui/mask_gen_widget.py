@@ -148,8 +148,6 @@ class MaskGenWidget(QWidget):
         interactive_slit_mask = slit_mask.send_interactive_slit_list()
 
         if interactive_slit_mask:
-            self.change_slit_image.emit(interactive_slit_mask)
-
             self.change_data.emit(slit_mask.send_target_list())
             self.change_row_widget.emit(slit_mask.send_row_widget_list())
 
