@@ -6,7 +6,7 @@ interactive image and highlight the corresponding star in the target list table
 
 from slitmaskgui.menu_bar import MenuBar
 import logging
-import itertools
+from itertools import groupby
 from PyQt6.QtCore import Qt, QAbstractTableModel, pyqtSignal, QSize
 from PyQt6.QtWidgets import (
     QWidget,
@@ -117,7 +117,6 @@ class SlitDisplay(QWidget):
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
         self.changed_data_dict = {}
-        self.table.setEditTriggers(QTableView.EditTrigger.DoubleClicked)
 
         #--------------------------connections-----------------------
         logger.info("slit_position_table: doing conections")
@@ -127,7 +126,6 @@ class SlitDisplay(QWidget):
         logger.info("slit_position_table: defining layout")
         
         main_layout = QVBoxLayout()
-        # main_layout.setSpacing(9)
         main_layout.setContentsMargins(0,0,9,0)
         
         main_layout.addWidget(self.table)
@@ -149,7 +147,7 @@ class SlitDisplay(QWidget):
         logger.info("slit_position_table: change_data function called, changing data")
         if data:
             self.model.beginResetModel()
-            replacement = list(x for x,_ in itertools.groupby(data))
+            replacement = list(x for x,_ in groupby(data))
             self.model._data = replacement
             self.data = replacement
             self.model.endResetModel()
@@ -161,12 +159,11 @@ class SlitDisplay(QWidget):
         logger.info("slit_position_table: method row_selected is called, row in slit_table was selected")
         selected_row = self.table.selectionModel().currentIndex().row()
         corresponding_row = self.model.get_bar_id(row=selected_row)
-
         self.highlight_other.emit(corresponding_row-1)
 
     def select_corresponding(self,bar_id):
         logger.info("slit_position_table: method select_corresponding is called, selected corresponding row from slit mask view")
-        self.disconnect_signalers
+        self.disconnect_signalers()
         self.bar_id = bar_id + 1
 
         filtered_row = list(filter(lambda x:x[0] == self.bar_id,self.data))
