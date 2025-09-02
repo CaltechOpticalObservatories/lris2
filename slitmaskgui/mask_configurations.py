@@ -120,7 +120,7 @@ class MaskConfigurationsWidget(QWidget):
     change_row_widget = pyqtSignal(list)
     reset_scene = pyqtSignal(bool)
     update_image = pyqtSignal(np.ndarray)
-    data_to_save_request = pyqtSignal(object)
+    data_to_save_request = pyqtSignal()
     changes_have_been_saved = pyqtSignal(object)
     change_name_above_slit_mask = pyqtSignal(np.ndarray)
 
@@ -227,7 +227,7 @@ class MaskConfigurationsWidget(QWidget):
 
 
     def save_button_clicked(self):
-        self.data_to_save_request.emit(None)
+        self.data_to_save_request.emit()
     
     def save_data_to_mask(self,new_data):
         if new_data:
