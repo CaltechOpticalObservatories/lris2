@@ -180,7 +180,7 @@ class SlitDisplay(QWidget):
         row = topLeft.row()
         model = topLeft.model()
         new_data = model.data(topLeft, Qt.ItemDataRole.DisplayRole)
-        bar_id = model.get_bar_id(row)
+        bar_id = model.get_bar_id(row) -1 
         self.changed_data_dict[bar_id]=new_data
 
         self.tell_unsaved.emit() 

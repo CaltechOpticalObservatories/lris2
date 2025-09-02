@@ -147,6 +147,7 @@ class MaskConfigurationsWidget(QWidget):
         self.table = CustomTableView()
         self.model = TableModel()
         self.table.setModel(self.model)
+        # maybe have the current row number as a self.row
 
         self.row_to_config_dict = {}
         self.last_used_slitmask = []
@@ -232,10 +233,11 @@ class MaskConfigurationsWidget(QWidget):
     def save_data_to_mask(self,new_data):
         if new_data:
             row_num = self.model.get_row_num(self.table.selectedIndexes())
-            for config in self.row_to_config_dict[row_num]:
-                if config["bar_id"] in new_data:
-                    config["slit_width"] = new_data[config["bar_id"]]
+            for bar in self.row_to_config_dict[row_num]:
+                if bar["bar_id"] in new_data:
+                    bar["slit_width"] = new_data[bar["bar_id"]]
             self.update_table_to_saved(row_num)
+
 
     def close_button_clicked(self):
         config_logger.info(f"mask configurations: start of close button function {self.row_to_config_dict}")

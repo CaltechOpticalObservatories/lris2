@@ -283,9 +283,9 @@ class interactiveSlits(QGraphicsItemGroup):
         self.star.setDefaultTextColor(QColor.fromString(self.theme['maroon']))
         #have to call a paint event
     def get_y_value(self):
-        return self.y_pos
+        return self.y()
     def get_bar_id(self):
-        return int(self.y_pos/self.bar_height)
+        return int(self.y()/self.bar_height)
     def get_star_name(self):
         return self.star_name
     
