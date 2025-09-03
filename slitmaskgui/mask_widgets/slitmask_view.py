@@ -30,6 +30,11 @@ logger = logging.getLogger(__name__)
 
 
 class interactiveSlitMask(QWidget):
+    """ interactive slit mask is a display widget 
+    with the ability to update objects in its display 
+    depending on outside signals """
+
+
     row_selected = pyqtSignal(int,name="row selected")
     select_star = pyqtSignal(str)
     new_slit_positions = pyqtSignal(list)

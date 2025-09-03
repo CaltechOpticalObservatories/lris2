@@ -37,6 +37,7 @@ from slitmaskgui.mask_widgets.mask_view_tab_bar import TabBar
 from slitmaskgui.configure_mode.mode_toggle_button import ShowControllerButton
 from slitmaskgui.configure_mode.mask_controller import MaskControllerWidget
 from slitmaskgui.configure_mode.csu_display_widget import CsuDisplauWidget
+from slitmaskgui.offline_mode import OfflineMode
 from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtWidgets import (
     QApplication,
@@ -68,6 +69,9 @@ class MainWindow(QMainWindow):
         
         #----------------------------definitions---------------------------
         main_logger.info("app: doing definitions")
+
+        self.connection_status = OfflineMode()
+        self.start_checking_internet_connection()
         
         mask_config_widget = MaskConfigurationsWidget()
         mask_gen_widget = MaskGenWidget()
@@ -120,6 +124,8 @@ class MainWindow(QMainWindow):
         mask_controller_widget.connect_controller_with_slitmask_display(csu_display_widget)
         self.mode_toggle_button.button.clicked.connect(self.mode_toggle_button.on_button_clicked)
         self.mode_toggle_button.button.clicked.connect(self.switch_modes)
+
+        self.connection_status.current_mode.connect(self.switch_internet_connection_mode)
 
 
         #-----------------------------------layout-----------------------------
@@ -225,6 +231,13 @@ class MainWindow(QMainWindow):
         self.slitmask_and_csu_display.setCurrentIndex(index)
         button_text = "Configuration Mode (ON)" if index == 1 else "Configuration Mode (OFF)"
         self.mode_toggle_button.button.setText(button_text)
+
+    def start_checking_internet_connection(self):
+        self.connection_status.start_checking_internet_connection()
+        self.connection_status.start_timer()
+    def switch_internet_connection_mode(self):
+        self.setWindowTitle(f"LRIS-2 Slit Configuration Tool ({repr(self.connection_status)})")
+        
         
     
         

@@ -86,64 +86,47 @@ class CSUConnectionChecker(QRunnable):
                 return False
 
 
-class ThreadPool:
-    def __init__(self):
-        self.threadpool = QThreadPool()
-
-        self.offline_checker = InternetConnectionChecker()
-        self.csu_connection_checker = CSUConnectionChecker()
-
-        # ------------- timer ----------------
-        self.timer = QTimer()
-        self.timer.setInterval(10000)
-        self.timer.timeout.connect(self.start_internet_connection_checker) # having what the timer is connected to not be known by the user is a bit confusing
-        # ------------------------------------
-
-    def connect_internet_checker_signals(self, function):
-        self.offline_checker.signals.connection_status.connect(function)
-    
-    def connect_csu_connection_checker_signals(self,function):
-        # not sure if I will connect the time to this yet. I don't think I will 
-        self.csu_connection_checker.signals.connection_status.connect(function)
-
-    def start_internet_connection_checker(self):
-        self.threadpool.start(self.offline_checker)
-    
-    def start_csu_connection_checker(self):
-        self.threadpool.start(self.csu_connection_checker)
-        
-
-class OfflineMode:
+class OfflineMode(QObject):
 
     current_mode = pyqtSignal(object)
 
     def __init__(self):
+        super().__init__()
         self.internet_offline = False
-        self.csu_connected = False
 
-        self.threadpool = ThreadPool()
-        
-    def start_checking_internet_connection(self): # this feels kind of bad but its fine for now
-        self.threadpool.connect_internet_checker_signals(self.change_mode)
-        self.threadpool.start_internet_connection_checker()
-        self.threadpool.timer.start()
-    
-    def check_csu_connection(self):
-        self.threadpool.connect_internet_checker_signals(self.change_mode)
-        self.threadpool.start_csu_connection_checker()
+        self.threadpool = QThreadPool()
 
+        # ------------- timer ----------------
+        self.timer = QTimer()
+        self.timer.setInterval(2000)
+        self.timer.timeout.connect(self.start_checking_internet_connection) # having what the timer is connected to not be known by the user is a bit confusing
+        # ------------------------------------
     
     def __repr__(self):
         if self.offline:
             return f'Offline'
         return f'Online'
+        
+    def start_checking_internet_connection(self): # this feels kind of bad but its fine for now
+        offline_checker = InternetConnectionChecker()
+        offline_checker.signals.connection_status.connect(self.change_mode)
+        self.threadpool.start(offline_checker)
+    
+    def start_timer(self):
+        self.timer.start()
+    
+    def stop_timer(self):
+        self.timer.stop()
 
     def change_mode(self,mode):
         self.offline = mode
+        self.current_mode.emit(self.offline)
 
     
 
 
 
-
+    # def check_csu_connection(self): # Offline mode will soon not be able to check if csu is connected or not
+    #     self.threadpool.connect_internet_checker_signals(self.change_mode)
+    #     self.threadpool.start_csu_connection_checker()
     
