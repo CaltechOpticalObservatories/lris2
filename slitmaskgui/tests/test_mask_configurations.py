@@ -3,6 +3,8 @@ from slitmaskgui.mask_configurations import MaskConfigurationsWidget, CustomTabl
 from slitmaskgui.slit_position_table import SlitDisplay
 import json
 from unittest.mock import patch, Mock
+import unittest
+from pytest import MonkeyPatch
 
 """ To test the connections between the classes we will test app.py"""
 
@@ -62,7 +64,6 @@ def test_update_table_to_saved(setup_mask_config_class):
 
 
 # def test_open_button()
-
 
 
 
