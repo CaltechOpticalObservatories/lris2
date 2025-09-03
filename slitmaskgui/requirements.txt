@@ -10,6 +10,7 @@ cycler==0.12.1
 fonttools==4.59.0
 html5lib==1.1
 idna==3.10
+iniconfig==2.1.0
 jaraco.classes==3.4.0
 jaraco.context==6.0.1
 jaraco.functools==4.2.1
@@ -23,12 +24,16 @@ numpy==2.3.1
 packaging==25.0
 pandas==2.3.1
 pillow==11.3.0
+pluggy==1.6.0
 pyerfa==2.0.1.5
+Pygments==2.19.2
 pyparsing==3.2.3
 PyQt6==6.9.1
 PyQt6-Qt6==6.9.1
 PyQt6_sip==13.10.2
 pysoem==1.1.12
+pytest==8.4.1
+pytest-qt==4.5.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
 pyvo==1.7

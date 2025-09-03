@@ -28,5 +28,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --statistics #--max-line-length=120
     - name: Test
       run: |
-        python3 -m pytest slitmaskgui/tests/
+        python3 -m pytest 
   #test:
