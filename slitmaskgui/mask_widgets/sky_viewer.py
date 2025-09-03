@@ -18,6 +18,8 @@ class SkyImageView(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.offline = True
+
         # Create the Matplotlib canvas
         self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
         self.canvas.axes.clear()
@@ -43,6 +45,13 @@ class SkyImageView(QWidget):
 
         self.setLayout(layout)
         self.resize(self.sizeHint())
+
+    def update_image(self,slitmask):
+        if not self.offline:
+            self.show_image(slitmask.generate_skyview())
+        else:
+            print("No skyview due to being offline")
+
     pyqtSlot(np.ndarray)
     def show_image(self, data: np.ndarray):
 

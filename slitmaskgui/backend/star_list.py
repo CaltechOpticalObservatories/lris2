@@ -126,7 +126,7 @@ class StarList:
         key = (hips, width, height, ra, dec, fov)
         if key in HIPS_CACHE:
             return HIPS_CACHE[key]
-
+    
         hdulist = hips2fits.query(
             hips=hips,
             width=width, #in pixels

@@ -92,13 +92,13 @@ class OfflineMode(QObject):
 
     def __init__(self):
         super().__init__()
-        self.internet_offline = False
+        self.offline = False
 
         self.threadpool = QThreadPool()
 
         # ------------- timer ----------------
         self.timer = QTimer()
-        self.timer.setInterval(2000)
+        self.timer.setInterval(1000)
         self.timer.timeout.connect(self.start_checking_internet_connection) # having what the timer is connected to not be known by the user is a bit confusing
         # ------------------------------------
     

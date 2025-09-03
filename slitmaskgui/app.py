@@ -111,7 +111,7 @@ class MainWindow(QMainWindow):
         mask_config_widget.change_row_widget.connect(self.slit_position_table.change_data)
         mask_config_widget.change_slit_image.connect(self.interactive_slit_mask.update_slit_and_star)
         mask_config_widget.reset_scene.connect(self.reset_scene)
-        mask_config_widget.update_image.connect(self.sky_view.show_image)
+        mask_config_widget.update_image.connect(self.sky_view.update_image)
         mask_config_widget.change_name_above_slit_mask.connect(self.interactive_slit_mask.update_name_center_pa)
 
         #if the data is changed connections
@@ -235,7 +235,9 @@ class MainWindow(QMainWindow):
     def start_checking_internet_connection(self):
         self.connection_status.start_checking_internet_connection()
         self.connection_status.start_timer()
+        
     def switch_internet_connection_mode(self):
+        self.sky_view.offline = self.connection_status.offline
         self.setWindowTitle(f"LRIS-2 Slit Configuration Tool ({repr(self.connection_status)})")
         
         

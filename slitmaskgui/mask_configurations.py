@@ -106,10 +106,6 @@ class CustomTableView(QTableView):
         super().setModel(model)
         self.setResizeMode()
         return 2 # I don't know what this does at all
-    
-    
-    
-
 
 
 
@@ -119,7 +115,7 @@ class MaskConfigurationsWidget(QWidget):
     change_slit_image = pyqtSignal(dict)
     change_row_widget = pyqtSignal(list)
     reset_scene = pyqtSignal(bool)
-    update_image = pyqtSignal(np.ndarray)
+    update_image = pyqtSignal(object)
     data_to_save_request = pyqtSignal()
     changes_have_been_saved = pyqtSignal(object)
     change_name_above_slit_mask = pyqtSignal(np.ndarray)
@@ -148,6 +144,7 @@ class MaskConfigurationsWidget(QWidget):
         self.model = TableModel()
         self.table.setModel(self.model)
         # maybe have the current row number as a self.row
+        
 
         self.row_to_config_dict = {}
         self.last_used_slitmask = []
@@ -324,12 +321,14 @@ class MaskConfigurationsWidget(QWidget):
             self.change_slit_image.emit(interactive_slit_mask)
             self.change_data.emit(slit_mask.send_target_list())
             self.change_row_widget.emit(slit_mask.send_row_widget_list())
-            self.update_image.emit(slit_mask.generate_skyview())
+            
             mask_name_info = np.array([str(name),str(str(ra)+str(dec)),str(pa)])
             self.change_name_above_slit_mask.emit(mask_name_info)
             
             self.last_used_slitmask = slit_mask.send_mask()
             self.emit_last_used_slitmask()
+
+            self.update_image.emit(slit_mask)
     
     def get_center(self,star_data):
         """neccessary in case someone imports a file (file doesn't contain the center)"""
@@ -350,6 +349,7 @@ class MaskConfigurationsWidget(QWidget):
     
     def emit_last_used_slitmask(self):
         self.send_to_csu.emit(self.last_used_slitmask)
+
 
     
 

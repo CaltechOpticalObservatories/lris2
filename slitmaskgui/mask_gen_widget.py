@@ -5,7 +5,7 @@ from slitmaskgui.mask_widgets.mask_objects import ErrorWidget
 import re
 import logging
 import numpy as np
-from PyQt6.QtCore import pyqtSignal, Qt, QSize
+from PyQt6.QtCore import pyqtSignal, Qt, QSize, QThread
 from PyQt6.QtWidgets import (
     QFileDialog,
     QVBoxLayout,
@@ -24,6 +24,10 @@ from PyQt6.QtWidgets import (
 
 #need to add another class to load parameters from a text file
 logger = logging.getLogger(__name__)
+
+
+
+
 
 class MaskGenWidget(QWidget):
     change_data = pyqtSignal(list)
@@ -154,7 +158,6 @@ class MaskGenWidget(QWidget):
             logger.info("mask_gen_widget: sending mask config to mask_configurations")
             self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
             self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
-            # self.update_image.emit(slit_mask.generate_skyview())
         #--------------------------------------------------------------------------
         else:
             self.error_catching()
@@ -165,6 +168,8 @@ class MaskGenWidget(QWidget):
         self.error_widget.show()
         if self.error_widget.exec() == QDialog.DialogCode.Accepted:
             pass
+    
+    
 
 
 

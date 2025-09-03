@@ -166,6 +166,8 @@ class interactiveSlitMask(QWidget):
                 self.scene.removeItem(slit)
                 logger.info(f'Slitmask view: slit {e} deleted when calling update_slit_and_star')
         
+        self.update_list_of_all_slits_in_scene()
+
         if len(pos) > len(self.all_slits):
             self.add_forgotten_slits(pos,x_center)
 
