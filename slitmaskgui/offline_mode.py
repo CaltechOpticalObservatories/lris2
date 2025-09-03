@@ -95,6 +95,7 @@ class OfflineMode(QObject):
         self.offline = False
 
         self.threadpool = QThreadPool()
+        self.offline_checker = InternetConnectionChecker()
 
         # ------------- timer ----------------
         self.timer = QTimer()
@@ -108,9 +109,9 @@ class OfflineMode(QObject):
         return f'Online'
         
     def start_checking_internet_connection(self): # this feels kind of bad but its fine for now
-        offline_checker = InternetConnectionChecker()
-        offline_checker.signals.connection_status.connect(self.change_mode)
-        self.threadpool.start(offline_checker)
+        self.offline_checker.signals.connection_status.connect(self.change_mode)
+        self.threadpool.start(self.offline_checker)
+        self.offline_checker = InternetConnectionChecker()
     
     def start_timer(self):
         self.timer.start()
