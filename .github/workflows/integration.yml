@@ -43,5 +43,6 @@ jobs:
     - name: Test
       run: |
         source .venv/bin/activate
+        export QT_QPA_PLATFORM=offscreen
         xvfb-run -a python3 -m pytest slitmaskgui/tests/
   #test:
