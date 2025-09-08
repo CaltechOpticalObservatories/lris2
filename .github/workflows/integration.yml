@@ -2,6 +2,7 @@
 name: Integration
 
 on:
+  commit
   pull_request
 
 permissions:
@@ -28,5 +29,6 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --statistics #--max-line-length=120
     - name: Test
       run: |
+        cd lris2
         python3 -m pytest 
   #test:
