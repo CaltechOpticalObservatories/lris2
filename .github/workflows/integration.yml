@@ -2,8 +2,7 @@
 name: Integration
 
 on:
-  workflow_dispatch
-  pull_request
+  push
 
 permissions:
   contents: read
