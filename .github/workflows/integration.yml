@@ -16,6 +16,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Cache pip
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
     - name: Install dependencies
       run: |
         python -m venv .venv
@@ -23,7 +31,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest Pyqt6 pytest-qt
         sudo apt-get update
-        sudo apt-get install -y libegl1
+        sudo apt-get install -y libegl1 xvfb
         if [ -f slitmaskgui/requirements.txt ]; then pip install -r slitmaskgui/requirements.txt; fi
 
     # - name: Lint with flake8
@@ -35,5 +43,5 @@ jobs:
     - name: Test
       run: |
         source .venv/bin/activate
-        python3 -m pytest slitmaskgui/tests/
+        xvfb-run -a python3 -m pytest slitmaskgui/tests/
   #test:
