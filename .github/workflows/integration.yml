@@ -15,20 +15,27 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+
     - name: Create virtual environment
       run: |
         python -m venv .venv
         source .venv/bin/activate
+
     - name: Install dependencies
       run: |
+        source .venv/bin/activate
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
     - name: Lint with flake8
       run: |
+        source .venv/bin/activate
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.venv
         flake8 . --count --exit-zero --max-complexity=10 --statistics #--max-line-length=120
+        
     - name: Test
       run: |
+        source .venv/bin/activate
         python3 -m pytest
   #test:
