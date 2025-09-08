@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
     - name: Create virtual environment
       run: |
         python -m venv .venv
@@ -28,8 +30,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --statistics #--max-line-length=120
     - name: Test
       run: |
-        ls -la
-        export PYTHONPATH=$PYTHONPATH:$(pwd)
-        cd slitmaskgui
         python3 -m pytest
   #test:
