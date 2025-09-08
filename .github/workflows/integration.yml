@@ -2,7 +2,7 @@
 name: Integration
 
 on:
-  commit
+  workflow_dispatch
   pull_request
 
 permissions:
