@@ -19,7 +19,7 @@ jobs:
     - name: Cache pip
       uses: actions/cache@v4
       with:
-        path: .venv
+        path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
@@ -34,11 +34,11 @@ jobs:
         sudo apt-get install -y libegl1 xvfb
         if [ -f slitmaskgui/requirements.txt ]; then pip install -r slitmaskgui/requirements.txt; fi
 
-    # - name: Lint with flake8
-    #   run: |
-    #     source .venv/bin/activate
-    #     flake8 slitmaskgui/ --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.venv
-    #     flake8 slitmaskgui/ --count --exit-zero --max-complexity=10 --statistics #--max-line-length=120 --exclude=.venv
+    - name: Lint with flake8
+      run: |
+        source .venv/bin/activate
+        flake8 slitmaskgui/ --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.venv
+        flake8 slitmaskgui/ --count --exit-zero --max-complexity=10 --statistics #--max-line-length=120 --exclude=.venv
         
     - name: Test
       run: |
