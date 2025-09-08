@@ -28,6 +28,8 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --statistics #--max-line-length=120
     - name: Test
       run: |
-        ls -la || true
-        python3 -m pytest ./slitmaskgui/tests/
+        ls -la
+        export PYTHONPATH=$PYTHONPATH:$(pwd)
+        cd slitmaskgui
+        python3 -m pytest
   #test:
