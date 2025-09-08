@@ -21,7 +21,6 @@ class ShowControllerButton(QWidget):
         super().__init__()
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         self.button = QPushButton("Configuration Mode (OFF)")
-        # self.button.clicked.connect(self.on_button_clicked)
         self.button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Maximum)
 
 
