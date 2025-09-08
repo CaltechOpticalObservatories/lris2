@@ -21,24 +21,20 @@ jobs:
         python -m venv .venv
         source .venv/bin/activate
         python -m pip install --upgrade pip
-        pip install flake8 pytest
+        pip install flake8 pytest Pyqt6 pytest-qt
         if [ -f slitmaskgui/requirements.txt ]; then pip install -r slitmaskgui/requirements.txt; fi
-        
-    - name: Install system dependencies for PyQt6
-      run: sudo apt-get update && sudo apt-get install -y \
-        libegl1 \
-        libgl1 \
-        libx11-xcb1 \
-        libxcb-glx0 \
-        libxrender1 \
-        libxrandr2 \
-        libxext6
 
     - name: Lint with flake8
       run: |
         source .venv/bin/activate
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.venv
         flake8 . --count --exit-zero --max-complexity=10 --statistics #--max-line-length=120 --exclude=.venv
+    
+    # - name: Start virtual display
+    #   run: |
+    #     sudo apt-get update
+    #     sudo apt-get install -y xvfb
+    #     Xvfb :99 & export DISPLAY=:99
         
     - name: Test
       run: |
