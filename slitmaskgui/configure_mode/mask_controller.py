@@ -120,7 +120,7 @@ class MaskControllerWidget(QWidget):
         """ !PROBLEM SLITS! !PROBLEM SLITS! """ 
         """ !PROBLEM SLITS! !PROBLEM SLITS! """ 
         """ !PROBLEM SLITS! !PROBLEM SLITS! """ 
-        problem_slits = [10] # manally edit this list during the dry run if any are acting up (you can check which ones are acting up by using status)
+        problem_slits = [8] # manally edit this list during the dry run if any are acting up (you can check which ones are acting up by using status)
         """ !PROBLEM SLITS! !PROBLEM SLITS! """ 
         """ !PROBLEM SLITS! !PROBLEM SLITS! """ 
         """ !PROBLEM SLITS! !PROBLEM SLITS! """
@@ -134,11 +134,9 @@ class MaskControllerWidget(QWidget):
         return set_slits
 
     def define_slits(self,slits):
-        set_slits = self.identify_problem_slits()
-        print(set_slits)
         try:
             self.slits = slits[:12]
-            self.slits = tuple([Slit(bar_id,CSU_WIDTH/2+star["x_mm"],float()/PLATE_SCALE) # CSU_WIDTH + star because star could be negative
+            self.slits = tuple([Slit(bar_id,CSU_WIDTH/2+star["x_mm"],float(star["slit_width"])/PLATE_SCALE) # CSU_WIDTH + star because star could be negative
                         for bar_id,star in enumerate(self.slits)])
         except:
             print("no mask config found")
