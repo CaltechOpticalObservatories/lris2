@@ -139,9 +139,7 @@ class MaskControllerWidget(QWidget):
             self.timer.stop()
 
         self.old_config = self.current_config
-        # if self.timer_counter >= self.total_counts:
-        #     self.timer.stop()
-        #     self.timer_counter = 0
+
 
     def reset_configuration(self):
         """Reset the configuration to a default state."""
@@ -216,19 +214,3 @@ class MaskControllerWidget(QWidget):
         except:
             pass #timer already stopped
     
-
-    # def parse_response(self, response):
-    #     """Parse the response to extract the mask data."""
-    #     try:
-    #         # Access the last element of the response to get the MaskConfig object
-    #         mask_config = response[-1]  # Using dot notation instead of dictionary access
-    #         slits = mask_config.slits
-    #         log_message = f"Extracted MaskConfig: {mask_config}"
-    #         print(log_message)
-    #         print(f"Slits: {slits}")
-    #         return slits
-    #     except (IndexError, AttributeError) as e:
-    #         # Handle cases where the structure is not as expected
-    #         error_message = f"Error parsing response: {e}"
-    #         print(error_message)
-    #         return None
