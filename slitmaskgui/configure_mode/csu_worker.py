@@ -30,8 +30,8 @@ class CSUWorkerThread(QThread):
             repr_list = []
             for slit in self.slits:
                 new_slit = slit
-                new_slit.x = f'{slit.x:.1f}'
-                new_slit.width = f'{slit.width:.1f}'
+                new_slit.x = f'{slit.x:.2f}'
+                new_slit.width = f'{slit.width:.2f}'
                 repr_list.append(new_slit)
         except:
             repr_list = None

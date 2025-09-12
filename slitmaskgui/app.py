@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("LRIS-2 Slit Configuration Tool")
-        self.setGeometry(100,100,1000,760)
+        self.setGeometry(100,100,1200,790)
         self.setMenuBar(MenuBar()) #sets the menu bar
         self.update_theme()
         

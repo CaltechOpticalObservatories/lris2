@@ -111,17 +111,52 @@ class MaskControllerWidget(QWidget):
         self.slitmask_display = slitmask_display_class
         self.connect_with_slitmask_display.connect(self.slitmask_display.handle_configuration_mode)
         self.slitmask_display.connect_with_controller.connect(self.define_slits)
-        
+
+    def identify_problem_slits(self):
+        try:
+            self.show_status()
+        except:
+            pass
+        """ !PROBLEM SLITS! !PROBLEM SLITS! """ 
+        """ !PROBLEM SLITS! !PROBLEM SLITS! """ 
+        """ !PROBLEM SLITS! !PROBLEM SLITS! """ 
+        problem_slits = [10] # manally edit this list during the dry run if any are acting up (you can check which ones are acting up by using status)
+        """ !PROBLEM SLITS! !PROBLEM SLITS! """ 
+        """ !PROBLEM SLITS! !PROBLEM SLITS! """ 
+        """ !PROBLEM SLITS! !PROBLEM SLITS! """
+        slits_status = self.worker_thread.slits
+        set_slits = []
+        for problem in problem_slits:
+            [set_slits.append(slit) for slit in slits_status
+             if slit.id == problem]
+             #Hopefully this works
+        print(set_slits) 
+        return set_slits
 
     def define_slits(self,slits):
+        set_slits = self.identify_problem_slits()
+        print(set_slits)
         try:
             self.slits = slits[:12]
-            self.slits = tuple([Slit(bar_id,CSU_WIDTH/2+star["x_mm"],float(star["slit_width"])/PLATE_SCALE) # CSU_WIDTH + star because star could be negative
+            self.slits = tuple([Slit(bar_id,CSU_WIDTH/2+star["x_mm"],float()/PLATE_SCALE) # CSU_WIDTH + star because star could be negative
                         for bar_id,star in enumerate(self.slits)])
         except:
             print("no mask config found")
+    def replace_problem_slits(self):
+        set_slits = self.identify_problem_slits()
 
+        new_slit_list = []
+        problem_id_list = [slit.id for slit in set_slits]
+        for slit in self.slits:
+            if slit.id in problem_id_list:
+                [new_slit_list.append(problem) for problem in set_slits if slit.id == problem.id]
+            else:
+                new_slit_list.append(slit)
+        self.slits = new_slit_list
+        
     def configure_slits(self):
+        self.replace_problem_slits()
+        print(self.slits)
         try:
             self.worker_thread.set_task("configure")
             self.worker_thread.configure_csu(self.slits)

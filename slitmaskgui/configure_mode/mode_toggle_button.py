@@ -42,17 +42,7 @@ class ShowControllerButton(QWidget):
         self.get_from_mask_config.emit("Start Communication")
 
     def on_button_clicked(self):
-        #handle button click
         self.start_communication()
-    #     self.check_if_connected()
-    # def check_if_connected(self):
-    #     try:
-    #         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    #             s.connect((HOST, PORT))
-    #             s.send(b"some data")
-    #         self.controller_class.connection_status.setText('Connection Status:\nCONNECTED')
-    #     except ConnectionRefusedError as e:
-    #         self.controller_class.connection_status.setText('Connection Status:\nCSU NOT CONNECTED')
     
 
 
