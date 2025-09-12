@@ -130,7 +130,6 @@ class MaskControllerWidget(QWidget):
             [set_slits.append(slit) for slit in slits_status
              if slit.id == problem]
              #Hopefully this works
-        print(set_slits) 
         return set_slits
 
     def define_slits(self,slits):
@@ -154,7 +153,6 @@ class MaskControllerWidget(QWidget):
         
     def configure_slits(self):
         self.replace_problem_slits()
-        print(self.slits)
         try:
             self.worker_thread.set_task("configure")
             self.worker_thread.configure_csu(self.slits)
