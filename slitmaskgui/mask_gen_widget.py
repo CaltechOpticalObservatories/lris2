@@ -1,52 +1,33 @@
 
 from slitmaskgui.backend.input_targets import TargetList
 from slitmaskgui.backend.star_list import StarList
+from slitmaskgui.mask_widgets.mask_objects import ErrorWidget
 import re
 import logging
 import numpy as np
-from PyQt6.QtCore import QObject, pyqtSignal, Qt, QSize
+from PyQt6.QtCore import pyqtSignal, Qt, QSize, QThread
 from PyQt6.QtWidgets import (
     QFileDialog,
     QVBoxLayout,
     QWidget,
     QPushButton,
-    QStackedLayout,
     QLineEdit,
     QFormLayout,
     QGroupBox,
-    QBoxLayout,
     QSizePolicy,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
-    QLayout,
     QCheckBox,
     QDialog,
-    QDialogButtonBox
     
 )
 
 #need to add another class to load parameters from a text file
 logger = logging.getLogger(__name__)
 
-class ErrorWidget(QDialog):
-    def __init__(self,dialog_text):
-        super().__init__()
-        self.setWindowTitle("ERROR")
-        layout = QVBoxLayout()
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
-        self.setWindowFlags(
-            self.windowFlags() |
-            Qt.WindowType.WindowStaysOnTopHint
-        )
-        
-        self.label = QLabel(dialog_text)
-        buttons = QDialogButtonBox.StandardButton.Ok
-        button_box = QDialogButtonBox(buttons)
-        button_box.accepted.connect(self.accept)
-        layout.addWidget(self.label)
-        layout.addWidget(button_box)
-        self.setLayout(layout)
+
+
+
 
 class MaskGenWidget(QWidget):
     change_data = pyqtSignal(list)
@@ -171,15 +152,12 @@ class MaskGenWidget(QWidget):
         interactive_slit_mask = slit_mask.send_interactive_slit_list()
 
         if interactive_slit_mask:
-            self.change_slit_image.emit(interactive_slit_mask)
-
             self.change_data.emit(slit_mask.send_target_list())
             self.change_row_widget.emit(slit_mask.send_row_widget_list())
 
             logger.info("mask_gen_widget: sending mask config to mask_configurations")
             self.send_mask_config.emit([mask_name,slit_mask.send_mask(mask_name=mask_name)]) #this is temporary I have no clue what I will actually send back (at le¡ast the format of it)
             self.change_wavelength_data.emit(slit_mask.send_list_for_wavelength())
-            # self.update_image.emit(slit_mask.generate_skyview())
         #--------------------------------------------------------------------------
         else:
             self.error_catching()
@@ -190,6 +168,8 @@ class MaskGenWidget(QWidget):
         self.error_widget.show()
         if self.error_widget.exec() == QDialog.DialogCode.Accepted:
             pass
+    
+    
 
 
 

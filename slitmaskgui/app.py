@@ -16,7 +16,6 @@ just take that and display that instead of through my awful input targets functi
 
 #just importing everything for now. When on the final stages I will not import what I don't need
 import sys
-import random
 import logging
 logging.basicConfig(
     filename="main.log",
@@ -29,27 +28,27 @@ logging.basicConfig(
 from slitmaskgui.target_list_widget import TargetDisplayWidget
 from slitmaskgui.mask_gen_widget import MaskGenWidget
 from slitmaskgui.menu_bar import MenuBar
-from slitmaskgui.mask_viewer import interactiveSlitMask, WavelengthView
-from slitmaskgui.sky_viewer import SkyImageView
+from slitmaskgui.mask_widgets.slitmask_view import interactiveSlitMask
+from slitmaskgui.mask_widgets.waveband_view import WavelengthView
+from slitmaskgui.mask_widgets.sky_viewer import SkyImageView
 from slitmaskgui.mask_configurations import MaskConfigurationsWidget
 from slitmaskgui.slit_position_table import SlitDisplay
-from slitmaskgui.mask_view_tab_bar import TabBar
-from PyQt6.QtCore import Qt, QSize, pyqtSlot
-from PyQt6.QtGui import QFontDatabase
+from slitmaskgui.mask_widgets.mask_view_tab_bar import TabBar
+from slitmaskgui.configure_mode.mode_toggle_button import ShowControllerButton
+from slitmaskgui.configure_mode.mask_controller import MaskControllerWidget
+from slitmaskgui.configure_mode.csu_display_widget import CsuDisplauWidget
+from slitmaskgui.offline_mode import OfflineMode
+from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
     QVBoxLayout,
     QHBoxLayout,
     QWidget,
-    QLabel,
     QSizePolicy,
     QSplitter,
-    QLayout,
-    QTreeWidgetItem,
-    QTreeWidget,
     QTabWidget,
-    QComboBox
+    QStackedLayout
 
 
 )
@@ -58,21 +57,6 @@ from PyQt6.QtWidgets import (
 main_logger = logging.getLogger()
 main_logger.info("starting logging")
 
-"""
-currently use center of priority doesn't work (don't know the problem will diagnose it at some later point)
-need to make it so that it doesn't randomly generate a starlist with random priority
-add more logging to all the functions
-"""
-
-"""
-Things to do before launch
-photo display of the stars
-use center of priority should work
-ability to modulate slit width
-actually use a starlist instead of generating your own
-add logging to everything
-ability to state max slit length
-"""
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -82,19 +66,31 @@ class MainWindow(QMainWindow):
         self.setMenuBar(MenuBar()) #sets the menu bar
         self.update_theme()
         
+        
         #----------------------------definitions---------------------------
         main_logger.info("app: doing definitions")
+
+        self.connection_status = OfflineMode()
+        self.start_checking_internet_connection()
         
         mask_config_widget = MaskConfigurationsWidget()
         mask_gen_widget = MaskGenWidget()
+        self.mode_toggle_button = ShowControllerButton()
+        mask_controller_widget = MaskControllerWidget()
+        csu_display_widget = CsuDisplauWidget()
         
         self.target_display = TargetDisplayWidget()
         self.interactive_slit_mask = interactiveSlitMask()
         self.slit_position_table = SlitDisplay()
         self.wavelength_view = WavelengthView()
         self.sky_view = SkyImageView()
-        self.mask_tab = TabBar(slitmask=self.interactive_slit_mask,waveview=self.wavelength_view,skyview=self.sky_view)
-        
+
+        #------------- stacked layout in mask_tab --------------------
+        self.slitmask_and_csu_display = QStackedLayout()
+        self.slitmask_and_csu_display.addWidget(self.interactive_slit_mask)
+        self.slitmask_and_csu_display.addWidget(csu_display_widget)
+
+        self.mask_tab = TabBar(slitmask_layout=self.slitmask_and_csu_display,waveview=self.wavelength_view,skyview=self.sky_view)
 
         #---------------------------------connections-----------------------------
         main_logger.info("app: doing connections")
@@ -104,25 +100,32 @@ class MainWindow(QMainWindow):
         self.target_display.selected_le_star.connect(self.interactive_slit_mask.get_row_from_star_name)
         self.interactive_slit_mask.select_star.connect(self.target_display.select_corresponding)
         self.wavelength_view.row_selected.connect(self.interactive_slit_mask.select_corresponding_row)
-        self.mask_tab.waveview_change.connect(self.wavelength_view.re_initialize_scene)
+        self.interactive_slit_mask.new_slit_positions.connect(self.mask_tab.initialize_spectral_view)
 
         mask_gen_widget.change_data.connect(self.target_display.change_data)
-        mask_gen_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
+        mask_gen_widget.change_slit_image.connect(self.interactive_slit_mask.update_slit_and_star)
         mask_gen_widget.change_row_widget.connect(self.slit_position_table.change_data)
-        mask_gen_widget.send_mask_config.connect(mask_config_widget.update_table)
-        mask_gen_widget.change_wavelength_data.connect(self.wavelength_view.get_spectra_of_star)
+        mask_gen_widget.send_mask_config.connect(mask_config_widget.initialize_configuration)
 
         mask_config_widget.change_data.connect(self.target_display.change_data)
         mask_config_widget.change_row_widget.connect(self.slit_position_table.change_data)
-        mask_config_widget.change_slit_image.connect(self.interactive_slit_mask.change_slit_and_star)
+        mask_config_widget.change_slit_image.connect(self.interactive_slit_mask.update_slit_and_star)
         mask_config_widget.reset_scene.connect(self.reset_scene)
-        mask_config_widget.update_image.connect(self.sky_view.show_image)
+        mask_config_widget.update_image.connect(self.sky_view.update_image)
         mask_config_widget.change_name_above_slit_mask.connect(self.interactive_slit_mask.update_name_center_pa)
 
         #if the data is changed connections
-        self.slit_position_table.tell_unsaved.connect(mask_config_widget.update_table)
+        self.slit_position_table.tell_unsaved.connect(mask_config_widget.update_table_to_unsaved)
         mask_config_widget.data_to_save_request.connect(self.slit_position_table.data_saved)
         self.slit_position_table.data_changed.connect(mask_config_widget.save_data_to_mask)
+
+        #sending to csu connections
+        self.mode_toggle_button.connect_controller_with_config(mask_controller_widget,mask_config_widget)
+        mask_controller_widget.connect_controller_with_slitmask_display(csu_display_widget)
+        self.mode_toggle_button.button.clicked.connect(self.mode_toggle_button.on_button_clicked)
+        self.mode_toggle_button.button.clicked.connect(self.switch_modes)
+
+        self.connection_status.current_mode.connect(self.switch_internet_connection_mode)
 
 
         #-----------------------------------layout-----------------------------
@@ -132,6 +135,12 @@ class MainWindow(QMainWindow):
         main_splitter = QSplitter()
         self.splitterV2 = QSplitter()
         self.mask_viewer_main = QVBoxLayout()
+        self.stacked_layout = QStackedLayout()
+        switcher_widget = QWidget()
+
+        self.stacked_layout.addWidget(mask_gen_widget)
+        self.stacked_layout.addWidget(mask_controller_widget)
+        switcher_widget.setLayout(self.stacked_layout)
 
         self.interactive_slit_mask.setContentsMargins(0,0,0,0)
         self.slit_position_table.setContentsMargins(0,0,0,0)
@@ -140,28 +149,25 @@ class MainWindow(QMainWindow):
         mask_config_widget.setMinimumSize(1,1)
         mask_gen_widget.setMinimumSize(1,1)
 
-
         self.splitterV2.addWidget(mask_config_widget)
-        self.splitterV2.addWidget(mask_gen_widget)
+        self.splitterV2.addWidget(switcher_widget)
+        self.splitterV2.addWidget(self.mode_toggle_button)
         self.splitterV2.setOrientation(Qt.Orientation.Vertical)
         self.splitterV2.setContentsMargins(0,0,0,0)
 
-        self.layoutH1.addWidget(self.slit_position_table)#temp_widget2)
+        self.layoutH1.addWidget(self.slit_position_table)
         self.layoutH1.addWidget(self.mask_tab)
-        # self.layoutH1.addWidget(self.combobox)
         self.layoutH1.setSpacing(0)
         self.layoutH1.setContentsMargins(9,9,9,9)
         widgetH1 = QWidget()
         widgetH1.setLayout(self.layoutH1)
 
         self.splitterV1.addWidget(widgetH1)
-        # self.splitterV1.setCollapsible(0,False)
         self.splitterV1.addWidget(self.target_display)
         self.splitterV1.setOrientation(Qt.Orientation.Vertical)
         self.splitterV1.setContentsMargins(0,0,0,0)
 
         main_splitter.addWidget(self.splitterV1)
-        # main_splitter.setCollapsible(0,False)
         main_splitter.addWidget(self.splitterV2)
 
         self.setCentralWidget(main_splitter)
@@ -218,6 +224,24 @@ class MainWindow(QMainWindow):
         else:
             with open("slitmaskgui/dark_mode.qss", "r") as f:
                 self.setStyleSheet(f.read())
+    
+    def switch_modes(self):
+        index = abs(self.stacked_layout.currentIndex()-1)
+        self.stacked_layout.setCurrentIndex(index)
+        self.slitmask_and_csu_display.setCurrentIndex(index)
+        button_text = "Configuration Mode (ON)" if index == 1 else "Configuration Mode (OFF)"
+        self.mode_toggle_button.button.setText(button_text)
+
+    def start_checking_internet_connection(self):
+        self.connection_status.start_checking_internet_connection()
+        self.connection_status.start_timer()
+        
+    def switch_internet_connection_mode(self):
+        self.sky_view.offline = self.connection_status.offline
+        self.setWindowTitle(f"LRIS-2 Slit Configuration Tool ({repr(self.connection_status)})")
+        
+        
+    
         
 
 
