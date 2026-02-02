@@ -102,16 +102,29 @@ def read_accelerometer(device_info, duration=5.0, sample_rate=48000):
     """
     device_index = device_info['device']
     scale = device_info['scale']
+    num_frames = int(duration * sample_rate)
 
-    # Record audio data from the device
-    data = sd.rec(
-        int(duration * sample_rate),
+    # Use InputStream directly for thread-safe recording
+    data = np.zeros((num_frames, 2), dtype='float32')
+    with sd.InputStream(
+        device=device_index,
         samplerate=sample_rate,
         channels=2,
-        dtype='float32',
-        device=device_index
-    )
-    sd.wait()  # Wait for recording to complete
+        dtype='float32'
+    ) as stream:
+        # Warm-up: discard first 0.5 seconds to let the device settle
+        warmup_frames = int(0.5 * sample_rate)
+        warmup_read = 0
+        while warmup_read < warmup_frames:
+            chunk, _ = stream.read(min(warmup_frames - warmup_read, sample_rate))
+            warmup_read += len(chunk)
+
+        # Now read the actual data
+        frames_read = 0
+        while frames_read < num_frames:
+            chunk, _ = stream.read(min(num_frames - frames_read, sample_rate))
+            data[frames_read:frames_read + len(chunk)] = chunk
+            frames_read += len(chunk)
 
     # Scale the data to m/s² (or volts depending on device format)
     channel1 = data[:, 0] * scale[0]
@@ -160,13 +173,12 @@ def integrate_signal(data, dt, sample_rate=48000):
 DEVICE_COLORS = ['#1f77b4', '#ff7f0e']  # Blue, Orange
 
 
-def calculate_fft(accel_data, sample_rate=48000, num_bins=4097):
-    """Calculate FFT amplitude spectrum for acceleration and displacement with binning.
+def calculate_fft(accel_data, sample_rate=48000):
+    """Calculate FFT amplitude spectrum for acceleration and displacement.
 
     Args:
         accel_data: Acceleration data array in m/s²
         sample_rate: Sample rate in Hz
-        num_bins: Number of frequency bins for output (default 4097)
 
     Returns:
         Dictionary with:
@@ -176,11 +188,11 @@ def calculate_fft(accel_data, sample_rate=48000, num_bins=4097):
     """
     dt = 1.0 / sample_rate
     n = len(accel_data)
-    raw_frequencies = np.fft.rfftfreq(n, dt)
+    frequencies = np.fft.rfftfreq(n, dt)
 
     # Acceleration FFT
     accel_fft = np.fft.rfft(accel_data)
-    raw_accel_amp = 2.0 * np.abs(accel_fft) / n
+    accel_amp = 2.0 * np.abs(accel_fft) / n
 
     # Displacement FFT (double integrate acceleration)
     velocity = integrate_signal(accel_data, dt, sample_rate)
@@ -188,25 +200,7 @@ def calculate_fft(accel_data, sample_rate=48000, num_bins=4097):
     displacement_um = displacement * 1e6  # Convert to microns
 
     disp_fft = np.fft.rfft(displacement_um)
-    raw_disp_amp = 2.0 * np.abs(disp_fft) / n
-
-    # Bin the FFT data using median for smoothing
-    max_freq = raw_frequencies[-1]
-    bin_edges = np.linspace(0, max_freq, num_bins + 1)
-    frequencies = (bin_edges[:-1] + bin_edges[1:]) / 2  # Bin centers
-
-    accel_amp = np.zeros(num_bins)
-    disp_amp = np.zeros(num_bins)
-
-    for i in range(num_bins):
-        mask = (raw_frequencies >= bin_edges[i]) & (raw_frequencies < bin_edges[i + 1])
-        if np.any(mask):
-            accel_amp[i] = np.median(raw_accel_amp[mask])
-            disp_amp[i] = np.median(raw_disp_amp[mask])
-        else:
-            # Interpolate if no samples in bin
-            accel_amp[i] = np.interp(frequencies[i], raw_frequencies, raw_accel_amp)
-            disp_amp[i] = np.interp(frequencies[i], raw_frequencies, raw_disp_amp)
+    disp_amp = 2.0 * np.abs(disp_fft) / n
 
     return {
         'frequencies': frequencies,
@@ -282,6 +276,8 @@ def plot_fft(fft_data_list, serial_numbers, calibration_data=None, num_peaks=3):
     accel_texts = []
     disp_texts = []
 
+    num_devices = len(fft_data_list)
+
     for i, (fft_data, serial) in enumerate(zip(fft_data_list, serial_numbers)):
         color = DEVICE_COLORS[i % len(DEVICE_COLORS)]
 
@@ -304,22 +300,18 @@ def plot_fft(fft_data_list, serial_numbers, calibration_data=None, num_peaks=3):
                 cal_accel = np.interp(frequencies, cal['frequencies'], cal['accel_amp'])
                 cal_disp = np.interp(frequencies, cal['frequencies'], cal['disp_amp'])
 
-            # Smooth the calibration data to reduce noise artifacts
-            smooth_window = 15
-            cal_accel_smooth = np.convolve(cal_accel, np.ones(smooth_window)/smooth_window, mode='same')
-            cal_disp_smooth = np.convolve(cal_disp, np.ones(smooth_window)/smooth_window, mode='same')
-
-            # Subtract smoothed calibration, clip to small floor for log display
+            # Subtract calibration directly, clip to small floor for log display
             noise_floor = 1e-9
-            accel_amp = np.maximum(accel_amp - cal_accel_smooth, noise_floor)
-            disp_amp = np.maximum(disp_amp - cal_disp_smooth, noise_floor)
+            accel_amp = np.maximum(accel_amp - cal_accel, noise_floor)
+            disp_amp = np.maximum(disp_amp - cal_disp, noise_floor)
 
         # Update y-axis bounds (only for frequencies in 10-200 Hz range)
         freq_mask = (frequencies >= 10.0) & (frequencies <= 200.0)
         accel_amp_min = min(accel_amp_min, accel_amp[freq_mask].min())
         accel_amp_max = max(accel_amp_max, accel_amp[freq_mask].max())
 
-        axes[0].loglog(frequencies, accel_amp, color=color, linewidth=0.8, label=serial)
+        # Plot as line instead of bars
+        axes[0].plot(frequencies, accel_amp, color=color, alpha=0.8, label=serial, linewidth=1)
 
         # Find and label peaks using prominence (in 10-200 Hz range)
         min_freq_idx = np.searchsorted(frequencies, 10.0)
@@ -348,7 +340,8 @@ def plot_fft(fft_data_list, serial_numbers, calibration_data=None, num_peaks=3):
         disp_amp_min = min(disp_amp_min, disp_amp[freq_mask].min())
         disp_amp_max = max(disp_amp_max, disp_amp[freq_mask].max())
 
-        axes[1].loglog(frequencies, disp_amp, color=color, linewidth=0.8, label=serial)
+        # Plot as line instead of bars
+        axes[1].plot(frequencies, disp_amp, color=color, alpha=0.8, label=serial, linewidth=1)
 
         # Find and label peaks using prominence (in 10-200 Hz range)
         disp_search_region = disp_amp[min_freq_idx:max_freq_idx]
@@ -377,6 +370,8 @@ def plot_fft(fft_data_list, serial_numbers, calibration_data=None, num_peaks=3):
 
     # Configure acceleration subplot
     title_suffix = " (calibrated)" if calibration_data else ""
+    axes[0].set_xscale('log')
+    axes[0].set_yscale('log')
     axes[0].set_xlabel('Frequency (Hz)', fontsize=11)
     axes[0].set_ylabel('Amplitude (m/s²)', fontsize=11)
     axes[0].set_title(f'Acceleration FFT Spectrum{title_suffix}', fontsize=12)
@@ -387,6 +382,8 @@ def plot_fft(fft_data_list, serial_numbers, calibration_data=None, num_peaks=3):
     axes[0].legend(loc='upper right', fontsize=9)
 
     # Configure displacement subplot
+    axes[1].set_xscale('log')
+    axes[1].set_yscale('log')
     axes[1].set_xlabel('Frequency (Hz)', fontsize=11)
     axes[1].set_ylabel('Amplitude (µm)', fontsize=11)
     axes[1].set_title(f'Displacement FFT Spectrum{title_suffix}', fontsize=12)
@@ -396,11 +393,13 @@ def plot_fft(fft_data_list, serial_numbers, calibration_data=None, num_peaks=3):
     axes[1].grid(True, which='both', alpha=0.3)
     axes[1].legend(loc='upper right', fontsize=9)
 
-    # Adjust text labels to avoid overlap
+    # Adjust text labels to avoid overlap (with iteration limit for speed)
     if accel_texts:
-        adjust_text(accel_texts, ax=axes[0], arrowprops=dict(arrowstyle='-', color='gray', lw=0.5))
+        adjust_text(accel_texts, ax=axes[0], arrowprops=dict(arrowstyle='->', color='gray', lw=0.5, shrinkA=5, shrinkB=5),
+                   max_iterations=20, force_text=(0.1, 0.1), force_points=(0.05, 0.05))
     if disp_texts:
-        adjust_text(disp_texts, ax=axes[1], arrowprops=dict(arrowstyle='-', color='gray', lw=0.5))
+        adjust_text(disp_texts, ax=axes[1], arrowprops=dict(arrowstyle='->', color='gray', lw=0.5, shrinkA=5, shrinkB=5),
+                   max_iterations=20, force_text=(0.1, 0.1), force_points=(0.05, 0.05))
 
     plt.tight_layout()
     return fig
@@ -436,8 +435,9 @@ def record_from_devices(devices, duration=1.0):
     return t, data_list
 
 
-def run_continuous(devices, serial_numbers, sample_rate=48000, smooth=False, decay=0.7):
-    """Run continuous FFT display mode.
+def run_continuous(devices, serial_numbers, sample_rate=48000, smooth=False, decay=0.7,
+                   calibration_data=None):
+    """Run continuous FFT display mode using callback-based streaming.
 
     Args:
         devices: List of device info dictionaries
@@ -445,81 +445,148 @@ def run_continuous(devices, serial_numbers, sample_rate=48000, smooth=False, dec
         sample_rate: Sample rate in Hz
         smooth: Use exponential moving average on FFT spectra for smoother display
         decay: Decay factor for EMA (0-1, higher = more smoothing/history)
+        calibration_data: Optional dict of calibration data to subtract (from load_calibration)
     """
+    import time
     dt = 1.0 / sample_rate
-    num_peaks = 5
+    buffer_size = sample_rate  # 1 second of data
+    num_devices = len(devices)
 
-    if smooth:
-        # Fast updates with rolling buffer for good frequency resolution
-        record_duration = 0.2
-        buffer_duration = 1.0
-        buffer_samples = int(buffer_duration * sample_rate)
-        # Initialize rolling buffers for each device
-        rolling_buffers = [np.zeros(buffer_samples) for _ in devices]
-    else:
-        record_duration = 1.0
-        rolling_buffers = None
+    # Create buffers and streams for each device
+    buffers = []
+    buffer_positions = []
+    streams = []
+    avg_accel_spectra = [None] * num_devices
+    avg_disp_spectra = [None] * num_devices
 
-    # Initialize averaged spectra storage (will be set on first iteration)
-    avg_accel_spectra = [None] * len(devices)
-    avg_disp_spectra = [None] * len(devices)
+    for i, device in enumerate(devices):
+        # Create buffer for this device
+        buf = np.zeros(buffer_size, dtype='float32')
+        buffers.append(buf)
+        buffer_positions.append([0])  # Use list for mutability in callback
 
-    plt.ion()
+        # Create callback for this device
+        scale = device['scale']
+        buf_ref = buf  # Closure reference
+        pos_ref = buffer_positions[i]
+
+        def make_callback(buf_ref, pos_ref, scale):
+            def audio_callback(indata, frames, time_info, status):
+                if status:
+                    print(f"Audio status: {status}")
+                scaled_data = indata[:, 0] * scale[0]
+                n = len(scaled_data)
+                pos = pos_ref[0]
+                if pos + n <= buffer_size:
+                    buf_ref[pos:pos + n] = scaled_data
+                else:
+                    first_part = buffer_size - pos
+                    buf_ref[pos:] = scaled_data[:first_part]
+                    buf_ref[:n - first_part] = scaled_data[first_part:]
+                pos_ref[0] = (pos + n) % buffer_size
+            return audio_callback
+
+        # Create stream for this device
+        stream = sd.InputStream(
+            device=device['device'],
+            samplerate=sample_rate,
+            channels=2,
+            dtype='float32',
+            callback=make_callback(buf, pos_ref, scale),
+            blocksize=int(sample_rate * 0.1)
+        )
+        streams.append(stream)
+
+    # Create figure
     fig, axes = plt.subplots(2, 1, figsize=(14, 10))
-    plt.tight_layout()
-
     mode_str = f"smooth (decay={decay})" if smooth else "continuous"
-    print(f"Starting {mode_str} mode. Press Ctrl+C or close the window to stop.")
+    print(f"Starting {mode_str} mode with {num_devices} device(s). Press Ctrl+C to stop.")
 
     try:
-        while plt.fignum_exists(fig.number):
-            # Record from all devices
-            _, data_list = record_from_devices(devices, duration=record_duration)
+        # Start all streams
+        for stream in streams:
+            stream.start()
+        print("Audio streams started. Waiting for data...")
 
-            # In smooth mode, update rolling buffers with new data
-            if smooth:
-                for i, new_data in enumerate(data_list):
-                    # Shift buffer left and append new data
-                    rolling_buffers[i] = np.roll(rolling_buffers[i], -len(new_data))
-                    rolling_buffers[i][-len(new_data):] = new_data
-                # Use the full rolling buffers for FFT
-                data_list = rolling_buffers
+        time.sleep(1.0)
+        print("Buffer filled. Starting display...")
 
-            # Clear both axes
-            axes[0].cla()
-            axes[1].cla()
+        plt.ion()
+        plt.show(block=False)
 
-            # Track min/max for y-axis limits
+        while True:
+            if not plt.fignum_exists(fig.number):
+                break
+
+            axes[0].clear()
+            axes[1].clear()
+
             accel_amp_min, accel_amp_max = float('inf'), 0
             disp_amp_min, disp_amp_max = float('inf'), 0
 
-            for i, (accel_data, serial) in enumerate(zip(data_list, serial_numbers)):
+            for i, (device, serial) in enumerate(zip(devices, serial_numbers)):
                 color = DEVICE_COLORS[i % len(DEVICE_COLORS)]
+                accel_data = buffers[i].copy()
 
                 n = len(accel_data)
                 frequencies = np.fft.rfftfreq(n, dt)
 
-                # --- Acceleration FFT ---
+                # Acceleration FFT
                 accel_fft = np.fft.rfft(accel_data)
                 accel_amp = 2.0 * np.abs(accel_fft) / n
 
-                # Apply EMA smoothing if enabled
+                # EMA smoothing
                 if smooth:
                     if avg_accel_spectra[i] is None:
-                        avg_accel_spectra[i] = accel_amp
+                        avg_accel_spectra[i] = accel_amp.copy()
                     else:
                         avg_accel_spectra[i] = decay * avg_accel_spectra[i] + (1 - decay) * accel_amp
                     accel_amp = avg_accel_spectra[i]
 
+                # Calibration subtraction
+                if calibration_data and serial in calibration_data:
+                    cal = calibration_data[serial]
+                    cal_accel = np.interp(frequencies, cal['frequencies'], cal['accel_amp'])
+                    accel_amp = np.maximum(accel_amp - cal_accel, 1e-9)
+
+                # Displacement
+                velocity = integrate_signal(accel_data, dt, sample_rate)
+                displacement = integrate_signal(velocity, dt, sample_rate)
+                displacement_um = displacement * 1e6
+                disp_fft = np.fft.rfft(displacement_um)
+                disp_amp = 2.0 * np.abs(disp_fft) / n
+
+                # EMA smoothing for displacement
+                if smooth:
+                    if avg_disp_spectra[i] is None:
+                        avg_disp_spectra[i] = disp_amp.copy()
+                    else:
+                        avg_disp_spectra[i] = decay * avg_disp_spectra[i] + (1 - decay) * disp_amp
+                    disp_amp = avg_disp_spectra[i]
+
+                # Calibration subtraction for displacement
+                if calibration_data and serial in calibration_data:
+                    cal = calibration_data[serial]
+                    cal_disp = np.interp(frequencies, cal['frequencies'], cal['disp_amp'])
+                    disp_amp = np.maximum(disp_amp - cal_disp, 1e-9)
+
+                # Update y limits
                 freq_mask = (frequencies >= 10.0) & (frequencies <= 200.0)
                 accel_amp_min = min(accel_amp_min, accel_amp[freq_mask].min())
                 accel_amp_max = max(accel_amp_max, accel_amp[freq_mask].max())
+                disp_amp_min = min(disp_amp_min, disp_amp[freq_mask].min())
+                disp_amp_max = max(disp_amp_max, disp_amp[freq_mask].max())
 
-                axes[0].loglog(frequencies, accel_amp, color=color, linewidth=0.8, label=serial)
+                # Plot as lines
+                axes[0].plot(frequencies, accel_amp, color=color, alpha=0.8, label=serial, linewidth=1)
+                axes[1].plot(frequencies, disp_amp, color=color, alpha=0.8, label=serial, linewidth=1)
 
-                # Find and label peaks using prominence (in 10-200 Hz range)
+                # Find and label peaks (in 10-200 Hz range)
                 min_freq_idx = np.searchsorted(frequencies, 10.0)
                 max_freq_idx = np.searchsorted(frequencies, 200.0)
+                num_peaks = 3
+
+                # Acceleration peaks
                 search_region = accel_amp[min_freq_idx:max_freq_idx]
                 peak_indices, properties = signal.find_peaks(
                     search_region,
@@ -528,7 +595,6 @@ def run_continuous(devices, serial_numbers, sample_rate=48000, smooth=False, dec
                 peak_indices = peak_indices + min_freq_idx
 
                 if len(peak_indices) > 0:
-                    # Sort by prominence to get the most significant peaks
                     prominences = properties['prominences']
                     sorted_idx = np.argsort(prominences)[::-1]
                     top_peak_indices = peak_indices[sorted_idx[:num_peaks]]
@@ -538,38 +604,16 @@ def run_continuous(devices, serial_numbers, sample_rate=48000, smooth=False, dec
                         amp = accel_amp[idx]
                         axes[0].plot(freq, amp, 'v', color=color, markersize=8)
                         axes[0].annotate(
-                            f'{freq:.1f} Hz, {amp:.4f} m/s²',
+                            f'{freq:.1f} Hz',
                             xy=(freq, amp),
-                            xytext=(5, 10 + j * 12 + i * 25),
+                            xytext=(5, 5 + j * 12),
                             textcoords='offset points',
                             fontsize=8,
                             color=color,
                             fontweight='bold'
                         )
 
-                # --- Displacement FFT ---
-                velocity = integrate_signal(accel_data, dt, sample_rate)
-                displacement = integrate_signal(velocity, dt, sample_rate)
-                displacement_um = displacement * 1e6
-
-                disp_fft = np.fft.rfft(displacement_um)
-                disp_amp = 2.0 * np.abs(disp_fft) / n
-
-                # Apply EMA smoothing if enabled
-                if smooth:
-                    if avg_disp_spectra[i] is None:
-                        avg_disp_spectra[i] = disp_amp
-                    else:
-                        avg_disp_spectra[i] = decay * avg_disp_spectra[i] + (1 - decay) * disp_amp
-                    disp_amp = avg_disp_spectra[i]
-
-                disp_freq_mask = (frequencies >= 10.0) & (frequencies <= 200.0)
-                disp_amp_min = min(disp_amp_min, disp_amp[disp_freq_mask].min())
-                disp_amp_max = max(disp_amp_max, disp_amp[disp_freq_mask].max())
-
-                axes[1].loglog(frequencies, disp_amp, color=color, linewidth=0.8, label=serial)
-
-                # Find and label peaks using prominence (in 10-200 Hz range)
+                # Displacement peaks
                 disp_search_region = disp_amp[min_freq_idx:max_freq_idx]
                 peak_indices, properties = signal.find_peaks(
                     disp_search_region,
@@ -578,7 +622,6 @@ def run_continuous(devices, serial_numbers, sample_rate=48000, smooth=False, dec
                 peak_indices = peak_indices + min_freq_idx
 
                 if len(peak_indices) > 0:
-                    # Sort by prominence to get the most significant peaks
                     prominences = properties['prominences']
                     sorted_idx = np.argsort(prominences)[::-1]
                     top_peak_indices = peak_indices[sorted_idx[:num_peaks]]
@@ -587,49 +630,53 @@ def run_continuous(devices, serial_numbers, sample_rate=48000, smooth=False, dec
                         freq = frequencies[idx]
                         amp = disp_amp[idx]
                         axes[1].plot(freq, amp, 'v', color=color, markersize=8)
-                        # Format amplitude based on magnitude
-                        if amp >= 0.1:
-                            amp_str = f'{amp:.2f} µm'
-                        else:
-                            amp_str = f'{amp:.3f} µm'
                         axes[1].annotate(
-                            f'{freq:.1f} Hz, {amp_str}',
+                            f'{freq:.1f} Hz',
                             xy=(freq, amp),
-                            xytext=(5, 10 + j * 12 + i * 25),
+                            xytext=(5, 5 + j * 12),
                             textcoords='offset points',
                             fontsize=8,
                             color=color,
                             fontweight='bold'
                         )
 
-            # Configure axes
-            axes[0].set_xlabel('Frequency (Hz)', fontsize=11)
-            axes[0].set_ylabel('Amplitude (m/s²)', fontsize=11)
-            axes[0].set_title('Acceleration Spectrum', fontsize=12)
+            # Configure plots
+            title_suffix = " (calibrated)" if calibration_data else ""
+
+            axes[0].set_xscale('log')
+            axes[0].set_yscale('log')
+            axes[0].set_xlabel('Frequency (Hz)')
+            axes[0].set_ylabel('Amplitude (m/s²)')
+            axes[0].set_title(f'Acceleration Spectrum{title_suffix}')
             axes[0].set_xlim(10, 200)
-            accel_ylim_min = max(accel_amp_min * 0.5, 1e-10)
-            axes[0].set_ylim(accel_ylim_min, accel_amp_max * 2)
+            axes[0].set_ylim(max(accel_amp_min * 0.5, 1e-10), accel_amp_max * 2)
             axes[0].grid(True, which='both', alpha=0.3)
-            axes[0].legend(loc='upper right', fontsize=9)
+            axes[0].legend(loc='upper right')
 
-            axes[1].set_xlabel('Frequency (Hz)', fontsize=11)
-            axes[1].set_ylabel('Amplitude (µm)', fontsize=11)
-            axes[1].set_title('Displacement Spectrum', fontsize=12)
+            axes[1].set_xscale('log')
+            axes[1].set_yscale('log')
+            axes[1].set_xlabel('Frequency (Hz)')
+            axes[1].set_ylabel('Amplitude (µm)')
+            axes[1].set_title(f'Displacement Spectrum{title_suffix}')
             axes[1].set_xlim(10, 200)
-            disp_ylim_min = max(disp_amp_min * 0.5, 1e-10)
-            axes[1].set_ylim(disp_ylim_min, disp_amp_max * 2)
+            axes[1].set_ylim(max(disp_amp_min * 0.5, 1e-10), disp_amp_max * 2)
             axes[1].grid(True, which='both', alpha=0.3)
-            axes[1].legend(loc='upper right', fontsize=9)
+            axes[1].legend(loc='upper right')
 
-            plt.tight_layout()
-            plt.pause(0.01)
+            fig.tight_layout()
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+            plt.pause(0.05)
 
     except KeyboardInterrupt:
-        print("\nStopping continuous mode...")
-
-    plt.ioff()
-    plt.close(fig)
-    print("Done.")
+        print("\nStopping...")
+    finally:
+        for stream in streams:
+            stream.stop()
+            stream.close()
+        plt.ioff()
+        plt.close(fig)
+        print("Done.")
 
 
 def main():
@@ -645,7 +692,7 @@ def main():
     parser.add_argument('-d', '--decay', type=float, default=0.7,
                         help='Decay factor for smooth mode (0-1, default: 0.7)')
     parser.add_argument('-s', '--save', action='store_true',
-                        help='Save plots to output directory')
+                        help='Save plots and data to output directory')
     parser.add_argument('-C', '--calibration', action='store_true',
                         help='Get calibration data')
     args = parser.parse_args()
@@ -673,7 +720,13 @@ def main():
     serial_numbers = [dev['serial_number'] for dev in devices_to_use]
 
     if args.continuous or args.smooth:
-        run_continuous(devices_to_use, serial_numbers, smooth=args.smooth, decay=args.decay)
+        calibration_data = load_calibration()
+        if calibration_data:
+            print("Loaded calibration data - noise floor will be subtracted from FFT.")
+        else:
+            print("No calibration data found - showing raw FFT.")
+        run_continuous(devices_to_use, serial_numbers, smooth=args.smooth, decay=args.decay,
+                       calibration_data=calibration_data)
         return
 
     if args.calibration:
@@ -710,16 +763,50 @@ def main():
     else:
         print("No calibration data found - showing raw FFT.")
 
+    # Calculate and plot FFT (with optional calibration subtraction)
+    fft_data_list = [calculate_fft(data) for data in data_list]
+    fig = plot_fft(fft_data_list, serial_numbers, calibration_data=calibration_data)
+
     if args.save:
         output_dir = "output"
         os.makedirs(output_dir, exist_ok=True)
 
-    # Calculate and plot FFT (with optional calibration subtraction)
-    fft_data_list = [calculate_fft(data) for data in data_list]
-    fig3 = plot_fft(fft_data_list, serial_numbers, calibration_data=calibration_data)
-    if args.save:
-        fig3.savefig(os.path.join(output_dir, "fft.png"), dpi=150, bbox_inches='tight')
+        # Save plot
+        fig.savefig(os.path.join(output_dir, "fft.png"), dpi=150, bbox_inches='tight')
         print(f"Saved: {output_dir}/fft.png")
+
+        # Save FFT data to CSV for each device
+        for fft_data, serial in zip(fft_data_list, serial_numbers):
+            frequencies = fft_data['frequencies']
+            accel_amp = fft_data['accel_amp'].copy()
+            disp_amp = fft_data['disp_amp'].copy()
+
+            # Apply calibration correction if available
+            if calibration_data and serial in calibration_data:
+                cal = calibration_data[serial]
+                if len(frequencies) == len(cal['frequencies']) and np.allclose(frequencies, cal['frequencies']):
+                    cal_accel = cal['accel_amp']
+                    cal_disp = cal['disp_amp']
+                else:
+                    cal_accel = np.interp(frequencies, cal['frequencies'], cal['accel_amp'])
+                    cal_disp = np.interp(frequencies, cal['frequencies'], cal['disp_amp'])
+                accel_amp = np.maximum(accel_amp - cal_accel, 1e-9)
+                disp_amp = np.maximum(disp_amp - cal_disp, 1e-9)
+
+            # Filter to 10-200 Hz range
+            freq_mask = (frequencies >= 10.0) & (frequencies <= 200.0)
+            freq_filtered = frequencies[freq_mask]
+            accel_filtered = accel_amp[freq_mask]
+            disp_filtered = disp_amp[freq_mask]
+
+            # Save FFT data
+            csv_path = os.path.join(output_dir, f"fft_data_{serial}.csv")
+            header = "frequency_hz,acceleration_m_s2,displacement_um"
+            data_to_save = np.column_stack((freq_filtered, accel_filtered, disp_filtered))
+            np.savetxt(csv_path, data_to_save, delimiter=',', header=header, comments='')
+            print(f"Saved: {csv_path}")
+
+        print(f"\nAll data saved to {output_dir}/")
 
     plt.show()
 
