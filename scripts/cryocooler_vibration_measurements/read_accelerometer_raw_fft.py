@@ -806,6 +806,14 @@ def main():
             np.savetxt(csv_path, data_to_save, delimiter=',', header=header, comments='')
             print(f"Saved: {csv_path}")
 
+        # Save raw time-domain data for each device
+        for raw_data, serial in zip(data_list, serial_numbers):
+            raw_csv_path = os.path.join(output_dir, f"raw_data_{serial}.csv")
+            raw_header = "time_s,acceleration_m_s2"
+            raw_data_to_save = np.column_stack((t, raw_data))
+            np.savetxt(raw_csv_path, raw_data_to_save, delimiter=',', header=raw_header, comments='')
+            print(f"Saved: {raw_csv_path}")
+
         print(f"\nAll data saved to {output_dir}/")
 
     plt.show()
