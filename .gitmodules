@@ -1,6 +1,9 @@
-[submodule "lris2-csu"]
-	path = lris2-csu
+[submodule "src/lris2/util/lris2-csu"]
+	path = src/lris2/util/lris2-csu
 	url = git@github.com:CaltechOpticalObservatories/lris2-csu.git
-[submodule "utils/coo-ethercat"]
-	path = utils/coo-ethercat
+[submodule "src/lris2/util/coo-ethercat"]
+	path = src/lris2/util/coo-ethercat
 	url = git@github.com:CaltechOpticalObservatories/coo-ethercat.git
+[submodule "src/lris2/util/sunpower"]
+	path = src/lris2/util/sunpower
+	url = git@github.com:COO-Utilities/sunpower.git
