@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lris2"
+version = "0.1.0"
+description = "LRIS2 Instrument Control Software"
+requires-python = ">=3.12"
+authors = [
+    {name = "Michael Langmayr", email = "langmayr@caltech.edu"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.package-dir]
+lris2 = "src"
+
+[tool.setuptools]
+packages = ["lris2", "lris2.driver", "lris2.gui"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
