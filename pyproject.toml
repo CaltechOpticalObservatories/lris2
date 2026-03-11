@@ -22,7 +22,8 @@ dev = [
 lris2 = "src"
 
 [tool.setuptools]
-packages = ["lris2", "lris2.driver", "lris2.gui"]
+packages = ["lris2", "lris2.driver"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["gui"]

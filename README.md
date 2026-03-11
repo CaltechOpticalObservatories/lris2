@@ -5,10 +5,10 @@ LRIS2 Instrument Control Software
 ## Structure
 
 - `daemons/` – mKTL service daemons
+- `gui/` – Graphical interfaces (`slitmaskgui`, `demo`)
 - `scripts/` – AIT and utility scripts
 - `src/driver/` – Hardware driver submodules
-- `src/gui/` – Graphical interfaces (`slitmaskgui`, `demo`)
-- `tests/` – Unit tests (mirrors `src/` structure)
+- `tests/` – Unit tests
 
 ## Quick start
 
