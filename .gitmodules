@@ -7,3 +7,6 @@
 [submodule "src/driver/lris2_csu"]
 	path = src/driver/lris2_csu
 	url = git@github.com:CaltechOpticalObservatories/lris2-csu.git
+[submodule "src/driver/inficon"]
+	path = src/driver/inficon
+	url = https://github.com/COO-Utilities/inficon
