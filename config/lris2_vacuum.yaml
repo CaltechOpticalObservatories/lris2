@@ -1,0 +1,21 @@
+#
+# Usage:
+#   daemons/vacuum-gauge -c config/lris2_vacuum.yaml
+
+peer_id: lris2_vacuum
+group_id: lris2
+
+# Local ZMQ transport for offline testing (no broker required).
+# Switch to rabbitmq for deployment.
+transport: zmq
+bind: tcp://*:5610
+discovery_enabled: false
+
+hardware:
+  # Serial->TCP bridge endpoint for the VGC502 on lris2-137 (instrument LAN).
+  ip_address: 192.168.30.100
+  tcp_port: 10001
+  n_gauges: 2   # VGC502 has 2 channels
+
+logging:
+  level: INFO

@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+'''LRIS2 Inficon vacuum gauge daemon'''
+import argparse
+import sys
+from typing import Any, Dict, Optional  # pylint: disable=W0611
+
+from lris2.daemon import Lris2Daemon
+from lris2.driver.inficon.inficonvgc502 import InficonVGC502
+
+
+class VacuumGauge(Lris2Daemon):  # pylint: disable=W0223
+    '''Daemon for the LRIS2 Inficon VGC50x vacuum gauge controller'''
+
+    # Defaults
+    group_id = "lris2"
+
+    # pub/sub topics
+    topics = {}
+
+    def __init__(self):
+        """Initialize the vacuum gauge daemon."""
+        super().__init__()
+
+        # Defaults
+        self.host = None
+        self.port = None
+        self.n_gauges = 1
+        self.dev = InficonVGC502(log=True)
+        self.daemon_desc = None
+
+        # Daemon state
+        self.state = {
+            'error': '',
+            'connected': False,
+        }
+
+    def on_start(self, libby):
+        '''Start the daemon, register keywords, connect to the controller'''
+        self.host = self.get_config("hardware.ip_address")
+        self.port = self.get_config("hardware.tcp_port")
+        self.n_gauges = int(self.get_config("hardware.n_gauges", 1))
+        self.daemon_desc = self.get_config("peer_id")
+
+        if not (self.host and self.port):
+            self.logger.error("No IP address or port specified for vacuum gauge controller")
+            self.state['error'] = 'No IP address or port specified'
+            return
+
+        # Keywords register regardless of hardware availability so the daemon
+        # is usable (and inspectable) even while the gauge is unreachable.
+        self._register_keywords()
+
+        try:
+            connection = self.connect(True)
+            if not connection.get("is_connected"):
+                self.logger.warning("Gauge not reachable at %s:%s; daemon up, hardware offline",
+                                    self.host, self.port)
+            else:
+                self.initialize()
+                self.logger.info("Initialized %s", self.daemon_desc)
+        except (ConnectionRefusedError, OSError) as e:
+            self.logger.warning("Failed to connect to hardware: %s", e)
+            self.state['error'] = str(e)
+
+        self.logger.info("Starting %s Daemon", self.daemon_desc)
+
+    def _register_keywords(self):
+        """Register keywords for the daemon."""
+        self.keyword_registry.bool("is_connected",
+                        getter=self.dev.is_connected,
+                        setter=self.keyword_wrapper(self.connect, key="is_connected"),
+                        description="Check if daemon can talk to the vacuum gauge controller.")
+        for gauge in range(1, self.n_gauges + 1):
+            self.keyword_registry.float(f"pressure{gauge}",
+                        getter=self.keyword_wrapper(
+                            lambda g=gauge: self.get_pressure(g), key="pressure"),
+                        units=self.dev.pressure_units or None,
+                        description=f"Pressure reading from gauge {gauge}.")
+        self.keyword_registry.float("temperature",
+                        getter=self.keyword_wrapper(self.get_temperature, key="temperature"),
+                        units="C",
+                        description="Controller temperature.")
+        self.keyword_registry.string("units",
+                        getter=self.keyword_wrapper(self.get_units, key="units"),
+                        setter=self.keyword_wrapper(self.set_units, key="units"),
+                        validator=self._check_units,
+                        description="Pressure units (mbar/Torr/Pascal/Micron/hPascal/Volt).")
+        self.keyword_registry.string("model",
+                        getter=lambda: self.dev.model or "",
+                        description="Controller model.")
+        self.keyword_registry.string("serial",
+                        getter=lambda: str(self.dev.serial_number or ""),
+                        description="Controller serial number.")
+        self.keyword_registry.string("firmware",
+                        getter=lambda: self.dev.firmware_version or "",
+                        description="Controller firmware version.")
+
+    def initialize(self):
+        """Query controller identity, gauge count, and units."""
+        if not self.dev.is_connected():
+            return {"ok": False, "error": "Not connected to hardware"}
+        try:
+            if not self.dev.initialize():
+                return {"ok": False, "error": "Controller initialization failed"}
+            self.logger.debug("Initialized %s", self.daemon_desc)
+        except (OSError, ValueError) as e:
+            self.logger.error("error: %s", e)
+            return {"ok": False, "error": str(e)}
+        return {"ok": True}
+
+    def on_stop(self, libby=None) -> None:
+        '''Stop the daemon and disconnect from the hardware device'''
+        try:
+            self.connect(False)
+            self.logger.info("Disconnected %s", self.daemon_desc)
+        except (OSError, ValueError) as e:
+            self.logger.error("Disconnect %s failed: %s", self.daemon_desc, e)
+
+    def connect(self, connect):
+        """Connect to or disconnect from the controller."""
+        try:
+            if connect:
+                self.dev.connect(host=self.host, port=self.port)
+            else:
+                self.dev.disconnect()
+            result = self.dev.is_connected()
+            self.state['connected'] = result
+        except (OSError, ValueError) as e:
+            self.logger.error("Failed to connect/disconnect with hardware: %s", e)
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, "is_connected": result}
+
+    def get_pressure(self, gauge: int):
+        """Read pressure from a gauge."""
+        if not self.dev.is_connected():
+            return {"ok": False, "error": "Not connected to hardware"}
+        try:
+            pressure = float(self.dev.read_pressure(gauge=gauge))
+            self.logger.debug("pressure%d: %s", gauge, pressure)
+        except (OSError, ValueError) as e:
+            self.logger.error("error: %s", e)
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, "pressure": pressure}
+
+    def get_temperature(self):
+        """Read controller temperature."""
+        if not self.dev.is_connected():
+            return {"ok": False, "error": "Not connected to hardware"}
+        try:
+            temperature = float(self.dev.read_temperature())
+            self.logger.debug("temperature: %s", temperature)
+        except (OSError, ValueError) as e:
+            self.logger.error("error: %s", e)
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, "temperature": temperature}
+
+    def get_units(self):
+        """Read the current pressure units."""
+        if not self.dev.is_connected():
+            return {"ok": False, "error": "Not connected to hardware"}
+        try:
+            self.dev.get_pressure_unit()
+            units = self.dev.pressure_units
+        except (OSError, ValueError) as e:
+            self.logger.error("error: %s", e)
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, "units": units}
+
+    def set_units(self, units: str):
+        """Set the pressure units by name."""
+        if not self.dev.is_connected():
+            return {"ok": False, "error": "Not connected to hardware"}
+        try:
+            code = InficonVGC502.UNIT_CODES.index(units)
+            if not self.dev.set_pressure_unit(code):
+                return {"ok": False, "error": f"Failed to set units to {units}"}
+        except (OSError, ValueError) as e:
+            self.logger.error("error: %s", e)
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, "units": self.dev.pressure_units}
+
+    def _check_units(self, units: str) -> Optional[str]:
+        """Validate a requested unit name against the controller's supported set."""
+        if units not in InficonVGC502.UNIT_CODES:
+            return (f"unknown units '{units}'; "
+                    f"available: {list(InficonVGC502.UNIT_CODES)}")
+        return None
+
+    @staticmethod
+    def keyword_wrapper(func, key=None):
+        """Wrap a daemon method for use as a keyword getter/setter."""
+        def wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            if not result.get("ok"):
+                raise RuntimeError(result.get("error", f"Unknown error in {func.__name__}"))
+            if key:
+                return result[key]
+            return {k: v for k, v in result.items() if k != "ok"}
+        return wrapper
+
+
+def main():
+    """Main entry point for the daemon."""
+    parser = argparse.ArgumentParser(description='LRIS2 Inficon vacuum gauge daemon')
+    parser.add_argument('-c', '--config', type=str,
+                        help='Path to config file (YAML)')
+    parser.add_argument('-d', '--daemon-id', type=str,
+                        help='Daemon ID (required for subsystem configs with multiple daemons)')
+
+    args = parser.parse_args()
+
+    if not args.config:
+        print("--config is required", file=sys.stderr)
+        sys.exit(2)
+
+    try:
+        daemon = VacuumGauge.from_config_file(args.config, daemon_id=args.daemon_id)
+        daemon.serve()
+    except KeyboardInterrupt:
+        print("\nDaemon interrupted by user")
+        sys.exit(0)
+    except Exception as e:  # pylint: disable=W0718
+        print(f"Error running daemon: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
