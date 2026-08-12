@@ -5,12 +5,6 @@
 peer_id: lris2_cryocooler
 group_id: lris2
 
-# Local ZMQ transport for offline testing (no broker required).
-# Switch to rabbitmq for deployment.
-transport: zmq
-bind: tcp://*:5611
-discovery_enabled: false
-
 hardware:
   # TODO: set to the real Sunpower cryocooler endpoint.
   # Placeholder points at a closed local port so the daemon exercises its
