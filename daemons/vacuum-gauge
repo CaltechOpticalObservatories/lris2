@@ -2,7 +2,7 @@
 '''LRIS2 Inficon vacuum gauge daemon'''
 import argparse
 import sys
-from typing import Any, Dict, Optional  # pylint: disable=W0611
+from typing import Optional  # pylint: disable=W0611
 
 from lris2.daemon import Lris2Daemon
 from lris2.driver.inficon.inficonvgc502 import InficonVGC502
