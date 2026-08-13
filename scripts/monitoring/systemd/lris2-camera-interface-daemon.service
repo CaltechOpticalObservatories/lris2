@@ -4,10 +4,10 @@ Documentation=file:/home/l2dev/apps/lris2/daemons/camera-interface
 After=network-online.target lris2-camerad.service rabbitmq-server.service
 Wants=network-online.target lris2-camerad.service rabbitmq-server.service
 
-# Mutually exclusive with the old direct-to-camerad collector: both are
-# automated camerad clients, and only one should poll STATUS/FRAME at a time.
-Conflicts=lris2-archon-collector.service
-After=lris2-archon-collector.service
+# TODO(cutover): this runs alongside the old lris2-archon-collector.service
+# for now (deliberate - no side-by-side comparison needed, just deploy ahead
+# of switching). Add `Conflicts=lris2-archon-collector.service` (+ ordering)
+# back once ready to cut over, so starting this stops the old one.
 
 [Service]
 Type=simple

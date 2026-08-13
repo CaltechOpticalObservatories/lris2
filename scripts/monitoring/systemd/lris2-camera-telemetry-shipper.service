@@ -5,10 +5,11 @@ After=network-online.target lris2-camera-interface-daemon.service
 Wants=network-online.target
 Requires=lris2-camera-interface-daemon.service
 
-# Mutually exclusive with the old direct-to-camerad collector: both write the
-# same InfluxDB measurements, so only one telemetry source should be active.
-Conflicts=lris2-archon-collector.service
-After=lris2-archon-collector.service
+# TODO(cutover): this writes the same InfluxDB measurements as the old
+# lris2-archon-collector.service and runs alongside it for now (deliberate -
+# no side-by-side comparison needed, just deploy ahead of switching). Add
+# `Conflicts=lris2-archon-collector.service` (+ ordering) back once ready to
+# cut over, so starting this stops the old one.
 
 [Service]
 Type=simple
