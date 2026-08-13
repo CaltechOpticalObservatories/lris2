@@ -1,0 +1,39 @@
+[Unit]
+Description=LRIS2 camera telemetry -> InfluxDB shipper (reads camera-interface daemon keywords)
+Documentation=file:/home/l2dev/apps/lris2/scripts/monitoring/camera_telemetry_shipper.py
+After=network-online.target lris2-camera-interface-daemon.service
+Wants=network-online.target
+Requires=lris2-camera-interface-daemon.service
+
+# Mutually exclusive with the old direct-to-camerad collector: both write the
+# same InfluxDB measurements, so only one telemetry source should be active.
+Conflicts=lris2-archon-collector.service
+After=lris2-archon-collector.service
+
+[Service]
+Type=simple
+User=l2dev
+Group=l2dev
+# TODO(deploy): confirm checkout path and venv once M4 lands.
+WorkingDirectory=/home/l2dev/apps/lris2
+EnvironmentFile=/etc/lris2/influxdb.env
+ExecStart=/home/l2dev/apps/lris2/.venv/bin/python3 /home/l2dev/apps/lris2/scripts/monitoring/camera_telemetry_shipper.py --peer lris2_camera
+Restart=on-failure
+RestartSec=10s
+
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target
