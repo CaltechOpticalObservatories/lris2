@@ -1,0 +1,18 @@
+#
+# Usage:
+#   daemons/camera-interface -c config/lris2_camera.yaml
+
+peer_id: lris2_camera
+group_id: lris2
+
+hardware:
+  # camerad's blocking command port (BLKPORT); camerad runs on the same host
+  # as this daemon (lris2-137), hence localhost.
+  ip_address: 127.0.0.1
+  tcp_port: 3031
+
+# How often the background poll thread queries native STATUS/FRAME.
+poll_interval_s: 60
+
+logging:
+  level: INFO

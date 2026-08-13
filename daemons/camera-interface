@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+'''LRIS2 camera-interface daemon (Archon telemetry via camerad)'''
+import argparse
+import sys
+import threading
+from typing import Any, Callable, Optional  # pylint: disable=W0611
+
+from lris2.daemon import Lris2Daemon
+from lris2.driver.camera_interface import CameradClient
+
+
+class CameraInterface(Lris2Daemon):  # pylint: disable=W0223
+    '''Daemon exposing Archon camera telemetry (via camerad) as libby keywords.
+
+    Unlike the sensor daemons (cryocooler, vacuum-gauge), keyword getters here
+    do not talk to camerad live. A background thread owns the one camerad
+    connection and polls STATUS/FRAME on an interval, caching results; keyword
+    getters just read the cache. This keeps camerad's connection to a single,
+    predictable automated client regardless of how many peers read keywords.
+    '''
+
+    # Defaults
+    group_id = "lris2"
+
+    # pub/sub topics
+    topics = {}
+
+    def __init__(self):
+        """Initialize the camera-interface daemon."""
+        super().__init__()
+
+        # Defaults
+        self.host = None
+        self.port = None
+        self.poll_interval_s = 60.0
+        self.dev = CameradClient(log=True)
+        self.daemon_desc = None
+        self._registered_fields = set()
+        self._poll_thread = None
+        self._poll_stop = threading.Event()
+
+        # Daemon state
+        self.state = {
+            'error': '',
+            'connected': False,
+        }
+
+    def on_start(self, libby):
+        '''Start the daemon, register keywords, connect and start polling.'''
+        self.host = self.get_config("hardware.ip_address")
+        self.port = self.get_config("hardware.tcp_port")
+        self.poll_interval_s = float(self.get_config("poll_interval_s", 60.0))
+        self.daemon_desc = self.get_config("peer_id")
+
+        if not (self.host and self.port):
+            self.logger.error("No IP address or port specified for camerad")
+            self.state['error'] = 'No IP address or port specified'
+            return
+
+        self._register_fallback_keywords()
+
+        try:
+            connection = self.connect(True)
+            if not connection.get("is_connected"):
+                self.logger.warning("camerad not reachable at %s:%s; daemon up, "
+                                    "hardware offline", self.host, self.port)
+        except (ConnectionRefusedError, OSError) as e:
+            self.logger.warning("Failed to connect to camerad: %s", e)
+            self.state['error'] = str(e)
+
+        self._poll_thread = threading.Thread(target=self._poll_loop, daemon=True)
+        self._poll_thread.start()
+        self.logger.info("Starting %s Daemon", self.daemon_desc)
+
+    def _register_fallback_keywords(self):
+        """Register keywords that don't depend on a successful poll."""
+        self.keyword_registry.bool("is_connected",
+                        getter=self.dev.is_connected,
+                        setter=self.keyword_wrapper(self.connect, key="is_connected"),
+                        description="Check if daemon can talk to camerad.")
+        self.keyword_registry.string("status_raw",
+                        getter=lambda: self.dev.status_raw,
+                        description="Last raw 'native STATUS' reply from camerad.")
+        self.keyword_registry.string("frame_raw",
+                        getter=lambda: self.dev.frame_raw,
+                        description="Last raw 'native FRAME' reply from camerad.")
+
+    def _register_telemetry_keywords(self):
+        """Register one keyword per newly-discovered telemetry field.
+
+        Called from the poll thread, after on_start has already returned, so
+        each new keyword is registered with libby directly rather than relying
+        on the automatic post-on_start buffer flush.
+        """
+        for key, value in self.dev.telemetry.items():
+            if key in self._registered_fields:
+                continue
+            name = key.lower().replace("/", "_")
+            description = f"Archon telemetry field {key}."
+            getter = self._telemetry_getter(key)
+            if isinstance(value, int):
+                keyword = self.keyword_registry.int(name, getter=getter, description=description)
+            elif isinstance(value, float):
+                keyword = self.keyword_registry.float(name, getter=getter, description=description)
+            else:
+                keyword = self.keyword_registry.string(name, getter=getter, description=description)
+            self.register_keyword(keyword)
+            self._registered_fields.add(key)
+
+    def _telemetry_getter(self, key: str) -> Callable[[], Any]:
+        """Build a keyword getter that reads one field from the telemetry cache."""
+        def getter():
+            value = self.dev.get_atomic_value(key)
+            if value is None:
+                raise RuntimeError(f"No cached value for {key}")
+            return value
+        return getter
+
+    def _poll_loop(self):
+        """Background thread: poll camerad on an interval, caching results."""
+        while not self._poll_stop.is_set():
+            if self.dev.is_connected():
+                try:
+                    self.dev.poll_status()
+                    self.dev.poll_frame()
+                    self._register_telemetry_keywords()
+                    self.state['error'] = ''
+                except OSError as e:
+                    self.logger.error("Telemetry poll failed: %s", e)
+                    self.state['error'] = str(e)
+            self._poll_stop.wait(self.poll_interval_s)
+
+    def on_stop(self, libby=None) -> None:
+        '''Stop the daemon: stop polling and disconnect from camerad.'''
+        self._poll_stop.set()
+        if self._poll_thread is not None:
+            self._poll_thread.join(timeout=5.0)
+        try:
+            self.connect(False)
+            self.logger.info("Disconnected %s", self.daemon_desc)
+        except (OSError, ValueError) as e:
+            self.logger.error("Disconnect %s failed: %s", self.daemon_desc, e)
+
+    def connect(self, connect):
+        """Connect to or disconnect from camerad."""
+        try:
+            if connect:
+                self.dev.connect(self.host, self.port)
+            else:
+                self.dev.disconnect()
+            result = self.dev.is_connected()
+            self.state['connected'] = result
+        except (OSError, ValueError) as e:
+            self.logger.error("Failed to connect/disconnect with camerad: %s", e)
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, "is_connected": result}
+
+    @staticmethod
+    def keyword_wrapper(func, key=None):
+        """Wrap a daemon method for use as a keyword getter/setter."""
+        def wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            if not result.get("ok"):
+                raise RuntimeError(result.get("error", f"Unknown error in {func.__name__}"))
+            if key:
+                return result[key]
+            return {k: v for k, v in result.items() if k != "ok"}
+        return wrapper
+
+
+def main():
+    """Main entry point for the daemon."""
+    parser = argparse.ArgumentParser(description='LRIS2 camera-interface daemon')
+    parser.add_argument('-c', '--config', type=str,
+                        help='Path to config file (YAML)')
+    parser.add_argument('-d', '--daemon-id', type=str,
+                        help='Daemon ID (required for subsystem configs with multiple daemons)')
+
+    args = parser.parse_args()
+
+    if not args.config:
+        print("--config is required", file=sys.stderr)
+        sys.exit(2)
+
+    try:
+        daemon = CameraInterface.from_config_file(args.config, daemon_id=args.daemon_id)
+        daemon.serve()
+    except KeyboardInterrupt:
+        print("\nDaemon interrupted by user")
+        sys.exit(0)
+    except Exception as e:  # pylint: disable=W0718
+        print(f"Error running daemon: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
