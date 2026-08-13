@@ -1,6 +1,6 @@
 [Unit]
 Description=LRIS2 camera telemetry -> InfluxDB shipper (reads camera-interface daemon keywords)
-Documentation=file:/home/l2dev/apps/lris2/scripts/monitoring/camera_telemetry_shipper.py
+Documentation=file:/home/l2dev/apps/lris2-camera-interface-daemon/scripts/monitoring/camera_telemetry_shipper.py
 After=network-online.target lris2-camera-interface-daemon.service
 Wants=network-online.target
 Requires=lris2-camera-interface-daemon.service
@@ -15,10 +15,11 @@ Requires=lris2-camera-interface-daemon.service
 Type=simple
 User=l2dev
 Group=l2dev
-# TODO(deploy): confirm checkout path and venv once M4 lands.
-WorkingDirectory=/home/l2dev/apps/lris2
+# NOTE: separate checkout from /home/l2dev/apps/lris2 (which stays on main
+# until this branch merges). Update once the final deploy location is chosen.
+WorkingDirectory=/home/l2dev/apps/lris2-camera-interface-daemon
 EnvironmentFile=/etc/lris2/influxdb.env
-ExecStart=/home/l2dev/apps/lris2/.venv/bin/python3 /home/l2dev/apps/lris2/scripts/monitoring/camera_telemetry_shipper.py --peer lris2_camera
+ExecStart=/home/l2dev/apps/lris2-camera-interface-daemon/.venv/bin/python3 /home/l2dev/apps/lris2-camera-interface-daemon/scripts/monitoring/camera_telemetry_shipper.py --peer lris2_camera
 Restart=on-failure
 RestartSec=10s
 

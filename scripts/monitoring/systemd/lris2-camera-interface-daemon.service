@@ -1,6 +1,6 @@
 [Unit]
 Description=LRIS2 camera-interface daemon (Archon telemetry via camerad)
-Documentation=file:/home/l2dev/apps/lris2/daemons/camera-interface
+Documentation=file:/home/l2dev/apps/lris2-camera-interface-daemon/daemons/camera-interface
 After=network-online.target lris2-camerad.service rabbitmq-server.service
 Wants=network-online.target lris2-camerad.service rabbitmq-server.service
 
@@ -13,9 +13,10 @@ Wants=network-online.target lris2-camerad.service rabbitmq-server.service
 Type=simple
 User=l2dev
 Group=l2dev
-# TODO(deploy): confirm checkout path and venv once M4 lands.
-WorkingDirectory=/home/l2dev/apps/lris2
-ExecStart=/home/l2dev/apps/lris2/.venv/bin/python3 /home/l2dev/apps/lris2/daemons/camera-interface -c /home/l2dev/apps/lris2/config/lris2_camera.yaml
+# NOTE: separate checkout from /home/l2dev/apps/lris2 (which stays on main
+# until this branch merges). Update once the final deploy location is chosen.
+WorkingDirectory=/home/l2dev/apps/lris2-camera-interface-daemon
+ExecStart=/home/l2dev/apps/lris2-camera-interface-daemon/.venv/bin/python3 /home/l2dev/apps/lris2-camera-interface-daemon/daemons/camera-interface -c /home/l2dev/apps/lris2-camera-interface-daemon/config/lris2_camera.yaml
 Restart=on-failure
 RestartSec=10s
 
