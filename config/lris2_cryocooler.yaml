@@ -1,0 +1,28 @@
+#
+# Usage:
+#   daemons/cryocooler -c config/lris2_cryocooler.yaml
+
+peer_id: lris2_cryocooler
+group_id: lris2
+
+hardware:
+  # TODO: set to the real Sunpower cryocooler endpoint.
+  # Placeholder points at a closed local port so the daemon exercises its
+  # graceful-offline path (connection refused) during offline testing.
+  ip_address: 127.0.0.1
+  tcp_port: 9
+  con_type: tcp
+  units: K
+
+# Software limits enforced by the daemon on writes (the controller exposes no
+# hard limits). TODO: set to the real safe operating envelope.
+limits:
+  temp:
+    soft_min: 40.0
+    soft_max: 330.0
+  power:
+    soft_min: 0.0
+    soft_max: 250.0
+
+logging:
+  level: INFO

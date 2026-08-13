@@ -1,0 +1,290 @@
+#!/usr/bin/env python3
+'''LRIS2 Sunpower cryocooler daemon'''
+import argparse
+import sys
+from typing import Any, Callable, Optional  # pylint: disable=W0611
+
+from lris2.daemon import Lris2Daemon
+from lris2.driver.sunpower import SunpowerCryocooler
+
+
+class Cryocooler(Lris2Daemon):  # pylint: disable=W0223
+    '''Daemon for the LRIS2 Sunpower cryocooler'''
+
+    # Defaults
+    group_id = "lris2"
+
+    # pub/sub topics
+    topics = {}
+
+    def __init__(self):
+        """Initialize the cryocooler daemon."""
+        super().__init__()
+
+        # Defaults
+        self.host = None
+        self.port = None
+        self.con_type = "tcp"
+        self.units = "K"
+        self.dev = SunpowerCryocooler(log=True)
+        self.daemon_desc = None
+        self._temp_soft_min = None
+        self._temp_soft_max = None
+        self._power_soft_min = None
+        self._power_soft_max = None
+
+        # Daemon state. The Sunpower controller has no query for control mode or
+        # cooler on/off, so both are tracked here from the commands we issue.
+        self.state = {
+            'error': '',
+            'connected': False,
+            'cooler_on': False,
+            'ctrlmode': 'temp',
+        }
+
+    def on_start(self, libby):
+        '''Start the daemon, register keywords, connect to the controller'''
+        self.host = self.get_config("hardware.ip_address")
+        self.port = self.get_config("hardware.tcp_port")
+        self.con_type = self.get_config("hardware.con_type", "tcp")
+        self.units = self.get_config("hardware.units", "K")
+        self.daemon_desc = self.get_config("peer_id")
+        self._temp_soft_min = self.get_config("limits.temp.soft_min")
+        self._temp_soft_max = self.get_config("limits.temp.soft_max")
+        self._power_soft_min = self.get_config("limits.power.soft_min")
+        self._power_soft_max = self.get_config("limits.power.soft_max")
+
+        if not (self.host and self.port):
+            self.logger.error("No IP address or port specified for cryocooler")
+            self.state['error'] = 'No IP address or port specified'
+            return
+
+        self._register_keywords()
+
+        try:
+            connection = self.connect(True)
+            if not connection.get("is_connected"):
+                self.logger.warning("Cryocooler not reachable at %s:%s; daemon up, "
+                                    "hardware offline", self.host, self.port)
+        except (ConnectionRefusedError, OSError) as e:
+            self.logger.warning("Failed to connect to hardware: %s", e)
+            self.state['error'] = str(e)
+
+        self.logger.info("Starting %s Daemon", self.daemon_desc)
+
+    def _register_keywords(self):
+        """Register keywords for the daemon."""
+        self.keyword_registry.bool("is_connected",
+                        getter=self.dev.is_connected,
+                        setter=self.keyword_wrapper(self.connect, key="is_connected"),
+                        description="Check if daemon can talk to the cryocooler.")
+        self.keyword_registry.float("targettemp",
+                        getter=self._reader(self.dev.get_target_temp, "targettemp"),
+                        setter=self.keyword_wrapper(self.set_targettemp, key="targettemp"),
+                        validator=self._check_temp_limits,
+                        units=self.units,
+                        description="Cold-head temperature setpoint.")
+        self.keyword_registry.float("coldtemp",
+                        getter=self._reader(self.dev.get_cold_head_temp, "coldtemp"),
+                        units=self.units,
+                        description="Cold-head temperature.")
+        self.keyword_registry.float("rejecttemp",
+                        getter=self._reader(self.dev.get_reject_temp, "rejecttemp"),
+                        units=self.units,
+                        description="Reject (warm end) temperature.")
+        self.keyword_registry.float("measpower",
+                        getter=self._reader(self.dev.get_measured_power, "measpower"),
+                        units="W",
+                        description="Measured cooler power.")
+        self.keyword_registry.float("cmdpower",
+                        getter=self._reader(self.dev.get_commanded_power, "cmdpower"),
+                        setter=self.keyword_wrapper(self.set_cmdpower, key="cmdpower"),
+                        validator=self._check_power_limits,
+                        units="W",
+                        description="Commanded (steady) cooler power.")
+        self.keyword_registry.float("curcmdpower",
+                        getter=self._reader(self.dev.get_current_commanded_power, "curcmdpower"),
+                        units="W",
+                        description="Current commanded power.")
+        self.keyword_registry.bool("cooler",
+                        getter=lambda: self.state['cooler_on'],
+                        setter=self.keyword_wrapper(self.set_cooler, key="cooler"),
+                        description="Cooler on/off (commanded state).")
+        self.keyword_registry.string("ctrlmode",
+                        getter=lambda: self.state['ctrlmode'],
+                        setter=self.keyword_wrapper(self.set_ctrlmode, key="ctrlmode"),
+                        validator=self._check_ctrlmode,
+                        description="Control mode: 'temp' (setpoint) or 'power' (fixed power).")
+        self.keyword_registry.float("tempsoftmin",
+                        getter=lambda: self._temp_soft_min,
+                        setter=lambda v: setattr(self, "_temp_soft_min", float(v)),
+                        units=self.units,
+                        description="Software lower limit for the temperature setpoint.")
+        self.keyword_registry.float("tempsoftmax",
+                        getter=lambda: self._temp_soft_max,
+                        setter=lambda v: setattr(self, "_temp_soft_max", float(v)),
+                        units=self.units,
+                        description="Software upper limit for the temperature setpoint.")
+        self.keyword_registry.float("powersoftmin",
+                        getter=lambda: self._power_soft_min,
+                        setter=lambda v: setattr(self, "_power_soft_min", float(v)),
+                        units="W",
+                        description="Software lower limit for commanded power.")
+        self.keyword_registry.float("powersoftmax",
+                        getter=lambda: self._power_soft_max,
+                        setter=lambda v: setattr(self, "_power_soft_max", float(v)),
+                        units="W",
+                        description="Software upper limit for commanded power.")
+        self.keyword_registry.string("status",
+                        getter=self._reader(lambda: " | ".join(self.dev.get_status()), "status"),
+                        description="Raw controller status block.")
+        self.keyword_registry.string("error",
+                        getter=self._reader(lambda: str(self.dev.get_error()), "error"),
+                        description="Last controller error.")
+        self.keyword_registry.string("version",
+                        getter=self._reader(lambda: str(self.dev.get_version()), "version"),
+                        description="Controller firmware version.")
+
+    def on_stop(self, libby=None) -> None:
+        '''Stop the daemon and disconnect from the hardware device'''
+        try:
+            self.connect(False)
+            self.logger.info("Disconnected %s", self.daemon_desc)
+        except (OSError, ValueError) as e:
+            self.logger.error("Disconnect %s failed: %s", self.daemon_desc, e)
+
+    def connect(self, connect):
+        """Connect to or disconnect from the controller."""
+        try:
+            if connect:
+                self.dev.connect(self.host, self.port, con_type=self.con_type)
+            else:
+                self.dev.disconnect()
+            result = self.dev.is_connected()
+            self.state['connected'] = result
+        except (OSError, ValueError) as e:
+            self.logger.error("Failed to connect/disconnect with hardware: %s", e)
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, "is_connected": result}
+
+    def set_targettemp(self, temp: float):
+        """Set the temperature setpoint and switch to temperature-control mode."""
+        result = self._write(lambda: self.dev.set_target_temp(float(temp)), "targettemp", temp)
+        if result.get("ok"):
+            self.state['ctrlmode'] = 'temp'
+        return result
+
+    def set_cmdpower(self, watts: float):
+        """Set the commanded power and switch to fixed-power mode."""
+        result = self._write(lambda: self.dev.set_commanded_power(float(watts)), "cmdpower", watts)
+        if result.get("ok"):
+            self.state['ctrlmode'] = 'power'
+        return result
+
+    def set_cooler(self, on: bool):
+        """Turn the cooler on or off."""
+        action = self.dev.turn_on_cooler if on else self.dev.turn_off_cooler
+        result = self._write(action, "cooler", bool(on))
+        if result.get("ok"):
+            self.state['cooler_on'] = bool(on)
+        return result
+
+    def set_ctrlmode(self, mode: str):
+        """Record the intended control mode.
+
+        The controller has no explicit mode command; the effective mode is
+        whichever setpoint (targettemp or cmdpower) was last written. This
+        keyword tracks that intent and is updated by those setters.
+        """
+        self.state['ctrlmode'] = mode
+        return {"ok": True, "ctrlmode": mode}
+
+    def _reader(self, fn: Callable[[], Any], key: str):
+        """Build a keyword getter that reads one value from the device."""
+        def read():
+            if not self.dev.is_connected():
+                return {"ok": False, "error": "Not connected to hardware"}
+            try:
+                value = fn()
+            except (OSError, ValueError, IndexError) as e:
+                self.logger.error("error reading %s: %s", key, e)
+                return {"ok": False, "error": str(e)}
+            return {"ok": True, key: value}
+        return self.keyword_wrapper(read, key=key)
+
+    def _write(self, fn: Callable[[], Any], key: str, value: Any):
+        """Run a device write, guarding on connection and mapping errors."""
+        if not self.dev.is_connected():
+            return {"ok": False, "error": "Not connected to hardware"}
+        try:
+            fn()
+        except (OSError, ValueError) as e:
+            self.logger.error("error writing %s: %s", key, e)
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, key: value}
+
+    def _check_temp_limits(self, value: float) -> Optional[str]:
+        """Validate a temperature setpoint against the software limits."""
+        return self._check_limits(value, self._temp_soft_min, self._temp_soft_max, "temperature")
+
+    def _check_power_limits(self, value: float) -> Optional[str]:
+        """Validate a commanded power against the software limits."""
+        return self._check_limits(value, self._power_soft_min, self._power_soft_max, "power")
+
+    @staticmethod
+    def _check_limits(value: float, low: Optional[float], high: Optional[float],
+                      label: str) -> Optional[str]:
+        """Return an error string if value is outside [low, high], else None."""
+        if low is not None and value < low:
+            return f"{label} {value} below soft min {low}"
+        if high is not None and value > high:
+            return f"{label} {value} above soft max {high}"
+        return None
+
+    @staticmethod
+    def _check_ctrlmode(mode: str) -> Optional[str]:
+        """Validate a control-mode value."""
+        if mode not in ("temp", "power"):
+            return f"ctrlmode must be 'temp' or 'power', got '{mode}'"
+        return None
+
+    @staticmethod
+    def keyword_wrapper(func, key=None):
+        """Wrap a daemon method for use as a keyword getter/setter."""
+        def wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            if not result.get("ok"):
+                raise RuntimeError(result.get("error", f"Unknown error in {func.__name__}"))
+            if key:
+                return result[key]
+            return {k: v for k, v in result.items() if k != "ok"}
+        return wrapper
+
+
+def main():
+    """Main entry point for the daemon."""
+    parser = argparse.ArgumentParser(description='LRIS2 Sunpower cryocooler daemon')
+    parser.add_argument('-c', '--config', type=str,
+                        help='Path to config file (YAML)')
+    parser.add_argument('-d', '--daemon-id', type=str,
+                        help='Daemon ID (required for subsystem configs with multiple daemons)')
+
+    args = parser.parse_args()
+
+    if not args.config:
+        print("--config is required", file=sys.stderr)
+        sys.exit(2)
+
+    try:
+        daemon = Cryocooler.from_config_file(args.config, daemon_id=args.daemon_id)
+        daemon.serve()
+    except KeyboardInterrupt:
+        print("\nDaemon interrupted by user")
+        sys.exit(0)
+    except Exception as e:  # pylint: disable=W0718
+        print(f"Error running daemon: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
