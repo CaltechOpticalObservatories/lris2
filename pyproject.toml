@@ -15,6 +15,7 @@ readme = "README.md"
 dependencies = [
     "pyserial",
     "pyyaml",
+    "influxdb-client",
 ]
 
 [project.optional-dependencies]
