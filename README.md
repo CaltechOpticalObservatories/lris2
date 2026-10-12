@@ -26,6 +26,34 @@ pip install -U pip
 pip install -e ".[dev]"
 ```
 
+## The camera daemon
+
+`daemons/camera` serves the Archon as `lris2.rcam`: the generic camera
+keywords, every declared bias channel, and the HeaterX setpoints and
+temperatures. It needs more than the other daemons, since it drives camerad
+in-process rather than over a socket:
+
+```bash
+pip install -e ".[camera]"
+pip install <lris2-camerad-instrument>   # builds the camera_interface module
+daemons/camera -c config/lris2_rcam.yaml
+```
+
+Reading does not need the detector powered. Opening the link is enough:
+
+```bash
+libby modify lris2.rcam.isopen true
+libby show "lris2.rcam.%"
+```
+
+A keyword write needs `loadfirmware` first, so the controller holds the
+configuration camerad parsed; a write patches a single configuration line and
+the line numbers have to agree. The controller also refuses to apply a bias
+change while the detector is unpowered.
+
+`config/lris2_rcam.yaml` names every channel that gets a keyword, and carries
+the voltage limits for the four module 4 rails that have them.
+
 ## Submodules
 
 This repo uses submodules under `src/driver/`:

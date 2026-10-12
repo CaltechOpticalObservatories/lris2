@@ -21,6 +21,12 @@ dependencies = [
 dev = [
     "pytest",
 ]
+# The camera daemon only; the others need none of this. The camera_interface
+# module it drives is built per instrument, from lris2-camerad-instrument
+camera = [
+    "pycamerad@git+https://github.com/COO-Utilities/pycamerad.git",
+    "camera-daemon@git+https://github.com/COO-Utilities/camera-daemon.git",
+]
 
 [tool.setuptools.package-dir]
 lris2 = "src"

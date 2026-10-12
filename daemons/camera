@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""LRIS2 Archon camera daemon
+
+Composes the generic camera, bias and heaterX services from camera-daemon onto
+the LRIS2 daemon base. Everything instrument-specific is in the config file:
+which camerad .cfg to build the camera from, and which bias channels, heaters
+and sensors get keywords.
+"""
+# pylint: disable=invalid-name
+
+import argparse
+import sys
+
+from camera_daemon import CameraService
+from camera_daemon.bias import BiasService
+from camera_daemon.heater import HeaterService
+from lris2.daemon import Lris2Daemon
+from pycamerad import Camerad
+
+
+class Lris2Camera(Camerad):
+    """The camerad driver, bound to the module built for LRIS2."""
+
+    MODULE_NAME = "camera_interface"
+
+
+class _Instrument:
+    """Supplies the camera class, which is what CameraService reads."""
+
+    camera_class = Lris2Camera
+
+
+class Camera(Lris2Daemon):  # pylint: disable=W0223
+    """Daemon for the LRIS2 Archon controller."""
+
+    def __init__(self):
+        super().__init__()
+        self.camera = None
+        self.instrument = _Instrument()
+        self.camera_service = CameraService(self)
+        self.bias_service = BiasService(self)
+        self.heater_service = HeaterService(self)
+
+    def on_start(self, libby):  # pylint: disable=unused-argument
+        """Register every keyword, then build the camera."""
+        self.logger.info("Starting %s daemon", self.peer_id)
+
+        # Registered before connecting so the daemon is inspectable with the
+        # controller offline, matching the other LRIS2 daemons
+        for service in (self.camera_service, self.bias_service, self.heater_service):
+            service.register_keywords(self.keyword_registry)
+
+        self.camera_service.connect()
+
+    def on_stop(self, libby):  # pylint: disable=unused-argument
+        """Release the controller."""
+        self.camera_service.on_stop()
+
+
+def main() -> int:
+    """Parse arguments and serve."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-c", "--config", required=True, help="daemon config YAML")
+    args = parser.parse_args()
+
+    daemon = Camera.from_config_file(args.config)
+    daemon.serve()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
