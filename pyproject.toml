@@ -13,7 +13,7 @@ authors = [
 license = {text = "MIT"}
 readme = "README.md"
 dependencies = [
-    "instrumentctl@git+https://github.com/CaltechOpticalObservatories/instrumentctl.git",
+    "instrumentctl@git+https://github.com/CaltechOpticalObservatories/instrumentctl.git@v0.1.0",
     "pyserial",
     "pyyaml",
 ]

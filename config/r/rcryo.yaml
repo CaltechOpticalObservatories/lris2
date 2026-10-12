@@ -2,7 +2,7 @@
 # Usage:
 #   daemons/cryocooler -c config/lris2_cryocooler.yaml
 
-peer_id: lris2_cryocooler
+peer_id: rcryo
 group_id: lris2
 
 hardware:

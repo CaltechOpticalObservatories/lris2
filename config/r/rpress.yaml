@@ -2,7 +2,7 @@
 # Usage:
 #   daemons/vacuum-gauge -c config/lris2_vacuum.yaml
 
-peer_id: lris2_vacuum
+peer_id: rpress
 group_id: lris2
 
 hardware:
