@@ -1,0 +1,77 @@
+# RCam - Archon detector controller, Red channel
+#
+# Usage:
+#   daemons/camera -c config/lris2_rcam.yaml
+#
+# Addressed as lris2.rcam (group_id.peer_id), e.g.
+#   libby show lris2.rcam.xvbiasbackbias
+#
+# Reading needs the link open but not the detector powered:
+#   libby modify lris2.rcam.isopen true
+
+peer_id: rcam
+group_id: lris2
+description: LRIS2 Red channel Archon controller
+
+camera:
+  config_file: /usr/local/share/lris2/lris2.cfg
+  nframes: 1
+
+# Every labelled channel the three bias boards carry, taken from "bias list"
+# against the loaded ACF. Each keyword names the board it lives on and the
+# label the channel carries, so an operator can see both what drives it and
+# what it drives. Which attributes a channel has depends on its bank, so
+# enable and ilim read null on the banks that carry none.
+biases:
+  # LVXBias, slot 4: output transfer gates and preamp offsets, LVLC bank
+  - {module: 4,  channel: 1,  keyword: lvxbiasotg0}
+  - {module: 4,  channel: 2,  keyword: lvxbiasotg1}
+  - {module: 4,  channel: 13, keyword: lvxbiasotg2}
+  - {module: 4,  channel: 14, keyword: lvxbiasotg3}
+  - {module: 4,  channel: 15, keyword: lvxbiasoffset0}
+  - {module: 4,  channel: 16, keyword: lvxbiasoffset1}
+  - {module: 4,  channel: 17, keyword: lvxbiasoffset2}
+  - {module: 4,  channel: 18, keyword: lvxbiasoffset3}
+  # LVXBias, slot 4: the supply rails, LVHC bank, which carries a current limit.
+  # These four are the only channels on this controller with a hard limit:
+  # the positive rails must not go above +5V nor the negative below -5V, so the
+  # bounds are declared here and a write past them is refused.
+  - {module: 4,  channel: 25, keyword: lvxbiaspreampplus5v,  maxvolts: 5.0}
+  - {module: 4,  channel: 26, keyword: lvxbiaspreampminus5v, minvolts: -5.0}
+  - {module: 4,  channel: 28, keyword: lvxbiasccdplus5v,     maxvolts: 5.0}
+  - {module: 4,  channel: 29, keyword: lvxbiasccdminus5v,    minvolts: -5.0}
+  # HVXBias, slot 9: one output and one reset drain per amplifier, HVLC bank
+  - {module: 9,  channel: 4,  keyword: hvxbiasoutputdraina}
+  - {module: 9,  channel: 5,  keyword: hvxbiasresetdraina}
+  - {module: 9,  channel: 2,  keyword: hvxbiasoutputdrainb}
+  - {module: 9,  channel: 3,  keyword: hvxbiasresetdrainb}
+  - {module: 9,  channel: 11, keyword: hvxbiasoutputdrainc}
+  - {module: 9,  channel: 12, keyword: hvxbiasresetdrainc}
+  - {module: 9,  channel: 9,  keyword: hvxbiasoutputdraind}
+  - {module: 9,  channel: 10, keyword: hvxbiasresetdraind}
+  - {module: 9,  channel: 1,  keyword: hvxbiasdumpdrainx}
+  - {module: 9,  channel: 8,  keyword: hvxbiasdumpdrainy}
+  - {module: 9,  channel: 17, keyword: hvxbiasoffseta}
+  - {module: 9,  channel: 18, keyword: hvxbiasoffsetb}
+  - {module: 9,  channel: 19, keyword: hvxbiasoffsetc}
+  - {module: 9,  channel: 20, keyword: hvxbiasoffsetd}
+  # XVBias, slot 10: the high voltage rails, XVP and XVN banks
+  - {module: 10, channel: 1,  keyword: xvbiasscupperdrain}
+  - {module: 10, channel: 5,  keyword: xvbiasbackbias}
+
+# Two HeaterX modules, slots 11 and 12
+heaters:
+  - {module: 11, channel: A, keyword: heaterxdetheater}
+  - {module: 11, channel: B, keyword: heaterxgetterheater}
+  - {module: 12, channel: A, keyword: heaterxcryoheater}
+
+sensors:
+  - {module: 11, channel: A, keyword: heaterxdettemp}
+  - {module: 11, channel: B, keyword: heaterxgetterbtemp}
+  - {module: 11, channel: C, keyword: heaterxstraptemp}
+  - {module: 12, channel: A, keyword: heaterxcryotemp}
+  - {module: 12, channel: B, keyword: heaterxcryorejecttemp}
+  - {module: 12, channel: C, keyword: heaterxspare12ctemp}
+
+logging:
+  level: INFO
