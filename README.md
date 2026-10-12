@@ -4,7 +4,9 @@ LRIS2 Instrument Control Software
 
 ## Structure
 
-- `daemons/` – mKTL service daemons
+- `daemons/` – libby hardware daemons, one script per device type
+- `config/` – one YAML per daemon instance, named for its `peer_id`
+- `systemd/` – per-instance env files and the host setup script
 - `gui/` – Graphical interfaces (`slitmaskgui`, `demo`)
 - `scripts/` – AIT and utility scripts
 - `src/driver/` – Hardware driver submodules
@@ -83,6 +85,26 @@ git submodule update --remote --merge --recursive
 git add .gitmodules .
 git commit -m "Update submodules to latest on main"
 ```
+
+## Running the daemons
+
+Each daemon takes its config with `-c` and serves keywords over libby
+(RabbitMQ by default), addressed as `lris2.<peer_id>.<keyword>`:
+
+```bash
+daemons/vacuum-gauge -c config/lris2_rpress.yaml
+libby show lris2.rpress.pressure1
+```
+
+The `libby` CLI reads `~/.libby/cli_config.yaml`; on the instrument host it
+needs only:
+
+```yaml
+transport: rabbitmq
+rabbitmq_url: amqp://localhost
+```
+
+For running daemons as services, see [`systemd/README.md`](systemd/README.md).
 
 ## Testing
 

@@ -13,9 +13,13 @@ authors = [
 license = {text = "MIT"}
 readme = "README.md"
 dependencies = [
+    "instrumentctl@git+https://github.com/CaltechOpticalObservatories/instrumentctl.git",
     "pyserial",
     "pyyaml",
 ]
+
+[project.scripts]
+lris2 = "lris2.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -32,7 +36,10 @@ camera = [
 lris2 = "src"
 
 [tool.setuptools]
-packages = ["lris2", "lris2.driver"]
+packages = ["lris2", "lris2.cli", "lris2.driver"]
+
+[tool.setuptools.package-data]
+"lris2.cli" = ["instrument.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

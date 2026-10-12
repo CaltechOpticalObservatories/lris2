@@ -1,0 +1,8 @@
+[instrument]
+name = "lris2"
+display_name = "LRIS2"
+env_prefix = "LRIS2"
+
+[help]
+example_instance = "rpress"
+example_subsystem = "r"

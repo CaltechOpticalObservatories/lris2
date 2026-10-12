@@ -1,0 +1,40 @@
+# Keyword archiver: polls the LRIS2 daemons and writes to InfluxDB for Grafana
+#
+# Usage:
+#   daemons/keygrabber -c config/lris2_keygrabber.yaml
+#
+# The InfluxDB token comes from the environment variable named in token_env.
+
+peer_id: keygrabber
+group_id: lris2
+
+sink:
+  type: influxdb
+  url: http://meridian.caltech.edu:8086
+  org: coo
+  bucket: lris2
+  token_env: LRIS2_INFLUX_TOKEN
+
+# Reads run concurrently across peers; a single daemon still answers one at a time
+workers: 4
+
+defaults:
+  interval_s: 30.0
+  timeout_s: 2.0
+  refresh_s: 300.0
+
+# "%" takes everything readable except uptime and lasterror, which libby excludes
+collections:
+
+  # Vacuum and cryo: slow-moving, the trend over a cooldown is the point
+  rpress:
+    peer: lris2.rpress
+    keywords: ["%"]
+    interval_s: 60.0
+  rcryo:
+    peer: lris2.rcryo
+    keywords: ["%"]
+    interval_s: 60.0
+
+logging:
+  level: INFO
