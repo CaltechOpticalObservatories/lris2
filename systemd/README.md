@@ -48,6 +48,23 @@ lris2 logs rpress -f       # follow its log
 lris2 doctor               # why isn't it working
 ```
 
+Reading a keyword is `libby`, which lives in the venv rather than on the path.
+`install` does not place it, so link it once per host:
+
+```bash
+sudo ln -sf /opt/lris2/venv/bin/libby /usr/local/bin/libby
+```
+
+Then in your shell rc, for TAB completion over keyword names:
+
+```bash
+eval "$(libby completion bash)"
+```
+
+With both in place no virtualenv needs activating, and an activated one is
+worth avoiding: a venv holding its own editable `lris2` shadows the deployed
+package while the daemons keep using `/opt/lris2/app`.
+
 `doctor` checks the host and your account, and compares the installed unit and
 polkit rule against what `install` would write now, so a host whose unit
 predates a template change is reported rather than silently stale.
