@@ -38,8 +38,11 @@ in-process rather than over a socket:
 ```bash
 pip install -e ".[camera]"
 pip install <lris2-camerad-instrument>   # builds the camera_interface module
-daemons/camera -c config/lris2_rcam.yaml
+daemons/camera -c config/r/rcam.yaml
 ```
+
+On a deployed host it runs as a service and both checkouts live under
+`/opt/lris2`; see [`systemd/README.md`](systemd/README.md).
 
 Reading does not need the detector powered. Opening the link is enough:
 
@@ -53,7 +56,7 @@ configuration camerad parsed; a write patches a single configuration line and
 the line numbers have to agree. The controller also refuses to apply a bias
 change while the detector is unpowered.
 
-`config/lris2_rcam.yaml` names every channel that gets a keyword, and carries
+`config/r/rcam.yaml` names every channel that gets a keyword, and carries
 the voltage limits for the four module 4 rails that have them.
 
 ## Submodules

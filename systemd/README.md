@@ -54,6 +54,32 @@ predates a template change is reported rather than silently stale.
 
 ## Updating
 
-`git pull` in `/opt/lris2/app` then `lris2 restart <name>`. The venv installs
-the repo editable, so the daemons and the CLI both follow the checkout without
-a reinstall.
+Code is an admin's to change, which is why the repo and the venv are not
+writable by `lris2-ops`. An operator changes configuration and run state; the
+daemons execute what an admin installed.
+
+```bash
+sudo git -C /opt/lris2/app pull
+lris2 restart <name>
+```
+
+The venv installs the repo editable, so a pull alone moves the daemons and the
+CLI. Only a change to the dependency list needs
+`sudo /opt/lris2/venv/bin/pip install -e /opt/lris2/app` as well.
+
+## The camera daemon's module
+
+`rcam` drives camerad in-process, so the instrument's compiled
+`camera_interface` module has to be in the venv. It is built per instrument and
+so cannot be a dependency of this repository:
+
+```bash
+sudo git clone https://github.com/CaltechOpticalObservatories/lris2-camerad-instrument \
+     /opt/lris2/camerad
+sudo /opt/lris2/venv/bin/pip install -e "/opt/lris2/app[camera]"
+sudo /opt/lris2/venv/bin/pip install /opt/lris2/camerad
+```
+
+`config/r/rcam.yaml` reads the camerad config from that checkout, so a pull
+there moves the ACF the controller is loaded with. Without the module the
+daemon still starts and serves its keywords, reporting `state: nocamera`.
