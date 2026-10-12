@@ -48,22 +48,13 @@ lris2 logs rpress -f       # follow its log
 lris2 doctor               # why isn't it working
 ```
 
-Reading a keyword is `libby`, which lives in the venv rather than on the path.
-`install` does not place it, so link it once per host:
+Reading a keyword is `libby`, which `install.sh` links beside `lris2` and
+wires for TAB completion through `/etc/profile.d/lris2.sh`, so it works in a
+fresh login shell with nothing to set up.
 
-```bash
-sudo ln -sf /opt/lris2/venv/bin/libby /usr/local/bin/libby
-```
-
-Then in your shell rc, for TAB completion over keyword names:
-
-```bash
-eval "$(libby completion bash)"
-```
-
-With both in place no virtualenv needs activating, and an activated one is
-worth avoiding: a venv holding its own editable `lris2` shadows the deployed
-package while the daemons keep using `/opt/lris2/app`.
+Do not activate a virtualenv to use them. One holding its own editable `lris2`
+shadows the deployed package while the daemons keep using `/opt/lris2/app`,
+which is a confusing way to lose an afternoon.
 
 `doctor` checks the host and your account, and compares the installed unit and
 polkit rule against what `install` would write now, so a host whose unit
@@ -86,9 +77,10 @@ CLI. Only a change to the dependency list needs
 
 ## The camera daemon's module
 
-`rcam` drives camerad in-process, so the instrument's compiled
-`camera_interface` module has to be in the venv. It is built per instrument and
-so cannot be a dependency of this repository:
+`rcam` is optional, like any other daemon a host may not run, so neither its
+dependencies nor its module are installed by default. On a host that runs it,
+`camera_interface` has to be in the venv; built per instrument, it cannot be a
+dependency of this repository:
 
 ```bash
 sudo git clone https://github.com/CaltechOpticalObservatories/lris2-camerad-instrument \

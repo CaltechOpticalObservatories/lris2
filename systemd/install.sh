@@ -35,4 +35,17 @@ fi
 "$VENV_DIR/bin/pip" install -U pip
 "$VENV_DIR/bin/pip" install -e "$REPO_DIR"
 
+# Reading a keyword is libby, which otherwise lives only inside the venv
+ln -sf "$VENV_DIR/bin/libby" /usr/local/bin/libby
+echo "linked /usr/local/bin/libby"
+
+# Every login shell rather than every operator's shell rc
+install -m 0644 /dev/stdin /etc/profile.d/lris2.sh <<'PROFILE'
+# TAB completion over libby keyword names
+if command -v libby >/dev/null 2>&1; then
+    eval "$(libby completion bash)"
+fi
+PROFILE
+echo "installed /etc/profile.d/lris2.sh"
+
 exec "$VENV_DIR/bin/lris2" install "$@"
