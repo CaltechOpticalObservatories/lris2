@@ -12,8 +12,10 @@ an env file in `systemd/instances/`:
 
 ```sh
 LRIS2_DAEMON=<path relative to daemons/, e.g. vacuum-gauge>
-LRIS2_CONFIG=<absolute path to that instance's config.yaml>
 ```
+
+Its config is `/etc/lris2/<name>.yaml`, deployed there from
+`config/<subsystem>/<name>.yaml`.
 
 ## Host setup
 
