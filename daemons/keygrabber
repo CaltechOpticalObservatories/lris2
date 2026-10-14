@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+"""Keyword archiver: polls the LRIS2 daemons into InfluxDB for Grafana.
+
+The daemon lives in libby; this shim lets the systemd template launch it like
+any other LRIS2 daemon.
+"""
+
+from libby.keygrabber.main import main
+
+if __name__ == '__main__':
+    raise SystemExit(main())

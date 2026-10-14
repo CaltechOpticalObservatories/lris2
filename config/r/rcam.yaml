@@ -1,7 +1,7 @@
 # RCam - Archon detector controller, Red channel
 #
 # Usage:
-#   daemons/camera -c config/lris2_rcam.yaml
+#   daemons/camera -c config/r/rcam.yaml
 #
 # Addressed as lris2.rcam (group_id.peer_id), e.g.
 #   libby show lris2.rcam.xvbiasbackbias
@@ -14,7 +14,7 @@ group_id: lris2
 description: LRIS2 Red channel Archon controller
 
 camera:
-  config_file: /usr/local/share/lris2/lris2.cfg
+  config_file: /opt/lris2/camerad/config/lris2.cfg
   nframes: 1
 
 # Every labelled channel the three bias boards carry, taken from "bias list"

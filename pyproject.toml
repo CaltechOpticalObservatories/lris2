@@ -13,9 +13,17 @@ authors = [
 license = {text = "MIT"}
 readme = "README.md"
 dependencies = [
+    "instrumentctl@git+https://github.com/CaltechOpticalObservatories/instrumentctl.git@v0.1.0",
+    "libby@git+https://github.com/CaltechOpticalObservatories/libby.git",
+    # The driver submodules are vendored rather than installed, so what they
+    # import has to be declared here. The pin is the one they ask for
+    "hardware_device_base@git+https://github.com/COO-Utilities/hardware_device_base@v1.0.0",
     "pyserial",
     "pyyaml",
 ]
+
+[project.scripts]
+lris2 = "lris2.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -32,7 +40,10 @@ camera = [
 lris2 = "src"
 
 [tool.setuptools]
-packages = ["lris2", "lris2.driver"]
+packages = ["lris2", "lris2.cli", "lris2.driver"]
+
+[tool.setuptools.package-data]
+"lris2.cli" = ["instrument.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -4,7 +4,9 @@ LRIS2 Instrument Control Software
 
 ## Structure
 
-- `daemons/` – mKTL service daemons
+- `daemons/` – libby hardware daemons, one script per device type
+- `config/` – one YAML per daemon instance, named for its `peer_id`
+- `systemd/` – per-instance env files and the host setup script
 - `gui/` – Graphical interfaces (`slitmaskgui`, `demo`)
 - `scripts/` – AIT and utility scripts
 - `src/driver/` – Hardware driver submodules
@@ -36,8 +38,11 @@ in-process rather than over a socket:
 ```bash
 pip install -e ".[camera]"
 pip install <lris2-camerad-instrument>   # builds the camera_interface module
-daemons/camera -c config/lris2_rcam.yaml
+daemons/camera -c config/r/rcam.yaml
 ```
+
+On a deployed host it runs as a service and both checkouts live under
+`/opt/lris2`; see [`systemd/README.md`](systemd/README.md).
 
 Reading does not need the detector powered. Opening the link is enough:
 
@@ -51,7 +56,7 @@ configuration camerad parsed; a write patches a single configuration line and
 the line numbers have to agree. The controller also refuses to apply a bias
 change while the detector is unpowered.
 
-`config/lris2_rcam.yaml` names every channel that gets a keyword, and carries
+`config/r/rcam.yaml` names every channel that gets a keyword, and carries
 the voltage limits for the four module 4 rails that have them.
 
 ## Submodules
@@ -83,6 +88,26 @@ git submodule update --remote --merge --recursive
 git add .gitmodules .
 git commit -m "Update submodules to latest on main"
 ```
+
+## Running the daemons
+
+Each daemon takes its config with `-c` and serves keywords over libby
+(RabbitMQ by default), addressed as `lris2.<peer_id>.<keyword>`:
+
+```bash
+daemons/vacuum-gauge -c config/lris2_rpress.yaml
+libby show lris2.rpress.pressure1
+```
+
+The `libby` CLI reads `~/.libby/cli_config.yaml`; on the instrument host it
+needs only:
+
+```yaml
+transport: rabbitmq
+rabbitmq_url: amqp://localhost
+```
+
+For running daemons as services, see [`systemd/README.md`](systemd/README.md).
 
 ## Testing
 
