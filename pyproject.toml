@@ -13,7 +13,7 @@ authors = [
 license = {text = "MIT"}
 readme = "README.md"
 dependencies = [
-    "instrumentctl@git+https://github.com/CaltechOpticalObservatories/instrumentctl.git@v0.1.0",
+    "instrumentctl@git+https://github.com/CaltechOpticalObservatories/instrumentctl.git@v0.2.0",
     "libby@git+https://github.com/CaltechOpticalObservatories/libby.git",
     # The driver submodules are vendored rather than installed, so what they
     # import has to be declared here. The pin is the one they ask for
