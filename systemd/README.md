@@ -12,6 +12,7 @@ an env file in `systemd/instances/`:
 
 ```sh
 LRIS2_DAEMON=<path relative to daemons/, e.g. vacuum-gauge>
+LRIS2_HOST=<the host it belongs on, so deploy refuses the wrong one>
 ```
 
 Its config is `/etc/lris2/<name>.yaml`, deployed there from
