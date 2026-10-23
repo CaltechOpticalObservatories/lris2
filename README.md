@@ -23,10 +23,12 @@ cd lris2
 git submodule sync --recursive
 git submodule update --init --recursive
 
-# 3) Install the package for development
-pip install -U pip
-pip install -e ".[dev]"
+# 3) Create the environment and install, editable
+uv sync --extra dev
 ```
+
+Run commands through `uv run <command>`. Instrument hosts install with
+`systemd/install.sh` instead; see [`systemd/README.md`](systemd/README.md).
 
 ## The camera daemon
 
@@ -36,9 +38,8 @@ temperatures. It needs more than the other daemons, since it drives camerad
 in-process rather than over a socket:
 
 ```bash
-pip install -e ".[camera]"
-pip install <lris2-camerad-instrument>   # builds the camera_interface module
-daemons/camera -c config/r/rcam.yaml
+uv sync --extra camera                   # builds the camera_interface module too
+uv run daemons/camera -c config/r/rcam.yaml
 ```
 
 On a deployed host it runs as a service and both checkouts live under
