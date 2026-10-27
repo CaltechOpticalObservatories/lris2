@@ -674,7 +674,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -693,7 +693,7 @@
           },
           "displayName": "${__field.labels._field}",
           "unit": "none",
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -738,7 +738,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -756,7 +756,7 @@
             ]
           },
           "unit": "none",
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -877,7 +877,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -896,7 +896,7 @@
           },
           "displayName": "${__field.labels._field}",
           "unit": "celsius",
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -941,7 +941,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -980,7 +980,7 @@
               }
             ]
           },
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -1022,7 +1022,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1040,7 +1040,7 @@
             ]
           },
           "unit": "none",
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -1286,7 +1286,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1305,7 +1305,7 @@
           },
           "displayName": "${__field.labels._field}",
           "unit": "volt",
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -1350,7 +1350,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1369,7 +1369,7 @@
           },
           "displayName": "${__field.labels._field}",
           "unit": "mamp",
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -1453,7 +1453,7 @@
               }
             ]
           },
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -1634,7 +1634,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1653,7 +1653,7 @@
           },
           "displayName": "${__field.labels._field}",
           "unit": "volt",
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -1698,7 +1698,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1717,7 +1717,7 @@
           },
           "displayName": "${__field.labels._field}",
           "unit": "mamp",
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -1801,7 +1801,7 @@
               }
             ]
           },
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -1982,7 +1982,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2001,7 +2001,7 @@
           },
           "displayName": "${__field.labels._field}",
           "unit": "volt",
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -2046,7 +2046,7 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the firmware loaded.",
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2065,7 +2065,7 @@
           },
           "displayName": "${__field.labels._field}",
           "unit": "mamp",
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
@@ -2149,7 +2149,7 @@
               }
             ]
           },
-          "noValue": "Needs firmware loaded"
+          "noValue": "Needs ACF loaded"
         },
         "overrides": []
       },
