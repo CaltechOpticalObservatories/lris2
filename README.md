@@ -24,9 +24,11 @@ git submodule sync --recursive
 git submodule update --init --recursive
 
 # 3) Create the environment and install, editable
-uv sync --extra dev
+uv sync --all-packages --extra dev
 ```
 
+`--all-packages` matters: the drivers under `src/driver/` are uv workspace
+members, and a plain `uv sync` installs only this package's own dependencies.
 Run commands through `uv run <command>`. Instrument hosts install with
 `systemd/install.sh` instead; see [`systemd/README.md`](systemd/README.md).
 
@@ -38,7 +40,7 @@ temperatures. It needs more than the other daemons, since it drives camerad
 in-process rather than over a socket:
 
 ```bash
-uv sync --extra camera                   # builds the camera_interface module too
+uv sync --all-packages --extra camera    # builds the camera_interface module too
 uv run daemons/camera -c config/r/rcam.yaml
 ```
 
@@ -111,10 +113,9 @@ rabbitmq_url: amqp://localhost
 
 The PDUs are the exception: like hispec's `hspower`, they form their own
 group, `l2power`, one peer per PDU. `daemons/l2power/` holds a shared base
-and one script per PDU family, and needs the `power` extra:
+and one script per PDU family:
 
 ```bash
-uv sync --extra power
 uv run daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu1.yaml
 libby modify l2power.pdu1.state3 false
 ```
