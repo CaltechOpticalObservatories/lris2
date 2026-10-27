@@ -1,0 +1,26 @@
+# l2power PDU 1 - Eaton EMAT-08 (epduB2)
+#
+# Usage:
+#   daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu1.yaml
+#
+# Addressed as l2power.pdu1, e.g.
+#   libby show l2power.pdu1.state1
+
+peer_id: pdu1
+group_id: l2power
+
+hardware:
+  # Lease pinned by the dnsmasq dhcp-host entry for its MAC on lris2-137
+  ip_address: 192.168.30.10
+  tcp_port: 23
+  outlet_count: 8
+  # Optional: name outlets in their keywords (state_arclamp instead of state1)
+  # outlet_names:
+  #   1: arclamp
+  # Telnet login from /etc/lris2/secrets.env. The password is the PDU's serial
+  # number, so each PDU has its own variable
+  username_env: LRIS2_PDU_USERNAME
+  password_env: LRIS2_PDU1_PASSWORD
+
+logging:
+  level: INFO

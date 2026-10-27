@@ -68,6 +68,7 @@ This repo uses submodules under `src/driver/`:
 |-----------|------|--------|
 | coo-ethercat | `src/driver/coo_ethercat` | `lris2.driver.coo_ethercat` |
 | lris2-csu | `src/driver/lris2_csu` | `lris2.driver.lris2_csu` |
+| pdu | `src/driver/pdu` | `lris2.driver.pdu.src` |
 | sunpower | `src/driver/sunpower` | `lris2.driver.sunpower` |
 
 ### Pull the submodules
@@ -106,6 +107,16 @@ needs only:
 ```yaml
 transport: rabbitmq
 rabbitmq_url: amqp://localhost
+```
+
+The PDUs are the exception: like hispec's `hspower`, they form their own
+group, `l2power`, one peer per PDU. `daemons/l2power/` holds a shared base
+and one script per PDU family, and needs the `power` extra:
+
+```bash
+uv sync --extra power
+uv run daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu1.yaml
+libby modify l2power.pdu1.state3 false
 ```
 
 For running daemons as services, see [`systemd/README.md`](systemd/README.md).

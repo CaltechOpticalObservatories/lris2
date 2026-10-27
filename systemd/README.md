@@ -30,7 +30,8 @@ sudo /opt/lris2/app/systemd/install.sh l2dev alice   # operators to enrol
 ```
 
 On the host that runs `rcam`, add `--extra camera`; see
-[the camera daemon's module](#the-camera-daemons-module). Log out and back in
+[the camera daemon's module](#the-camera-daemons-module). On the host that runs
+the `l2power` PDU daemons, add `--extra power`. Log out and back in
 afterwards, for the new groups and `PATH`, then run `lris2 doctor`.
 
 `install.sh` builds the venv with a pinned `uv` and hands over to

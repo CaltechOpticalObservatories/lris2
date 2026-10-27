@@ -36,6 +36,12 @@ camera = [
     "camera-daemon@git+https://github.com/COO-Utilities/camera-daemon.git",
     "lris2-camera-interface@git+https://github.com/CaltechOpticalObservatories/lris2-camerad-instrument",
 ]
+# The l2power PDU daemons: install.sh --extra power. The pdu driver package
+# imports every vendor module, so all of their transports are needed
+power = [
+    "paramiko",
+    "telnetlib3",
+]
 
 [tool.setuptools.package-dir]
 lris2 = "src"
