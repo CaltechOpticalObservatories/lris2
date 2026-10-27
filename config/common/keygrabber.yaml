@@ -1,7 +1,7 @@
 # Keyword archiver: polls the LRIS2 daemons and writes to InfluxDB for Grafana
 #
 # Usage:
-#   daemons/keygrabber -c config/lris2_keygrabber.yaml
+#   daemons/keygrabber -c config/common/keygrabber.yaml
 #
 # The InfluxDB token comes from the environment variable named in token_env.
 
@@ -11,8 +11,8 @@ group_id: lris2
 sink:
   type: influxdb
   url: http://meridian.caltech.edu:8086
-  org: coo
-  bucket: lris2
+  org: caltech
+  bucket: LRIS2
   token_env: LRIS2_INFLUX_TOKEN
 
 # Reads run concurrently across peers; a single daemon still answers one at a time
@@ -26,15 +26,27 @@ defaults:
 # "%" takes everything readable except uptime and lasterror, which libby excludes
 collections:
 
-  # Vacuum and cryo: slow-moving, the trend over a cooldown is the point
+  # Pressure moves fast during a pumpdown; the cooler trend is slow
   rpress:
     peer: lris2.rpress
     keywords: ["%"]
-    interval_s: 60.0
+    interval_s: 10.0
   rcryo:
     peer: lris2.rcryo
     keywords: ["%"]
     interval_s: 60.0
+
+  # HeaterX setpoints, outputs and temperatures; bias keywords still report
+  # their commanded values, so they are left out
+  rcam:
+    peer: lris2.rcam
+    keywords: ["heaterx%"]
+
+  # One telnet query per keyword, so a batch of 32 takes a couple of seconds
+  pdu1:
+    peer: l2power.pdu1
+    keywords: ["state%", "current%", "power%", "energy%"]
+    timeout_s: 10.0
 
 logging:
   level: INFO

@@ -14,7 +14,8 @@ license = {text = "MIT"}
 readme = "README.md"
 dependencies = [
     "instrumentctl@git+https://github.com/CaltechOpticalObservatories/instrumentctl.git",
-    "libby@git+https://github.com/CaltechOpticalObservatories/libby.git",
+    # influxdb extra: needed by daemons/keygrabber
+    "libby[influxdb]@git+https://github.com/CaltechOpticalObservatories/libby.git",
     "pyyaml",
 ]
 
