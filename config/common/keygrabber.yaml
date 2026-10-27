@@ -36,11 +36,11 @@ collections:
     keywords: ["%"]
     interval_s: 60.0
 
-  # HeaterX setpoints, outputs and temperatures; bias keywords still report
-  # their commanded values, so they are left out
+  # HeaterX setpoints, outputs and temperatures, and the measured bias
+  # voltages and currents
   rcam:
     peer: lris2.rcam
-    keywords: ["heaterx%"]
+    keywords: ["heaterx%", "%vmeas", "%imeas"]
 
   # One telnet query per keyword, so a batch of 32 takes a couple of seconds
   pdu1:

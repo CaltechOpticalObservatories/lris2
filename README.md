@@ -7,6 +7,7 @@ LRIS2 Instrument Control Software
 - `daemons/` – libby hardware daemons, one script per device type
 - `config/` – one YAML per daemon instance, named for its `peer_id`
 - `systemd/` – per-instance env files and the host setup script
+- `grafana/` – Grafana dashboards, imported on meridian
 - `gui/` – Graphical interfaces (`slitmaskgui`, `demo`)
 - `scripts/` – AIT and utility scripts
 - `src/driver/` – Hardware driver submodules
