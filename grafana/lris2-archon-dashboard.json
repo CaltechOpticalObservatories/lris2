@@ -1,0 +1,2209 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "panels": [],
+      "title": "Camera",
+      "type": "row",
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Age of the newest keygrabber sample from rcam.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "red",
+                "value": 300
+              }
+            ]
+          },
+          "unit": "s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "from(bucket: \"LRIS2\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement == \"isopen\")\n  |> last()\n  |> map(fn: (r) => ({_time: r._time, _field: \"rcam\", _value: float(v: int(v: now()) - int(v: r._time)) / 1000000000.0}))",
+          "refId": "A"
+        }
+      ],
+      "title": "Last rcam sample",
+      "type": "stat",
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "NO"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "YES"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^isconnected$/)\n  |> map(fn: (r) => ({r with _value: if r._value then 1 else 0}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "isconnected",
+      "type": "stat",
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 4,
+        "y": 1
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "NO"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "YES"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^isopen$/)\n  |> map(fn: (r) => ({r with _value: if r._value then 1 else 0}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "isopen",
+      "type": "stat",
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 7,
+        "y": 1
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "NO"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "YES"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^ispowered$/)\n  |> map(fn: (r) => ({r with _value: if r._value then 1 else 0}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "ispowered",
+      "type": "stat",
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 10,
+        "y": 1
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^state$/)\n  |> last()\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "state",
+      "type": "stat",
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 13,
+        "y": 1
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^exptime$/)\n  |> last()\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "exptime",
+      "type": "stat",
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 17,
+        "y": 1
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^nframes$/)\n  |> last()\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "nframes",
+      "type": "stat",
+      "id": 8,
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 20,
+        "y": 1
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^lastframe$/)\n  |> last()\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "lastframe",
+      "type": "stat",
+      "id": 9,
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 22,
+        "y": 1
+      }
+    },
+    {
+      "collapsed": false,
+      "panels": [],
+      "title": "HeaterX: sensors",
+      "type": "row",
+      "id": 10,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Sensors reading 0 K (not connected) are hidden.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*temp$/)\n  |> filter(fn: (r) => r._value > -273.0)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"temp\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Temperatures",
+      "type": "timeseries",
+      "id": 11,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "none",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*tempcurrent$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"tempcurrent\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Sensor excitation currents",
+      "type": "timeseries",
+      "id": 12,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*tempfilter$/)\n  |> last()\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"tempfilter\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Sensor filters",
+      "type": "stat",
+      "id": 13,
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      }
+    },
+    {
+      "collapsed": false,
+      "panels": [],
+      "title": "HeaterX: heaters",
+      "type": "row",
+      "id": 14,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "volt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*heateroutput$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"heateroutput\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Heater outputs",
+      "type": "timeseries",
+      "id": 15,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "celsius",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*heater$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"heater\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Heater setpoints",
+      "type": "timeseries",
+      "id": 16,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 19
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "lineWidth": 0
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "dark-gray",
+                  "text": "OFF"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "ON"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-gray",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "alignValue": "left",
+        "mergeValues": true,
+        "rowHeight": 0.8,
+        "showValue": "auto",
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*heaterenable$/)\n  |> map(fn: (r) => ({r with _value: if r._value then 1 else 0}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"heaterenable\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Heater enables",
+      "type": "state-timeline",
+      "id": 17,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*heaterinput$/)\n  |> last()\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"heaterinput\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Heater inputs",
+      "type": "stat",
+      "id": 18,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*heater(p|i|d|ilim)$/)\n  |> last()\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "PID terms and current limits",
+      "type": "stat",
+      "id": 19,
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      }
+    },
+    {
+      "collapsed": false,
+      "panels": [],
+      "title": "HVX bias: HVXBias MOD9",
+      "type": "row",
+      "id": 20,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "volt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^hvxbias.*vmeas$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"hvxbias\"), suffix: \"vmeas\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Measured voltages",
+      "type": "timeseries",
+      "id": 21,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "mamp"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^hvxbias.*imeas$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"hvxbias\"), suffix: \"imeas\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Measured currents",
+      "type": "timeseries",
+      "id": 22,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "volt",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^hvxbias/)\n  |> filter(fn: (r) => r._measurement !~ /(vmeas|imeas|iset|enable|ilim|label|order)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"hvxbias\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Commanded voltages",
+      "type": "timeseries",
+      "id": 23,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 49
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "mamp",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^hvxbias.*(iset|ilim)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"hvxbias\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Current limits (iset / ilim)",
+      "type": "timeseries",
+      "id": 24,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 49
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Null where the bank has no switch.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "lineWidth": 0
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "dark-gray",
+                  "text": "OFF"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "ON"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-gray",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "alignValue": "left",
+        "mergeValues": true,
+        "rowHeight": 0.8,
+        "showValue": "auto",
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^hvxbias.*enable$/)\n  |> map(fn: (r) => ({r with _value: if r._value then 1 else 0}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"hvxbias\"), suffix: \"enable\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Enables",
+      "type": "state-timeline",
+      "id": 25,
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 58
+      }
+    },
+    {
+      "collapsed": false,
+      "panels": [],
+      "title": "XV bias: XVBias MOD10",
+      "type": "row",
+      "id": 26,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "volt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^xvbias.*vmeas$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"xvbias\"), suffix: \"vmeas\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Measured voltages",
+      "type": "timeseries",
+      "id": 27,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 65
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "mamp"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^xvbias.*imeas$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"xvbias\"), suffix: \"imeas\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Measured currents",
+      "type": "timeseries",
+      "id": 28,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 65
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "volt",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^xvbias/)\n  |> filter(fn: (r) => r._measurement !~ /(vmeas|imeas|iset|enable|ilim|label|order)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"xvbias\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Commanded voltages",
+      "type": "timeseries",
+      "id": 29,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 74
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "mamp",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^xvbias.*(iset|ilim)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"xvbias\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Current limits (iset / ilim)",
+      "type": "timeseries",
+      "id": 30,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 74
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Null where the bank has no switch.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "lineWidth": 0
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "dark-gray",
+                  "text": "OFF"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "ON"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-gray",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "alignValue": "left",
+        "mergeValues": true,
+        "rowHeight": 0.8,
+        "showValue": "auto",
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^xvbias.*enable$/)\n  |> map(fn: (r) => ({r with _value: if r._value then 1 else 0}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"xvbias\"), suffix: \"enable\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Enables",
+      "type": "state-timeline",
+      "id": 31,
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 83
+      }
+    },
+    {
+      "collapsed": false,
+      "panels": [],
+      "title": "LVX bias: LVXBias MOD4",
+      "type": "row",
+      "id": 32,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 89
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "volt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^lvxbias.*vmeas$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"lvxbias\"), suffix: \"vmeas\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Measured voltages",
+      "type": "timeseries",
+      "id": 33,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 90
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "mamp"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^lvxbias.*imeas$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"lvxbias\"), suffix: \"imeas\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Measured currents",
+      "type": "timeseries",
+      "id": 34,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 90
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "volt",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^lvxbias/)\n  |> filter(fn: (r) => r._measurement !~ /(vmeas|imeas|iset|enable|ilim|label|order)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"lvxbias\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Commanded voltages",
+      "type": "timeseries",
+      "id": 35,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 99
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "displayName": "${__field.labels._field}",
+          "unit": "mamp",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^lvxbias.*(iset|ilim)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"lvxbias\"), suffix: \"\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Current limits (iset / ilim)",
+      "type": "timeseries",
+      "id": 36,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 99
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Null where the bank has no switch.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "lineWidth": 0
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "dark-gray",
+                  "text": "OFF"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "ON"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-gray",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "alignValue": "left",
+        "mergeValues": true,
+        "rowHeight": 0.8,
+        "showValue": "auto",
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^lvxbias.*enable$/)\n  |> map(fn: (r) => ({r with _value: if r._value then 1 else 0}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"lvxbias\"), suffix: \"enable\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Enables",
+      "type": "state-timeline",
+      "id": 37,
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 108
+      }
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": [
+    "lris2",
+    "archon",
+    "telemetry"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "LRIS2 Archon Telemetry",
+  "uid": "lris2-archon",
+  "weekStart": ""
+}

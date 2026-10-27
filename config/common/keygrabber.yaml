@@ -36,11 +36,12 @@ collections:
     keywords: ["%"]
     interval_s: 60.0
 
-  # HeaterX setpoints, outputs and temperatures; bias keywords still report
-  # their commanded values, so they are left out
+  # Everything: HeaterX, every bias channel, camera state. A full read takes
+  # about 1.5 s, and setpoints and enables only answer with firmware loaded
   rcam:
     peer: lris2.rcam
-    keywords: ["heaterx%"]
+    keywords: ["%"]
+    timeout_s: 5.0
 
   # One telnet query per keyword, so a batch of 32 takes a couple of seconds
   pdu1:
