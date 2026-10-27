@@ -15,10 +15,6 @@ readme = "README.md"
 dependencies = [
     "instrumentctl@git+https://github.com/CaltechOpticalObservatories/instrumentctl.git",
     "libby@git+https://github.com/CaltechOpticalObservatories/libby.git",
-    # The driver submodules are vendored rather than installed, so what they
-    # import has to be declared here. The pin is the one they ask for
-    "hardware_device_base@git+https://github.com/COO-Utilities/hardware_device_base@v1.0.0",
-    "pyserial",
     "pyyaml",
 ]
 
@@ -36,7 +32,6 @@ camera = [
     "camera-daemon@git+https://github.com/COO-Utilities/camera-daemon.git",
     "lris2-camera-interface@git+https://github.com/CaltechOpticalObservatories/lris2-camerad-instrument",
 ]
-
 [tool.setuptools.package-dir]
 lris2 = "src"
 
@@ -45,6 +40,22 @@ packages = ["lris2", "lris2.cli", "lris2.driver"]
 
 [tool.setuptools.package-data]
 "lris2.cli" = ["instrument.toml"]
+
+# The vendor drivers are vendored as submodules so they can be fixed in place,
+# but their own dependencies still have to reach the environment.
+# coo_ethercat does not build as a package yet, and lris2_csu depends on it
+[tool.uv.workspace]
+members = [
+    "src/driver/inficon",
+    "src/driver/pdu",
+    "src/driver/sunpower",
+]
+
+[tool.uv]
+# The drivers pin this to v1.0.0 and v1.0.1, and uv allows one URL per package
+override-dependencies = [
+    "hardware_device_base @ git+https://github.com/COO-Utilities/hardware_device_base@v1.0.1",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

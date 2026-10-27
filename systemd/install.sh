@@ -77,7 +77,9 @@ fi
 (
     cd "$REPO_DIR"
     "$UV_BIN" lock --upgrade
-    "$UV_BIN" sync "${EXTRA_FLAGS[@]}"
+    # --all-packages installs the vendored drivers too; plain sync covers only
+    # the root project and leaves their dependencies out
+    "$UV_BIN" sync --all-packages "${EXTRA_FLAGS[@]}"
 )
 
 # Only once the sync accepted them, so a mistyped extra is not kept
