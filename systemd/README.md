@@ -69,6 +69,16 @@ which is a confusing way to lose an afternoon.
 polkit rule against what `install` would write now, so a host whose unit
 predates a template change is reported rather than silently stale.
 
+## Dashboard
+
+A web page of every deployed daemon, with start, stop and restart. It has no
+login and listens on loopback, so serve it once per host and tunnel to it:
+
+```bash
+sudo systemctl enable --now lris2-dashboard
+ssh -L 8750:127.0.0.1:8750 <host>          # then open http://127.0.0.1:8750/
+```
+
 ## Updating
 
 ```bash
