@@ -1385,7 +1385,7 @@
     {
       "collapsed": false,
       "panels": [],
-      "title": "HeaterX: sensors",
+      "title": "HeaterX",
       "type": "row",
       "id": 22,
       "gridPos": {
@@ -1463,146 +1463,6 @@
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
-      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "lineWidth": 1,
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            }
-          },
-          "displayName": "${__field.labels._field}",
-          "unit": "none",
-          "noValue": "Needs ACF loaded"
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "min",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "edy7o8tiy9s00e"
-          },
-          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*tempcurrent$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"tempcurrent\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
-          "refId": "A"
-        }
-      ],
-      "title": "Sensor excitation currents",
-      "type": "timeseries",
-      "id": 24,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 37
-      }
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "edy7o8tiy9s00e"
-      },
-      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "displayName": "${__field.labels._field}",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none",
-          "noValue": "Needs ACF loaded"
-        },
-        "overrides": []
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "/.*/",
-          "values": false
-        },
-        "textMode": "value_and_name",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "edy7o8tiy9s00e"
-          },
-          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*tempfilter$/)\n  |> last()\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"tempfilter\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
-          "refId": "A"
-        }
-      ],
-      "title": "Sensor filters",
-      "type": "stat",
-      "id": 25,
-      "gridPos": {
-        "h": 3,
-        "w": 24,
-        "x": 0,
-        "y": 46
-      }
-    },
-    {
-      "collapsed": false,
-      "panels": [],
-      "title": "HeaterX: heaters",
-      "type": "row",
-      "id": 26,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 49
-      }
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "edy7o8tiy9s00e"
-      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -1653,12 +1513,12 @@
       ],
       "title": "Heater outputs",
       "type": "timeseries",
-      "id": 27,
+      "id": 24,
       "gridPos": {
         "h": 9,
         "w": 12,
-        "x": 0,
-        "y": 50
+        "x": 12,
+        "y": 37
       }
     },
     {
@@ -1717,12 +1577,12 @@
       ],
       "title": "Heater setpoints",
       "type": "timeseries",
-      "id": 28,
+      "id": 25,
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 50
+        "x": 0,
+        "y": 46
       }
     },
     {
@@ -1798,12 +1658,25 @@
       ],
       "title": "Heater enables",
       "type": "state-timeline",
-      "id": 29,
+      "id": 26,
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 12,
+        "x": 12,
+        "y": 46
+      }
+    },
+    {
+      "collapsed": false,
+      "panels": [],
+      "title": "HeaterX: settings",
+      "type": "row",
+      "id": 27,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
         "x": 0,
-        "y": 59
+        "y": 54
       }
     },
     {
@@ -1861,12 +1734,12 @@
       ],
       "title": "Heater inputs",
       "type": "stat",
-      "id": 30,
+      "id": 28,
       "gridPos": {
-        "h": 6,
-        "w": 12,
-        "x": 12,
-        "y": 59
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 55
       }
     },
     {
@@ -1921,14 +1794,140 @@
           "refId": "A"
         }
       ],
-      "title": "PID terms and current limits",
+      "title": "PID terms and integral limits",
+      "type": "stat",
+      "id": 29,
+      "gridPos": {
+        "h": 5,
+        "w": 18,
+        "x": 6,
+        "y": 55
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*tempcurrent$/)\n  |> last()\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"tempcurrent\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Sensor excitation currents",
+      "type": "stat",
+      "id": 30,
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 60
+      }
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "description": "Needs the ACF loaded (libby modify lris2.rcam.loadfirmware true).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels._field}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none",
+          "noValue": "Needs ACF loaded"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcam\" and r._measurement =~ /^heaterx.*tempfilter$/)\n  |> last()\n  |> map(fn: (r) => ({r with _field: strings.trimSuffix(v: strings.trimPrefix(v: r._measurement, prefix: \"heaterx\"), suffix: \"tempfilter\")}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Sensor filters",
       "type": "stat",
       "id": 31,
       "gridPos": {
-        "h": 5,
-        "w": 24,
-        "x": 0,
-        "y": 65
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 60
       }
     },
     {
@@ -1941,7 +1940,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 64
       }
     },
     {
@@ -2004,7 +2003,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 71
+        "y": 65
       }
     },
     {
@@ -2067,7 +2066,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 71
+        "y": 65
       }
     },
     {
@@ -2131,7 +2130,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 80
+        "y": 74
       }
     },
     {
@@ -2144,7 +2143,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 89
+        "y": 83
       }
     },
     {
@@ -2207,7 +2206,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 90
+        "y": 84
       }
     },
     {
@@ -2270,7 +2269,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 90
+        "y": 84
       }
     },
     {
@@ -2334,7 +2333,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 99
+        "y": 93
       }
     },
     {
@@ -2415,7 +2414,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 108
+        "y": 102
       }
     },
     {
@@ -2428,7 +2427,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 114
+        "y": 108
       }
     },
     {
@@ -2491,7 +2490,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 115
+        "y": 109
       }
     },
     {
@@ -2554,7 +2553,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 115
+        "y": 109
       }
     },
     {
@@ -2618,7 +2617,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 124
+        "y": 118
       }
     },
     {
@@ -2682,7 +2681,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 124
+        "y": 118
       }
     },
     {
@@ -2763,7 +2762,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 133
+        "y": 127
       }
     }
   ],
