@@ -73,5 +73,10 @@ sensors:
   - {module: 12, channel: B, keyword: heaterxcryorejecttemp}
   - {module: 12, channel: C, keyword: heaterxspare12ctemp}
 
+# Filled slots, for board temperatures; the HeaterX modules carry digital inputs
+chassis:
+  modules: [1, 2, 3, 4, 5, 6, 9, 10, 11, 12]
+  dinputs: [11, 12]
+
 logging:
   level: INFO
