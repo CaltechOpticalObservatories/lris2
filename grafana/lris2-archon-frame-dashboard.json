@@ -909,7 +909,7 @@
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "",
+          "fields": "/.*/",
           "values": false
         },
         "textMode": "value_and_name",
