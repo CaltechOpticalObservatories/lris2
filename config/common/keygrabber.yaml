@@ -8,12 +8,13 @@
 peer_id: keygrabber
 group_id: lris2
 
-sink:
-  type: influxdb
-  url: http://meridian.caltech.edu:8086
-  org: caltech
-  bucket: LRIS2
-  token_env: LRIS2_INFLUX_TOKEN
+sinks:
+  influxdb:
+    type: influxdb
+    url: http://meridian.caltech.edu:8086
+    org: caltech
+    bucket: LRIS2
+    token_env: LRIS2_INFLUX_TOKEN
 
 # Reads run concurrently across peers; a single daemon still answers one at a time
 workers: 4
