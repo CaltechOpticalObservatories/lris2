@@ -49,10 +49,16 @@ collections:
     peer: l2power.pdu1
     keywords: ["state%", "current%", "power%", "energy%"]
     timeout_s: 10.0
+  # Drive telemetry and motion state; positions are commanded, so they stay out
+  csu:
+    peer: lris2.csu
+    keywords: ["boardtemp%", "i2tmotor%", "i2tstage%", "current%", "supply%",
+               "ismoving%", "isenabled%", "error%", "plcstate", "isconnected"]
+    interval_s: 10.0
+    timeout_s: 5.0
   csupdu:
     peer: l2power.csupdu
     keywords: ["state%", "current%", "power%", "energy%"]
-    interval_s: 10.0
     timeout_s: 10.0
 
 logging:
