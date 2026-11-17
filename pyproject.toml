@@ -15,8 +15,9 @@ readme = "README.md"
 dependencies = [
     # dashboard extra: lris2-dashboard.service
     "instrumentctl[dashboard]@git+https://github.com/CaltechOpticalObservatories/instrumentctl.git",
-    # influxdb extra: needed by daemons/keygrabber
-    "libby[influxdb]@git+https://github.com/CaltechOpticalObservatories/libby.git",
+    # influxdb extra: the keygrabber's InfluxDB sink; otel: traces, metrics and
+    # the keygrabber's Prometheus sink, exported when /etc/lris2/otel.env is set
+    "libby[influxdb,otel]@git+https://github.com/CaltechOpticalObservatories/libby.git",
     "pyyaml",
 ]
 
