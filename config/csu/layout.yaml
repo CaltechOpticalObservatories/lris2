@@ -1,0 +1,17 @@
+# Physical slot of each CSU bar as seen from the webcam: side of the slit, row counted
+# from the top (1-12), and which way a positive move takes the bar on screen.
+# Bars not listed here are not in service.
+rows: 12
+bars:
+  CSU-0:  {side: left,  row: 7,  plus: left}
+  CSU-1:  {side: left,  row: 8,  plus: left}
+  CSU-2:  {side: left,  row: 9,  plus: left}
+  CSU-3:  {side: left,  row: 10, plus: left}
+  CSU-4:  {side: left,  row: 11, plus: left}
+  CSU-5:  {side: left,  row: 12, plus: left}
+  CSU-6:  {side: left,  row: 5,  plus: right}
+  CSU-13: {side: right, row: 9,  plus: left}
+  CSU-14: {side: right, row: 10, plus: left}
+  CSU-15: {side: right, row: 11, plus: left}
+  CSU-16: {side: right, row: 12, plus: left}
+  CSU-18: {side: right, row: 5,  plus: right}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_Axis" Id="{9a44cdb7-4dd3-583a-8434-c9a57689fda8}">
+    <Declaration><![CDATA[TYPE ST_Axis :
+STRUCT
+    Cmd : ST_AxisCmd;
+    Sts : ST_AxisSts;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

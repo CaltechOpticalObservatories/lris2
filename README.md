@@ -121,7 +121,27 @@ uv run daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu1.yaml
 libby modify l2power.pdu1.state3 false
 ```
 
+A daemon on another host reaches the instrument broker through
+`LRIS2_BROKER_HOST`, `LRIS2_RABBITMQ_USER` and `LRIS2_RABBITMQ_PASSWORD` in
+`/etc/lris2/secrets.env`; a `rabbitmq_url` in the daemon config takes precedence.
+
 For running daemons as services, see [`systemd/README.md`](systemd/README.md).
+
+## The CSU
+
+`daemons/csu` serves the configurable slit unit as `lris2.csu`: each bar's
+position, velocity, enable, halt and fault, plus drive telemetry (board
+temperature, I2t, current, supply). It drives the PLC motion server over ADS
+through coo-ethercat; `plc/` holds that PLC program and `plc/setup-csu.ps1`
+installs it into a TwinCAT project.
+
+```bash
+uv run daemons/csu -c config/csu/csu.yaml
+libby modify lris2.csu.positionvalue6 -260.0
+```
+
+`lris2-csu-demo` is a browser demo with the webcam stream and bar controls,
+laid out as in `config/csu/layout.yaml` (install with `--extra csu-demo`).
 
 ## Testing
 

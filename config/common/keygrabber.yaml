@@ -49,6 +49,11 @@ collections:
     peer: l2power.pdu1
     keywords: ["state%", "current%", "power%", "energy%"]
     timeout_s: 10.0
+  csupdu:
+    peer: l2power.csupdu
+    keywords: ["state%", "current%", "power%", "energy%"]
+    interval_s: 10.0
+    timeout_s: 10.0
 
 logging:
   level: INFO

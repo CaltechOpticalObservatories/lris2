@@ -22,10 +22,21 @@ dependencies = [
 
 [project.scripts]
 lris2 = "lris2.cli:main"
+lris2-csu-demo = "lris2.csu_demo.__main__:main"
 
 [project.optional-dependencies]
 dev = [
     "pytest",
+]
+# The CSU daemon, on the host that reaches the CSU PLC: install.sh --extra csu
+csu = [
+    "cooethercat[twincat]@git+https://github.com/CaltechOpticalObservatories/coo-ethercat.git@twincat-backend",
+]
+# The CSU browser demo, on the host with the webcam and PLC: install.sh --extra csu-demo
+csu-demo = [
+    "cooethercat[twincat]@git+https://github.com/CaltechOpticalObservatories/coo-ethercat.git@twincat-backend",
+    "flask",
+    "waitress",
 ]
 # The camera daemon only, on the host that runs it: install.sh --extra camera.
 # The camera_interface module it drives is built from lris2-camerad-instrument
@@ -38,10 +49,11 @@ camera = [
 lris2 = "src"
 
 [tool.setuptools]
-packages = ["lris2", "lris2.cli", "lris2.driver"]
+packages = ["lris2", "lris2.cli", "lris2.csu", "lris2.csu_demo", "lris2.driver"]
 
 [tool.setuptools.package-data]
 "lris2.cli" = ["instrument.toml"]
+"lris2.csu_demo" = ["templates/*.html", "static/*"]
 
 # The vendor drivers are vendored as submodules so they can be fixed in place,
 # but their own dependencies still have to reach the environment.

@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+'''LRIS2 CSU daemon: the slit bars as libby keywords, driven over ADS through the PLC'''
+import argparse
+import dataclasses
+import sys
+
+import pyads
+from cooethercat import AxisError, AxisSet
+from cooethercat.backends.sim import open_simulated
+from cooethercat.backends.twincat import open_twincat
+from cooethercat.config import Backend, parse_topology
+
+from lris2.csu.keywords import CsuKeywords
+from lris2.daemon import Lris2Daemon
+
+TRANSPORT_ERRORS = (OSError, pyads.ADSError)
+
+
+class Csu(Lris2Daemon):  # pylint: disable=W0223
+    '''Daemon for the LRIS2 configurable slit unit'''
+
+    group_id = "lris2"
+    topics = {}
+
+    def __init__(self):
+        super().__init__()
+        self.axes: AxisSet | None = None
+        self.keywords: CsuKeywords | None = None
+        self.topology = None
+        self.sim = False
+
+    def on_start(self, libby=None):
+        '''Register keywords, then connect; the daemon stays up if the PLC is unreachable'''
+        self.sim = bool(self.get_config("hardware.sim", False))
+        self.topology = parse_topology(self.get_config("topology"), source="topology")
+        if self.sim:
+            self.topology = dataclasses.replace(self.topology, backend=Backend.SIM)
+        self.axes = self._open_axes()
+        self.keywords = CsuKeywords(self.axes, TRANSPORT_ERRORS)
+        self.keywords.register(self.keyword_registry)
+        self.keyword_registry.bool("isconnected", getter=self.is_connected,
+                                   setter=self.set_connected,
+                                   description="PLC reachable; write true to reconnect")
+        self.keyword_registry.trigger("shutdown", action=self.shutdown,
+                                      description="Stop the daemon; refused while a bar moves")
+        self.logger.info("CSU daemon serving %d bars (%s)", len(self.axes),
+                         "simulated" if self.sim else self.topology.transport.host)
+
+    def on_stop(self, libby=None):
+        '''Close the PLC connection; the PLC keeps each bar's enable state'''
+        if self.axes is not None:
+            self.axes.backend.close()
+
+    def _open_axes(self) -> AxisSet:
+        if self.sim:
+            return open_simulated(self.topology)
+        return open_twincat(self.topology)
+
+    def is_connected(self) -> bool:
+        '''Return whether a status read reaches the PLC'''
+        try:
+            next(iter(self.axes)).status()
+        except (AxisError, *TRANSPORT_ERRORS):
+            return False
+        return True
+
+    def set_connected(self, value) -> None:
+        '''Reconnect on true; false is refused, since keywords need the connection'''
+        if not value:
+            raise RuntimeError("the CSU daemon always holds its PLC connection")
+        self.axes.backend.close()
+        self.axes.backend.open()
+
+    def shutdown(self) -> None:
+        '''Stop the daemon unless a bar is moving'''
+        if self.keywords.any_moving():
+            raise RuntimeError("a bar is moving; halt first")
+        self.request_stop()
+
+
+def main():
+    '''Parse arguments and serve until stopped'''
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-c", "--config", required=True, help="daemon config YAML")
+    parser.add_argument("-d", "--daemon-id", help="override peer_id")
+    args = parser.parse_args()
+    Csu.from_config_file(args.config, args.daemon_id).serve()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
