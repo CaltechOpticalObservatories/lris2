@@ -69,7 +69,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^plcstate$/)\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\"])",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^plcstate$/)\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\"])",
           "refId": "A"
         }
       ],
@@ -448,16 +448,16 @@
     },
     {
       "type": "state-timeline",
-      "title": "Moving",
-      "description": "",
+      "title": "Bars",
+      "description": "Per bar: green while enabled, blue while moving",
       "id": 8,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 10,
+        "w": 24,
         "x": 0,
         "y": 5
       },
@@ -467,7 +467,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^ismoving[0-9]+$/)\n  |> map(fn: (r) => ({_time: r._time, _value: if r._value then 1 else 0, _field: r._measurement}))\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^(isenabled|ismoving)[0-9]+$/)\n  |> map(fn: (r) => ({_time: r._time, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\"),\n      _value: if not r._value then 0 else if strings.hasPrefix(v: r._measurement, prefix: \"ismoving\") then 2 else 1}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -483,77 +483,16 @@
               "type": "value",
               "options": {
                 "0": {
-                  "text": "no",
+                  "text": "off",
                   "color": "transparent"
                 },
                 "1": {
+                  "text": "enabled",
+                  "color": "green"
+                },
+                "2": {
                   "text": "moving",
                   "color": "blue"
-                }
-              }
-            }
-          ],
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "transparent"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "showValue": "never",
-        "rowHeight": 0.8,
-        "mergeValues": true,
-        "legend": {
-          "showLegend": false
-        },
-        "alignValue": "left"
-      },
-      "pluginVersion": "11.2.0"
-    },
-    {
-      "type": "state-timeline",
-      "title": "Enabled",
-      "description": "",
-      "id": 9,
-      "datasource": {
-        "type": "influxdb",
-        "uid": "edy7o8tiy9s00e"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 5
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "edy7o8tiy9s00e"
-          },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^isenabled[0-9]+$/)\n  |> map(fn: (r) => ({_time: r._time, _value: if r._value then 1 else 0, _field: r._measurement}))\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__field.labels._field}",
-          "custom": {
-            "fillOpacity": 80,
-            "lineWidth": 0
-          },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {
-                  "text": "no",
-                  "color": "transparent"
-                },
-                "1": {
-                  "text": "on",
-                  "color": "green"
                 }
               }
             }
@@ -580,7 +519,7 @@
       "type": "timeseries",
       "title": "Drive board temperature",
       "description": "EPOS4 power stage temperature; motion is shaded",
-      "id": 10,
+      "id": 9,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -589,7 +528,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 13
+        "y": 15
       },
       "targets": [
         {
@@ -597,7 +536,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^boardtemp[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^boardtemp[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
@@ -636,7 +575,7 @@
       "type": "timeseries",
       "title": "Motor I2t",
       "description": "Drive thermal model of the motor winding; 100 % trips the drive",
-      "id": 11,
+      "id": 10,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -645,7 +584,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 15
       },
       "targets": [
         {
@@ -653,7 +592,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^i2tmotor[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^i2tmotor[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
@@ -692,7 +631,7 @@
       "type": "timeseries",
       "title": "Motor current",
       "description": "",
-      "id": 12,
+      "id": 11,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -701,7 +640,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 22
+        "y": 24
       },
       "targets": [
         {
@@ -709,7 +648,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^current[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^current[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
@@ -748,7 +687,7 @@
       "type": "timeseries",
       "title": "Power stage I2t",
       "description": "",
-      "id": 13,
+      "id": 12,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -757,7 +696,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 22
+        "y": 24
       },
       "targets": [
         {
@@ -765,7 +704,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^i2tstage[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^i2tstage[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
@@ -804,7 +743,7 @@
       "type": "timeseries",
       "title": "Drive supply",
       "description": "",
-      "id": 14,
+      "id": 13,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -813,7 +752,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 22
+        "y": 24
       },
       "targets": [
         {
@@ -821,7 +760,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^supply[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^supply[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
@@ -861,12 +800,12 @@
       "title": "Power (${pdu})",
       "collapsed": false,
       "panels": [],
-      "id": 15,
+      "id": 14,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 32
       },
       "pluginVersion": "11.2.0"
     },
@@ -874,7 +813,7 @@
       "type": "state-timeline",
       "title": "Outlet state",
       "description": "",
-      "id": 16,
+      "id": 15,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -883,7 +822,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 31
+        "y": 33
       },
       "targets": [
         {
@@ -891,7 +830,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^state(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> map(fn: (r) => ({_time: r._time, _value: if r._value then 1 else 0, _field: r._measurement}))\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^state(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> map(fn: (r) => ({_time: r._time, _value: if r._value then 1 else 0, _field: r.peer + \" \" + r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -939,7 +878,7 @@
       "type": "timeseries",
       "title": "Power per outlet",
       "description": "",
-      "id": 17,
+      "id": 16,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -948,7 +887,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 38
+        "y": 40
       },
       "targets": [
         {
@@ -956,7 +895,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^power(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^power(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r.peer + \" \" + r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
@@ -999,7 +938,7 @@
       "type": "timeseries",
       "title": "Current per outlet",
       "description": "",
-      "id": 18,
+      "id": 17,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -1008,7 +947,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 38
+        "y": 40
       },
       "targets": [
         {
@@ -1016,7 +955,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^current(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^current(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r.peer + \" \" + r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
@@ -1055,7 +994,7 @@
       "type": "timeseries",
       "title": "Energy per outlet",
       "description": "",
-      "id": 19,
+      "id": 18,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -1064,7 +1003,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 49
       },
       "targets": [
         {
@@ -1072,7 +1011,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^energy(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^energy(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r.peer + \" \" + r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
@@ -1112,12 +1051,12 @@
       "title": "Thermovac",
       "collapsed": false,
       "panels": [],
-      "id": 20,
+      "id": 19,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 57
       },
       "pluginVersion": "11.2.0"
     },
@@ -1125,7 +1064,7 @@
       "type": "timeseries",
       "title": "Pressure",
       "description": "",
-      "id": 21,
+      "id": 20,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -1134,7 +1073,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 56
+        "y": 58
       },
       "targets": [
         {
@@ -1142,7 +1081,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rpress\" and r._measurement =~ /^pressure[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rpress\" and r._measurement =~ /^pressure[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
@@ -1185,7 +1124,7 @@
       "type": "timeseries",
       "title": "Cryocooler",
       "description": "",
-      "id": 22,
+      "id": 21,
       "datasource": {
         "type": "influxdb",
         "uid": "edy7o8tiy9s00e"
@@ -1194,7 +1133,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 56
+        "y": 58
       },
       "targets": [
         {
@@ -1202,7 +1141,7 @@
             "type": "influxdb",
             "uid": "edy7o8tiy9s00e"
           },
-          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcryo\" and r._measurement =~ /^(coldtemp|rejecttemp|curcmdpower)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))",
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcryo\" and r._measurement =~ /^(coldtemp|rejecttemp|curcmdpower)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
