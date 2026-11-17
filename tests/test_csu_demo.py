@@ -96,8 +96,8 @@ def client_fixture(controller: Controller, camera: SharedCamera) -> FlaskClient:
     return create_app(controller, camera, LAYOUT).test_client()
 
 
-def _take_control(client: FlaskClient, name: str = "alice") -> None:
-    assert client.post("/api/control", json={"name": name}).status_code == 200
+def _take_control(client: FlaskClient) -> None:
+    assert client.post("/api/control", json={}).status_code == 200
 
 
 def _position(client: FlaskClient, controller: Controller, name: str) -> float:
@@ -156,18 +156,19 @@ def test_move_outside_travel_is_refused(client: FlaskClient) -> None:
 def test_second_operator_is_refused_until_lease_expires(
     client: FlaskClient, controller: Controller, clock: FakeClock
 ) -> None:
-    _take_control(client, "alice")
+    _take_control(client)
     other = create_app(controller, None, LAYOUT).test_client()
-    assert other.post("/api/control", json={"name": "bob"}).status_code == 409
+    other.environ_base["REMOTE_ADDR"] = "10.1.1.20"
+    assert other.post("/api/control", json={}).status_code == 409
     clock.now += LEASE_S + 1
-    assert other.post("/api/control", json={"name": "bob"}).status_code == 200
-    assert other.get("/api/status").get_json()["controller"] == "bob"
+    assert other.post("/api/control", json={}).status_code == 200
+    assert other.get("/api/status").get_json()["controller"] == "10.1.1.20"
 
 
-def test_renewal_keeps_the_holder_name(client: FlaskClient) -> None:
-    _take_control(client, "alice")
+def test_holder_is_shown_by_address(client: FlaskClient) -> None:
+    _take_control(client)
     assert client.post("/api/control", json={}).status_code == 200
-    assert client.get("/api/status").get_json()["controller"] == "alice"
+    assert client.get("/api/status").get_json()["controller"] == "127.0.0.1"
 
 
 def test_release_clears_control(client: FlaskClient) -> None:

@@ -40,7 +40,7 @@ def create_app(controller: Controller, camera: SharedCamera | None, layout: Layo
     @app.post("/api/control")
     def take_control() -> Response | tuple[Response, int]:
         body = request.get_json(silent=True) or {}
-        holder = str(body.get("name") or request.remote_addr or "operator")[:40]
+        holder = str(request.remote_addr or "unknown")
         try:
             token = controller.acquire(holder, request.cookies.get(TOKEN_COOKIE),
                                        body.get("password"))

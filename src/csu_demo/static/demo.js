@@ -242,8 +242,7 @@ async function poll() {
 document.getElementById("take").addEventListener("click", async () => {
   try {
     const password = document.getElementById("password");
-    await api("POST", "/api/control", { name: document.getElementById("operator").value,
-                                        password: password.value });
+    await api("POST", "/api/control", { password: password.value });
     password.value = "";
     poll();
   } catch (error) {
