@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -24,6 +25,9 @@ class Registry(Protocol):
 
     def float(self, name: str, **options: Any) -> Any:
         """Register a float keyword."""
+
+    def string(self, name: str, **options: Any) -> Any:
+        """Register a string keyword."""
 
     def trigger(self, name: str, **options: Any) -> Any:
         """Register a trigger keyword."""
@@ -73,6 +77,8 @@ class CsuKeywords:
                       description="Any bar is moving")
         registry.trigger("halt", action=self._guard(self.halt_all),
                          description="Stop every bar, continuing past failures")
+        registry.string("status", getter=self._guard(self.status_json),
+                        description="Every bar's readbacks as JSON, keyed by bar name")
 
     def _register_bar(self, registry: Registry, axis: Axis) -> None:
         n, units = bar_number(axis), axis.config.units.name
@@ -127,6 +133,10 @@ class CsuKeywords:
     def read_telemetry(self, axis: Axis, item: Telemetry) -> float:
         """Read one drive object and scale it to engineering units."""
         return round(float(axis.read_object(item.index, item.subindex, item.kind)) * item.scale, 2)
+
+    def status_json(self) -> str:
+        """Return every bar's status snapshot as one JSON object."""
+        return json.dumps({axis.name: axis.status() for axis in self._axes})
 
     def any_moving(self) -> bool:
         """Return whether any bar is moving."""

@@ -1,4 +1,4 @@
-"""Serve the CSU demo page: ``lris2-csu-demo --config csu-demo.yaml``."""
+"""Serve the CSU demo page: ``lris2-csu-demo --config config/csu/csu.yaml``."""
 
 from __future__ import annotations
 
@@ -10,20 +10,26 @@ import signal
 import sys
 from pathlib import Path
 
-import pyads
 import waitress
+import yaml
+from cooethercat import Axis, AxisSet
 from cooethercat.backends.sim import open_simulated
-from cooethercat.backends.twincat import open_twincat
-from cooethercat.config import Backend, TopologyConfig, TwincatTransport, load_topology
+from cooethercat.config import Backend, TopologyConfig, parse_topology
+from libby import Client
+from libby.errors import LibbyError
+
+from lris2.daemon import broker_url
 
 from .camera import CommandSource, SharedCamera, StreamFormat, gstreamer_argv
 from .control import Controller
 from .layout import Layout, load_layout
+from .libby_backend import LibbyBackend
 from .presets import PresetStore
 from .web import create_app
 
 # Each open MJPEG stream holds a worker thread for as long as it is watched
 _SERVER_THREADS = 16
+PASSWORD_ENV = "LRIS2_CSU_DEMO_PASSWORD"
 
 
 def main() -> None:
@@ -33,11 +39,11 @@ def main() -> None:
     args = _parse_args()
     topology = _topology(args)
     layout = load_layout(args.layout) if args.layout else Layout(rows=12, slots={})
-    axes = open_simulated(topology) if args.sim else open_twincat(topology)
     camera = None if args.no_camera else SharedCamera(lambda: CommandSource(_capture_argv(args)))
-    with axes:
+    with _open_axes(topology, args) as axes:
         controller = Controller(
-            axes, PresetStore(args.presets), transport_errors=(OSError, pyads.ADSError)
+            axes, PresetStore(args.presets), transport_errors=(OSError, LibbyError),
+            password=os.environ.get(PASSWORD_ENV) or None,
         )
         controller.start()
         try:
@@ -54,17 +60,20 @@ def _capture_argv(args: argparse.Namespace) -> list[str]:
 
 
 def _topology(args: argparse.Namespace) -> TopologyConfig:
-    topology = load_topology(args.config)
+    # The daemon's own config, so limits and units match what it enforces
+    with args.config.open(encoding="utf-8") as handle:
+        topology = parse_topology(yaml.safe_load(handle)["topology"], source=str(args.config))
+    return dataclasses.replace(topology, backend=Backend.SIM) if args.sim else topology
+
+
+def _open_axes(topology: TopologyConfig, args: argparse.Namespace) -> AxisSet:
     if args.sim:
-        return dataclasses.replace(topology, backend=Backend.SIM)
-    transport = topology.transport
-    if not isinstance(transport, TwincatTransport):
-        raise SystemExit(f"{args.config} is not a TwinCAT topology; use --sim")
-    overrides = {
-        key: value for key, value in (("host", args.plc_host), ("local_net_id", args.local_net_id))
-        if value is not None
-    }
-    return dataclasses.replace(topology, transport=dataclasses.replace(transport, **overrides))
+        return open_simulated(topology)
+    client = Client.rabbitmq(self_id="csu-demo", rabbitmq_url=broker_url())
+    backend = LibbyBackend(client, args.peer)
+    axes = AxisSet(backend, {config.keyword_name: Axis(backend, config) for config in topology.axes})
+    backend.open()
+    return axes
 
 
 def _default_presets_path() -> Path:
@@ -75,10 +84,10 @@ def _default_presets_path() -> Path:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, required=True, help="coo-ethercat topology YAML")
-    parser.add_argument("--sim", action="store_true", help="simulate the axes, no PLC")
-    parser.add_argument("--plc-host", help="override the PLC address, e.g. 127.0.0.1 via a tunnel")
-    parser.add_argument("--local-net-id", help="override this host's AMS net id")
+    parser.add_argument("--config", type=Path, required=True,
+                        help="CSU daemon config whose topology lists the bars, e.g. config/csu/csu.yaml")
+    parser.add_argument("--sim", action="store_true", help="simulate the axes, no daemon")
+    parser.add_argument("--peer", default="lris2.csu", help="CSU daemon to drive the bars through")
     parser.add_argument("--camera", default="/dev/video0", help="V4L2 device")
     parser.add_argument("--camera-host", help="capture on this SSH host instead of locally")
     parser.add_argument("--width", type=int, default=StreamFormat.width)

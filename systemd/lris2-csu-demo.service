@@ -1,0 +1,38 @@
+# Installed by install.sh on the host with --extra csu-demo.
+#
+# Serves the CSU browser demo on port 8088 of every interface. It drives the bars
+# only through lris2.csu, and taking control needs LRIS2_CSU_DEMO_PASSWORD.
+
+[Unit]
+Description=LRIS2 CSU browser demo
+After=network-online.target lris2@csu.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lris2
+Group=lris2
+# The webcam
+SupplementaryGroups=video
+# Broker host and the control password; systemd reads it as root
+EnvironmentFile=-/etc/lris2/secrets.env
+ExecStart=/opt/lris2/venv/bin/lris2-csu-demo --config /opt/lris2/app/config/csu/csu.yaml \
+    --layout /opt/lris2/app/config/csu/layout.yaml --host 0.0.0.0 --port 8088
+Environment=PYTHONUNBUFFERED=1
+# Save points live in /var/lib/lris2-csu-demo
+StateDirectory=lris2-csu-demo
+
+Restart=on-failure
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lris2-csu-demo
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

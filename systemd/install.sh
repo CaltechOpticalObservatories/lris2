@@ -88,4 +88,11 @@ if ((${#EXTRAS[@]})); then
     printf '%s\n' "${EXTRAS[@]}" >"$EXTRAS_FILE"
 fi
 
+# The browser demo has its own unit, beside the lris2@ daemons
+if printf '%s\n' "${EXTRAS[@]}" | grep -qx csu-demo; then
+    install -m 644 "$REPO_DIR/systemd/lris2-csu-demo.service" /etc/systemd/system/
+    systemctl daemon-reload
+    echo "installed lris2-csu-demo.service; start it with: sudo systemctl enable --now lris2-csu-demo"
+fi
+
 exec "$VENV_DIR/bin/lris2" install "${INSTALL_ARGS[@]}"

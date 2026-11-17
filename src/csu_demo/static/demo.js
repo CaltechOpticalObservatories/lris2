@@ -143,6 +143,7 @@ function render(status) {
     ? (inControl ? "You are in control" : `${status.controller} is in control`)
     : "Nobody is in control";
   document.getElementById("take").hidden = inControl;
+  document.getElementById("password").hidden = inControl;
   document.getElementById("release").hidden = !inControl;
   if (status.error) showError(`PLC: ${status.error}`);
   if (!document.querySelector(".bar")) buildCsu(status.axes);
@@ -240,7 +241,10 @@ async function poll() {
 
 document.getElementById("take").addEventListener("click", async () => {
   try {
-    await api("POST", "/api/control", { name: document.getElementById("operator").value });
+    const password = document.getElementById("password");
+    await api("POST", "/api/control", { name: document.getElementById("operator").value,
+                                        password: password.value });
+    password.value = "";
     poll();
   } catch (error) {
     showError(error.message);

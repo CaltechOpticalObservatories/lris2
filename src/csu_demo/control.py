@@ -39,8 +39,10 @@ class Controller:
         presets: PresetStore,
         transport_errors: tuple[type[Exception], ...] = (OSError,),
         clock: Callable[[], float] = time.monotonic,
+        password: str | None = None,
     ) -> None:
         self._axes = axes
+        self._password = password
         self._presets = presets
         self._transport_errors = (AxisError, *transport_errors)
         self._clock = clock
@@ -110,8 +112,11 @@ class Controller:
                 "in_control": lease is not None and token == lease.token,
             }
 
-    def acquire(self, holder: str, token: str | None) -> str:
-        """Take or renew control, returning the token the holder must present."""
+    def acquire(self, holder: str, token: str | None, password: str | None = None) -> str:
+        """Take or renew control, returning the token the holder must present.
+
+        Taking control needs the password when one is set; renewing needs only the token.
+        """
         with self._lock:
             lease = self._live_lease()
             if lease is not None and token != lease.token:
@@ -119,6 +124,9 @@ class Controller:
             if lease is not None:
                 lease.expires = self._clock() + LEASE_S
                 return lease.token
+            if self._password is not None and not secrets.compare_digest(
+                    (password or "").encode(), self._password.encode()):
+                raise ControlError("wrong password")
             self._lease = _Lease(secrets.token_urlsafe(16), holder, self._clock() + LEASE_S)
             return self._lease.token
 

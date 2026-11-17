@@ -141,7 +141,11 @@ libby modify lris2.csu.positionvalue6 -260.0
 ```
 
 `lris2-csu-demo` is a browser demo with the webcam stream and bar controls,
-laid out as in `config/csu/layout.yaml` (install with `--extra csu-demo`).
+laid out as in `config/csu/layout.yaml`. It drives the bars only through
+`lris2.csu`, so it runs anywhere the broker is reachable. On the CSU host,
+`install.sh --extra csu-demo` installs `lris2-csu-demo.service`, which serves it
+on port 8088; taking control needs `LRIS2_CSU_DEMO_PASSWORD` from
+`/etc/lris2/secrets.env`.
 
 ## Testing
 

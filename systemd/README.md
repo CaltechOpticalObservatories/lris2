@@ -79,6 +79,12 @@ sudo systemctl enable --now lris2-dashboard
 ssh -L 8750:127.0.0.1:8750 <host>          # then open http://127.0.0.1:8750/
 ```
 
+## CSU demo
+
+`lris2-csu-demo.service` serves the CSU browser demo on port 8088 of the host
+installed with `--extra csu-demo`. Set `LRIS2_CSU_DEMO_PASSWORD` in
+`/etc/lris2/secrets.env`, then `sudo systemctl enable --now lris2-csu-demo`.
+
 ## Updating
 
 ```bash

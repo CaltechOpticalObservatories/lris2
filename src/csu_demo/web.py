@@ -42,7 +42,8 @@ def create_app(controller: Controller, camera: SharedCamera | None, layout: Layo
         body = request.get_json(silent=True) or {}
         holder = str(body.get("name") or request.remote_addr or "operator")[:40]
         try:
-            token = controller.acquire(holder, request.cookies.get(TOKEN_COOKIE))
+            token = controller.acquire(holder, request.cookies.get(TOKEN_COOKIE),
+                                       body.get("password"))
         except ControlError as error:
             return jsonify(error=str(error)), 409
         response = jsonify(ok=True)

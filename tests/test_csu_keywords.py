@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Callable, Iterator
 from typing import Any
@@ -60,7 +61,7 @@ def wait_for(predicate: Callable[[], bool], timeout_s: float = 2.0) -> None:
 def test_every_bar_gets_its_keywords(keywords: dict[str, Keyword]) -> None:
     per_bar = {"positionvalue", "velocity", "ismoving", "isenabled", "error", "halt", "reset",
                *(item.keyword for item in TELEMETRY)}
-    expected = {f"{name}{n}" for name in per_bar for n in (0, 6)} | {"ismoving", "halt"}
+    expected = {f"{name}{n}" for name in per_bar for n in (0, 6)} | {"ismoving", "halt", "status"}
     assert set(keywords) == expected
 
 
@@ -118,3 +119,11 @@ def test_telemetry_is_scaled(axes: AxisSet, keywords: dict[str, Keyword]) -> Non
     backend.set_object("CSU-6", 0x2200, 1, 233)
     assert read(keywords, "boardtemp6") == pytest.approx(72.4)
     assert read(keywords, "supply6") == pytest.approx(23.3)
+
+
+def test_status_covers_every_bar(keywords: dict[str, Keyword]) -> None:
+    keywords["isenabled6"].handle({"value": True})
+    status = json.loads(read(keywords, "status"))
+    assert set(status) == {"CSU-0", "CSU-6"}
+    assert status["CSU-6"]["enabled"] is True
+    assert status["CSU-0"]["position"] == pytest.approx(0.0)
