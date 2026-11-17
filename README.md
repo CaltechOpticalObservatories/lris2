@@ -122,8 +122,10 @@ libby modify l2power.pdu1.state3 false
 ```
 
 A daemon on another host reaches the instrument broker through
-`LRIS2_BROKER_HOST`, `LRIS2_RABBITMQ_USER` and `LRIS2_RABBITMQ_PASSWORD` in
-`/etc/lris2/secrets.env`; a `rabbitmq_url` in the daemon config takes precedence.
+`LRIS2_BROKER_HOST` in `/etc/lris2/secrets.env`; a `rabbitmq_url` in the daemon
+config takes precedence. The broker admits remote guests with
+`loopback_users = none` in `/etc/rabbitmq/rabbitmq.conf`. Every variable that
+goes in `secrets.env` is listed in [`systemd/README.md`](systemd/README.md#secrets).
 
 For running daemons as services, see [`systemd/README.md`](systemd/README.md).
 

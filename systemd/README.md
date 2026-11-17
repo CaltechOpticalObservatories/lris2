@@ -44,6 +44,20 @@ sudo. It is safe to re-run and reports only what it changes.
 Override `LRIS2_REPO_DIR`, `LRIS2_VENV_DIR` and `LRIS2_ETC_DIR` for other
 paths.
 
+## Secrets
+
+Credentials and per-host settings live in `/etc/lris2/secrets.env`, which every
+unit reads at start; restart a service after changing it.
+
+| Variable | Host | Used by |
+|---|---|---|
+| `LRIS2_INFLUX_TOKEN` | lris2-137 | keygrabber |
+| `LRIS2_PDU_USERNAME` | lris2-137, lris2-ethercat | `l2power` daemons |
+| `LRIS2_PDU1_PASSWORD` | lris2-137 | `l2power_pdu1`; the PDU's serial number |
+| `LRIS2_CSUPDU_PASSWORD` | lris2-ethercat | `l2power_csupdu`; the PDU's serial number |
+| `LRIS2_BROKER_HOST` | lris2-ethercat | every daemon on a host without the broker |
+| `LRIS2_CSU_DEMO_PASSWORD` | lris2-ethercat | taking control in `lris2-csu-demo` |
+
 ## Day to day
 
 Nothing below needs root, for anyone in `lris2-ops`:
@@ -83,7 +97,7 @@ ssh -L 8750:127.0.0.1:8750 <host>          # then open http://127.0.0.1:8750/
 
 `lris2-csu-demo.service` serves the CSU browser demo on port 8088 of the host
 installed with `--extra csu-demo`. Set `LRIS2_CSU_DEMO_PASSWORD` in
-`/etc/lris2/secrets.env`, then `sudo systemctl enable --now lris2-csu-demo`.
+[`secrets.env`](#secrets), then `sudo systemctl enable --now lris2-csu-demo`.
 
 ## Updating
 

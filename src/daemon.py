@@ -1,26 +1,17 @@
 """ LRIS2 daemon base class """
 import os
-from urllib.parse import quote
 
 from libby.daemon import LibbyDaemon
 
-# The instrument broker. Its credentials stay out of git: set these in
-# /etc/lris2/secrets.env. A host other than the broker's names it in LRIS2_BROKER_HOST.
+# The instrument broker. A daemon on another host names it in LRIS2_BROKER_HOST;
+# the broker lets the guest account in remotely (loopback_users = none)
 BROKER_HOST = "localhost"
 BROKER_HOST_ENV = "LRIS2_BROKER_HOST"
-BROKER_USER_ENV = "LRIS2_RABBITMQ_USER"
-BROKER_PASSWORD_ENV = "LRIS2_RABBITMQ_PASSWORD"
 
 
 def broker_url() -> str:
-    """Return the instrument broker URL, with credentials from the environment."""
-    user = os.environ.get(BROKER_USER_ENV)
-    password = os.environ.get(BROKER_PASSWORD_ENV)
-    host = os.environ.get(BROKER_HOST_ENV) or BROKER_HOST
-    if not (user and password):
-        return f"amqp://{host}"
-    # quote() so a password containing @ or / cannot break the URL apart
-    return f"amqp://{quote(user, safe='')}:{quote(password, safe='')}@{host}"
+    """Return the instrument broker URL."""
+    return f"amqp://{os.environ.get(BROKER_HOST_ENV) or BROKER_HOST}"
 
 
 class Lris2Daemon(LibbyDaemon):
