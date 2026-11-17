@@ -77,6 +77,21 @@ This repo uses submodules under `src/driver/`:
 | schott | `src/driver/schott` | `coldvision` |
 | sunpower | `src/driver/sunpower` | `lris2.driver.sunpower` |
 
+### Lab drivers from the Python console
+
+The AIT lab drivers are installed into the deployment venv, so on `lris2-137`:
+
+```bash
+/opt/lris2/venv/bin/python
+>>> from cornerstone260 import Cornerstone260
+>>> mono = Cornerstone260(log=False)
+>>> mono.connect("/dev/ttyS0")
+>>> mono.initialize()
+```
+
+- Cornerstone 260 monochromator: [newport README](https://github.com/COO-Utilities/newport#cornerstone-260)
+- SCHOTT ColdVision light source: [schott USAGE.md](https://github.com/COO-Utilities/schott/blob/main/USAGE.md)
+
 ### Pull the submodules
 
 ```bash
