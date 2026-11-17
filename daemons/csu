@@ -5,7 +5,7 @@ import dataclasses
 import sys
 
 import pyads
-from cooethercat import AxisError, AxisSet
+from cooethercat import AxisError, AxisSet, ControllerState
 from cooethercat.backends.sim import open_simulated
 from cooethercat.backends.twincat import open_twincat
 from cooethercat.config import Backend, parse_topology
@@ -41,6 +41,8 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
         self.keyword_registry.bool("isconnected", getter=self.is_connected,
                                    setter=self.set_connected,
                                    description="PLC reachable; write true to reconnect")
+        self.keyword_registry.string("plcstate", getter=self.plc_state,
+                                     description="PLC runtime mode: run, stop, config or other")
         self.keyword_registry.trigger("shutdown", action=self.shutdown,
                                       description="Stop the daemon; refused while a bar moves")
         self.logger.info("CSU daemon serving %d bars (%s)", len(self.axes),
@@ -57,12 +59,21 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
         return open_twincat(self.topology)
 
     def is_connected(self) -> bool:
-        '''Return whether a status read reaches the PLC'''
+        '''Return whether the PLC is in Run and a status read reaches it'''
         try:
+            if self.axes.backend.controller_state() is not ControllerState.RUN:
+                return False
             next(iter(self.axes)).status()
         except (AxisError, *TRANSPORT_ERRORS):
             return False
         return True
+
+    def plc_state(self) -> str:
+        '''Return the PLC runtime mode, as read from the TwinCAT system service'''
+        try:
+            return str(self.axes.backend.controller_state())
+        except TRANSPORT_ERRORS as error:
+            raise RuntimeError(f"PLC unreachable: {error}") from error
 
     def set_connected(self, value) -> None:
         '''Reconnect on true; false is refused, since keywords need the connection'''
