@@ -110,3 +110,13 @@ The extra is recorded in `/etc/lris2/extras`, so later runs keep it, and
 `config/r/rcam.yaml` reads the camerad config from the checkout, so a pull
 there moves the ACF the controller is loaded with. Without the module the
 daemon still starts and serves its keywords, reporting `state: nocamera`.
+
+## The Galil driver's bindings
+
+The `galil` driver imports `gclib`, whose Python bindings come from Galil's
+own index and load Galil's `libgclib`, so they are an extra too. On a host
+with Galil's `gclib` package installed:
+
+```bash
+sudo /opt/lris2/app/systemd/install.sh --extra galil
+```
