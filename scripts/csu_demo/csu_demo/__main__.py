@@ -16,9 +16,9 @@ from cooethercat import Axis, AxisSet
 from cooethercat.backends.sim import open_simulated
 from cooethercat.config import Backend, TopologyConfig, parse_topology
 from libby import Client
+from libby.config_resolve import resolve_rabbitmq_url
 from libby.errors import LibbyError
 
-from lris2.daemon import broker_url
 
 from .camera import CommandSource, SharedCamera, StreamFormat, gstreamer_argv
 from .control import Controller
@@ -44,7 +44,8 @@ def main() -> None:
     topology = _topology(args)
     layout = load_layout(args.layout) if args.layout else Layout(rows=12, slots={})
     camera = None if args.no_camera else SharedCamera(lambda: CommandSource(_capture_argv(args)))
-    client = None if args.sim else Client.rabbitmq(self_id="csu-demo", rabbitmq_url=broker_url())
+    client = None if args.sim else Client.rabbitmq(self_id="csu-demo",
+                                                   rabbitmq_url=resolve_rabbitmq_url(None, {}))
     history = TelemetryHistory()
     power = None if client is None or args.no_power else PowerPanel(client, args.pdu)
     pollers = _pollers(client, args, history, power)
@@ -131,7 +132,7 @@ def _parse_args() -> argparse.Namespace:
                         help="JPEG quality 1-100")
     parser.add_argument("--no-camera", action="store_true")
     parser.add_argument("--layout", type=Path,
-                        help="bar slots on the CSU, e.g. config/csu/layout.yaml")
+                        help="bar slots on the CSU, e.g. scripts/csu_demo/layout.yaml")
     parser.add_argument("--presets", type=Path, default=_default_presets_path(),
                         help="JSON file holding the save points")
     parser.add_argument("--host", default="127.0.0.1")

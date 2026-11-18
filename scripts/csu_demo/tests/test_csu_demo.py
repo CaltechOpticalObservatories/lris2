@@ -13,11 +13,11 @@ from cooethercat import AxisSet
 from cooethercat.backends.sim import open_simulated
 from cooethercat.config import parse_topology
 from flask.testing import FlaskClient
-from lris2.csu_demo.camera import SharedCamera
-from lris2.csu_demo.control import LEASE_S, Controller
-from lris2.csu_demo.layout import Layout, LayoutError, Side, Slot, load_layout
-from lris2.csu_demo.presets import PresetStore, SavedBar
-from lris2.csu_demo.web import TOKEN_COOKIE, create_app
+from csu_demo.camera import SharedCamera
+from csu_demo.control import LEASE_S, Controller
+from csu_demo.layout import Layout, LayoutError, Side, Slot, load_layout
+from csu_demo.presets import PresetStore, SavedBar
+from csu_demo.web import TOKEN_COOKIE, create_app
 
 TOPOLOGY: dict[str, Any] = {
     "name": "csu-sim",
@@ -31,7 +31,7 @@ TOPOLOGY: dict[str, Any] = {
 }
 JPEG = b"\xff\xd8fake-frame\xff\xd9"
 LAYOUT = Layout(rows=12, slots={"CSU-0": Slot(Side.LEFT, 7, Side.LEFT)})
-REPO_LAYOUT = Path(__file__).parent.parent / "config" / "csu" / "layout.yaml"
+REPO_LAYOUT = Path(__file__).parent.parent / "layout.yaml"
 
 
 class FakeSource:

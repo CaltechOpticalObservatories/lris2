@@ -55,8 +55,8 @@ unit reads at start; restart a service after changing it.
 | `LRIS2_PDU_USERNAME` | lris2-137, lris2-ethercat | `l2power` daemons |
 | `LRIS2_PDU137_PASSWORD` | lris2-137 | `l2power_pdu_137`; the PDU's serial number |
 | `LRIS2_PDUETHERCAT_PASSWORD` | lris2-ethercat | `l2power_pdu_ethercat`; the PDU's serial number |
-| `LRIS2_BROKER_HOST` | lris2-ethercat | every daemon on a host without the broker |
-| `LRIS2_CSU_DEMO_PASSWORD` | lris2-ethercat | taking control in `lris2-csu-demo` |
+| `LIBBY_RABBITMQ_URL` | lris2-ethercat | every daemon and the libby CLI on a host without the broker, e.g. `amqp://131.215.193.41` |
+| `LRIS2_CSU_DEMO_PASSWORD` | lris2-ethercat | taking control in the [CSU demo](../scripts/csu_demo/README.md) |
 
 ## Day to day
 
@@ -92,12 +92,6 @@ login and listens on loopback, so serve it once per host and tunnel to it:
 sudo systemctl enable --now lris2-dashboard
 ssh -L 8750:127.0.0.1:8750 <host>          # then open http://127.0.0.1:8750/
 ```
-
-## CSU demo
-
-`lris2-csu-demo.service` serves the CSU browser demo on port 8088 of the host
-installed with `--extra csu-demo`. Set `LRIS2_CSU_DEMO_PASSWORD` in
-[`secrets.env`](#secrets), then `sudo systemctl enable --now lris2-csu-demo`.
 
 ## Updating
 

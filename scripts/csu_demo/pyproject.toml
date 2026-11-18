@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lris2-csu-demo"
+version = "0.1.0"
+description = "Browser demo of the LRIS2 CSU prototype, driven through the lris2.csu daemon"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+readme = "README.md"
+dependencies = [
+    "cooethercat@git+https://github.com/CaltechOpticalObservatories/coo-ethercat.git@twincat-backend",
+    "libby@git+https://github.com/CaltechOpticalObservatories/libby.git",
+    "flask",
+    "pyyaml",
+    "waitress",
+]
+
+[project.optional-dependencies]
+# The tests serve keywords from daemons/csu, which imports lris2 and pyads
+dev = [
+    "cooethercat[twincat]@git+https://github.com/CaltechOpticalObservatories/coo-ethercat.git@twincat-backend",
+    "pytest",
+]
+
+[project.scripts]
+lris2-csu-demo = "csu_demo.__main__:main"
+
+[tool.setuptools]
+packages = ["csu_demo"]
+
+[tool.setuptools.package-data]
+csu_demo = ["templates/*.html", "static/*"]

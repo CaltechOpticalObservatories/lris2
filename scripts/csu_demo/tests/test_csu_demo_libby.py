@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import importlib.machinery
+import importlib.util
 import time
 from collections.abc import Callable, Iterator
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -12,14 +15,26 @@ from cooethercat.backends.sim import open_simulated
 from cooethercat.config import parse_topology
 from libby.keyword import Keyword
 from libby.keyword_registry import KeywordRegistry
-from lris2.csu.keywords import CsuKeywords
-from lris2.csu_demo.control import ControlError, Controller
-from lris2.csu_demo.history import TelemetryHistory, record_telemetry
-from lris2.csu_demo.layout import Layout
-from lris2.csu_demo.libby_backend import LibbyBackend
-from lris2.csu_demo.power import OUTLETS, PowerPanel
-from lris2.csu_demo.presets import PresetStore
-from lris2.csu_demo.web import create_app
+from csu_demo.control import ControlError, Controller
+from csu_demo.history import TelemetryHistory, record_telemetry
+from csu_demo.layout import Layout
+from csu_demo.libby_backend import LibbyBackend
+from csu_demo.power import OUTLETS, PowerPanel
+from csu_demo.presets import PresetStore
+from csu_demo.web import create_app
+
+
+
+def load_daemon() -> Any:
+    """Import the extensionless daemons/csu script as a module."""
+    path = Path(__file__).parents[3] / "daemons" / "csu"
+    loader = importlib.machinery.SourceFileLoader("csu_daemon", str(path))
+    module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
+    loader.exec_module(module)
+    return module
+
+
+CsuKeywords = load_daemon().CsuKeywords
 
 TOPOLOGY: dict[str, Any] = {
     "name": "csu-sim",
