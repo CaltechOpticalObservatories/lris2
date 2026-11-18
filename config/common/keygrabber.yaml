@@ -48,7 +48,7 @@ collections:
     timeout_s: 5.0
 
   # One telnet query per keyword, so a batch of 32 takes a couple of seconds
-  pdu-137:
+  pdu_137:
     peer: l2power.pdu-137
     keywords: ["state%", "current%", "power%", "energy%"]
     timeout_s: 10.0
@@ -59,7 +59,7 @@ collections:
                "ismoving%", "isenabled%", "error%", "plcstate", "isconnected"]
     interval_s: 10.0
     timeout_s: 5.0
-  pdu-ethercat:
+  pdu_ethercat:
     peer: l2power.pdu-ethercat
     keywords: ["state%", "current%", "power%", "energy%"]
     timeout_s: 10.0
