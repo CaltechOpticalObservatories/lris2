@@ -1,7 +1,7 @@
 # l2power PDU 1 - Eaton EMAT-08 (epduB2)
 #
 # Usage:
-#   daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu-137.yaml
+#   daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu_137.yaml
 #
 # Addressed as l2power.pdu-137, e.g.
 #   libby show l2power.pdu-137.state1

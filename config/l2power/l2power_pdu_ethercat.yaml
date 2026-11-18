@@ -1,7 +1,7 @@
 # l2power pdu-ethercat - Eaton EMAT-08 (epduC5) in the CSU lab
 #
 # Usage:
-#   daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu-ethercat.yaml
+#   daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu_ethercat.yaml
 #
 # Addressed as l2power.pdu-ethercat, e.g.
 #   libby show l2power.pdu-ethercat.power_ethercat

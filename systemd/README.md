@@ -53,8 +53,8 @@ unit reads at start; restart a service after changing it.
 |---|---|---|
 | `LRIS2_INFLUX_TOKEN` | lris2-137 | keygrabber |
 | `LRIS2_PDU_USERNAME` | lris2-137, lris2-ethercat | `l2power` daemons |
-| `LRIS2_PDU137_PASSWORD` | lris2-137 | `l2power_pdu-137`; the PDU's serial number |
-| `LRIS2_PDUETHERCAT_PASSWORD` | lris2-ethercat | `l2power_pdu-ethercat`; the PDU's serial number |
+| `LRIS2_PDU137_PASSWORD` | lris2-137 | `l2power_pdu_137`; the PDU's serial number |
+| `LRIS2_PDUETHERCAT_PASSWORD` | lris2-ethercat | `l2power_pdu_ethercat`; the PDU's serial number |
 | `LRIS2_BROKER_HOST` | lris2-ethercat | every daemon on a host without the broker |
 | `LRIS2_CSU_DEMO_PASSWORD` | lris2-ethercat | taking control in `lris2-csu-demo` |
 

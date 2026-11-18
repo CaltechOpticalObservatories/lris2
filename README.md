@@ -117,7 +117,7 @@ group, `l2power`, one peer per PDU. `daemons/l2power/` holds a shared base
 and one script per PDU family:
 
 ```bash
-uv run daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu-137.yaml
+uv run daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu_137.yaml
 libby modify l2power.pdu-137.state3 false
 ```
 
