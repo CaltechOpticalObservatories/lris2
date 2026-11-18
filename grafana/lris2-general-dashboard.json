@@ -95,6 +95,10 @@
                 "other": {
                   "color": "orange",
                   "text": "Other"
+                },
+                "unreachable": {
+                  "color": "red",
+                  "text": "Unreachable"
                 }
               }
             }

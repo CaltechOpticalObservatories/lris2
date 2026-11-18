@@ -134,8 +134,13 @@ For running daemons as services, see [`systemd/README.md`](systemd/README.md).
 `daemons/csu` serves the configurable slit unit as `lris2.csu`: each bar's
 position, velocity, enable, halt and fault, plus drive telemetry (board
 temperature, I2t, current, supply). It drives the PLC motion server over ADS
-through coo-ethercat; `plc/` holds that PLC program and `plc/setup-csu.ps1`
-installs it into a TwinCAT project.
+through coo-ethercat. While the PLC is unreachable, bar keywords fail at once
+and `plcstate` reads `unreachable`.
+
+The PLC program's source is `plc/MotionServer.st`. After editing it, run
+`python plc/gen_tc.py` to regenerate the object files in
+`plc/csu-motion-server/`, then `plc/setup-csu.ps1 -Activate` on the XAE PC to
+install and activate them.
 
 ```bash
 uv run daemons/csu -c config/csu/csu.yaml

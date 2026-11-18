@@ -17,6 +17,7 @@ from lris2.daemon import Lris2Daemon
 TRANSPORT_ERRORS = (OSError, pyads.ADSError)
 # How often the watchdog checks the PLC link, and so how soon a dropped link heals
 WATCHDOG_S = 5.0
+UNREACHABLE = "unreachable"
 
 
 class Csu(Lris2Daemon):  # pylint: disable=W0223
@@ -32,6 +33,8 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
         self.topology = None
         self.sim = False
         self._stopping = threading.Event()
+        self._link_up = threading.Event()
+        self._link_up.set()
 
     def on_start(self, libby=None):  # pylint: disable=W0613
         '''Register keywords, then connect; the daemon stays up if the PLC is unreachable'''
@@ -40,13 +43,13 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
         if self.sim:
             self.topology = dataclasses.replace(self.topology, backend=Backend.SIM)
         self.axes = self._open_axes()
-        self.keywords = CsuKeywords(self.axes, TRANSPORT_ERRORS)
+        self.keywords = CsuKeywords(self.axes, TRANSPORT_ERRORS, self._link_up.is_set)
         self.keywords.register(self.keyword_registry)
         self.keyword_registry.bool("isconnected", getter=self.is_connected,
                                    setter=self.set_connected,
                                    description="PLC reachable; write true to reconnect")
         self.keyword_registry.string("plcstate", getter=self.plc_state,
-                                     description="PLC runtime mode: run, stop, config or other")
+                                     description="PLC run, stop, config, other or unreachable")
         self.keyword_registry.trigger("shutdown", action=self.shutdown,
                                       description="Stop the daemon; refused while a bar moves")
         self.logger.info("CSU daemon serving %d bars (%s)", len(self.axes),
@@ -66,6 +69,8 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
 
     def is_connected(self) -> bool:
         '''Return whether the PLC is in Run and a status read reaches it'''
+        if not self._link_up.is_set():
+            return False
         try:
             if self.axes.backend.controller_state() is not ControllerState.RUN:
                 return False
@@ -76,10 +81,12 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
 
     def plc_state(self) -> str:
         '''Return the PLC runtime mode, as read from the TwinCAT system service'''
+        if not self._link_up.is_set():
+            return UNREACHABLE
         try:
             return str(self.axes.backend.controller_state())
-        except TRANSPORT_ERRORS as error:
-            raise RuntimeError(f"PLC unreachable: {error}") from error
+        except TRANSPORT_ERRORS:
+            return UNREACHABLE
 
     def set_connected(self, value) -> None:
         '''Reconnect on true; false is refused, since keywords need the connection'''
@@ -98,11 +105,13 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
                 if not failing:
                     self.logger.warning("PLC link lost (%s); reconnecting", error)
                 failing = True
+                self._link_up.clear()
                 self._reopen()
                 continue
             if failing:
                 self.logger.info("PLC link restored")
             failing = False
+            self._link_up.set()
 
     def _reopen(self) -> None:
         try:

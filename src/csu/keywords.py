@@ -70,8 +70,10 @@ def bar_number(axis: Axis) -> int:
 class CsuKeywords:
     """Translate keyword reads and writes into axis commands and drive reads."""
 
-    def __init__(self, axes: AxisSet, transport_errors: TransportErrors = (OSError,)) -> None:
+    def __init__(self, axes: AxisSet, transport_errors: TransportErrors = (OSError,),
+                 online: Callable[[], bool] = lambda: True) -> None:
         self._axes = axes
+        self._online = online
         self._errors = (AxisError, *transport_errors)
         self._locks = {axis.name: threading.Lock() for axis in axes}
 
@@ -177,6 +179,9 @@ class CsuKeywords:
     def _guard(self, call: Callable[..., Any]) -> Callable[..., Any]:
         """Report axis and transport failures as RuntimeError, which libby replies with."""
         def guarded(*args: Any) -> Any:
+            # Fail fast while the link is down, so a reader of every keyword is not held up
+            if not self._online():
+                raise RuntimeError("PLC unreachable")
             try:
                 return call(*args)
             except self._errors as error:

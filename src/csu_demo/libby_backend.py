@@ -97,8 +97,11 @@ class LibbyBackend:
         raise AxisError(f"{axis.name}: CoE objects are served as telemetry keywords, not here")
 
     def controller_state(self) -> ControllerState:
-        """Return the PLC runtime mode the daemon reports."""
-        return ControllerState(self._get("plcstate"))
+        """Return the PLC mode the daemon reports, raising OSError while it cannot reach it."""
+        state = self._get("plcstate")
+        if state == "unreachable":
+            raise OSError("PLC unreachable")
+        return ControllerState(state)
 
     def _target(self, axis: AxisConfig) -> float:
         pending = self._pending.pop(axis.name, {})

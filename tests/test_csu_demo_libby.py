@@ -217,3 +217,14 @@ def test_status_reports_the_plc_mode(axes: AxisSet, tmp_path: Any) -> None:
     controller = Controller(axes, PresetStore(tmp_path / "presets.json"))
     controller.refresh()
     assert controller.status(None)["plc"] == "run"
+
+
+def test_unreachable_plc_is_a_transport_error(client: DaemonClient) -> None:
+    class Unreachable(DaemonClient):
+        """Report the PLC as unreachable."""
+
+        def get(self, name: str, *, timeout_s: float = 2.0) -> Any:
+            return "unreachable" if name.endswith("plcstate") else super().get(name)
+
+    with pytest.raises(OSError, match="unreachable"):
+        LibbyBackend(Unreachable(client.keywords)).controller_state()

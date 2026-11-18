@@ -137,3 +137,12 @@ def test_telemetry_reads_every_bar(axes: AxisSet, keywords: dict[str, Keyword]) 
     readings = json.loads(read(keywords, "telemetry"))
     assert readings["CSU-6"] == {"boardtemp": pytest.approx(71.2), "current": pytest.approx(150.0)}
     assert set(readings) == {"CSU-0", "CSU-6"}
+
+
+def test_link_down_fails_every_bar_keyword_at_once(axes: AxisSet) -> None:
+    registry = KeywordRegistry()
+    CsuKeywords(axes, online=lambda: False).register(registry)
+    keywords = {keyword.name: keyword for keyword in registry.drain()}
+    for name in ("positionvalue0", "boardtemp6", "status", "telemetry"):
+        reply = keywords[name].handle({})
+        assert reply["ok"] is False and "PLC unreachable" in reply["error"]
