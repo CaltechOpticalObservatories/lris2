@@ -2,17 +2,20 @@ import pytest
 from slitmaskgui.backend.star_list import StarList
 from slitmaskgui.backend.mask_gen import SlitMask
 import json
+from pathlib import Path
+
+TESTFILES = Path(__file__).parent / "testfiles"
 
 
 
 @pytest.fixture
 def sample_target_list():
-    with open('slitmaskgui/tests/testfiles/gaia_target_list.json','r') as file:
+    with open(TESTFILES / 'gaia_target_list.json','r') as file:
         return file.read()
 
 @pytest.fixture
 def sample_config_data():
-    with open('slitmaskgui/tests/testfiles/gaia_mask_config.json','r') as file:
+    with open(TESTFILES / 'gaia_mask_config.json','r') as file:
         return json.load(file)
     
 @pytest.fixture
