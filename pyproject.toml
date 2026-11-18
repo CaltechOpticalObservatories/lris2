@@ -56,9 +56,7 @@ packages = ["lris2", "lris2.cli", "lris2.driver"]
 members = [
     "src/driver/galil",
     "src/driver/inficon",
-    "src/driver/newport",
     "src/driver/pdu",
-    "src/driver/schott",
     "src/driver/sunpower",
 ]
 
