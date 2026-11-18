@@ -70,6 +70,7 @@ This repo uses submodules under `src/driver/`:
 | Submodule | Path | Import |
 |-----------|------|--------|
 | coo-ethercat | `src/driver/coo_ethercat` | `lris2.driver.coo_ethercat` |
+| galil | `src/driver/galil` | `galil` (needs the `galil` extra) |
 | lris2-csu | `src/driver/lris2_csu` | `lris2.driver.lris2_csu` |
 | pdu | `src/driver/pdu` | `lris2.driver.pdu.src` |
 | sunpower | `src/driver/sunpower` | `lris2.driver.sunpower` |

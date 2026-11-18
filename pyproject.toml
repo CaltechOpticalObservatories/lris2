@@ -35,6 +35,11 @@ camera = [
     "camera-daemon@git+https://github.com/COO-Utilities/camera-daemon.git",
     "lris2-camera-interface@git+https://github.com/CaltechOpticalObservatories/lris2-camerad-instrument",
 ]
+# The Galil driver's Python bindings, on a host with Galil's gclib package
+# installed: install.sh --extra galil
+galil = [
+    "gclib",
+]
 [tool.setuptools.package-dir]
 lris2 = "src"
 
@@ -49,6 +54,7 @@ packages = ["lris2", "lris2.cli", "lris2.driver"]
 # coo_ethercat does not build as a package yet, and lris2_csu depends on it
 [tool.uv.workspace]
 members = [
+    "src/driver/galil",
     "src/driver/inficon",
     "src/driver/pdu",
     "src/driver/sunpower",
@@ -59,6 +65,14 @@ members = [
 override-dependencies = [
     "hardware_device_base @ git+https://github.com/COO-Utilities/hardware_device_base@v1.0.1",
 ]
+
+[tool.uv.sources]
+gclib = { index = "galil" }
+
+[[tool.uv.index]]
+name = "galil"
+url = "https://www.galil.com/sw/pub/python"
+explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
