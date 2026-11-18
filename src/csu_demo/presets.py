@@ -67,13 +67,13 @@ class PresetStore:
         if not self._path.exists():
             return {}
         raw = json.loads(self._path.read_text())
-        return {str(name): {str(bar): _saved_bar(entry) for bar, entry in bars.items()}
+        return {str(name): {str(bar_name): _saved_bar(entry) for bar_name, entry in bars.items()}
                 for name, bars in raw.items()}
 
     def _write(self) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         staging = self._path.with_suffix(".tmp")
-        payload = {name: {bar: asdict(saved) for bar, saved in bars.items()}
+        payload = {name: {bar_name: asdict(saved) for bar_name, saved in bars.items()}
                    for name, bars in self._presets.items()}
         staging.write_text(json.dumps(payload, indent=2))
         os.replace(staging, self._path)

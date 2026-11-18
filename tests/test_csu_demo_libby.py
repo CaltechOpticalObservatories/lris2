@@ -14,8 +14,12 @@ from libby.keyword import Keyword
 from libby.keyword_registry import KeywordRegistry
 from lris2.csu.keywords import CsuKeywords
 from lris2.csu_demo.control import ControlError, Controller
+from lris2.csu_demo.history import TelemetryHistory, record_telemetry
+from lris2.csu_demo.layout import Layout
 from lris2.csu_demo.libby_backend import LibbyBackend
+from lris2.csu_demo.power import OUTLETS, PowerPanel
 from lris2.csu_demo.presets import PresetStore
+from lris2.csu_demo.web import create_app
 
 TOPOLOGY: dict[str, Any] = {
     "name": "csu-sim",
@@ -122,3 +126,77 @@ def test_taking_control_needs_the_password(axes: AxisSet, tmp_path: Any) -> None
         controller.acquire("mallory", None, "guess")
     token = controller.acquire("alice", None, "s3cret")
     assert controller.acquire("alice", token) == token
+
+
+class FakePdu:
+    """The CSU lab PDU's outlet keywords."""
+
+    def __init__(self) -> None:
+        self.values: dict[str, Any] = {}
+        for name, _ in OUTLETS:
+            self.values |= {f"state_{name}": True, f"power_{name}": 10.0, f"current_{name}": 0.1}
+
+    def get(self, name: str, *, timeout_s: float = 2.0) -> Any:
+        return self.values[name.removeprefix("l2power.csupdu.")]
+
+    def set(self, name: str, value: Any, *, timeout_s: float | None = None) -> Any:
+        self.values[name.removeprefix("l2power.csupdu.")] = value
+        return value
+
+
+def test_history_trims_to_its_window() -> None:
+    history = TelemetryHistory(window_s=100.0)
+    history.add(0.0, {"CSU-6": {"boardtemp": 60.0, "current": 0.0}})
+    history.add(50.0, {"CSU-6": {"boardtemp": 61.0, "current": None}})
+    history.add(150.0, {"CSU-6": {"boardtemp": 62.0, "current": 5.0}})
+    assert history.series("CSU-6") == {"time": [50.0, 150.0], "boardtemp": [61.0, 62.0],
+                                       "current": [None, 5.0]}
+    assert history.series("CSU-0") == {"time": []}
+
+
+def test_telemetry_poll_records_the_daemon_reading(client: DaemonClient) -> None:
+    history = TelemetryHistory()
+    record_telemetry(lambda: client.get("lris2.csu.telemetry"), history, clock=lambda: 1.0)()
+    assert history.series("CSU-6")["time"] == [1.0]
+
+
+@pytest.fixture(name="web")
+def web_fixture(axes: AxisSet, tmp_path: Any) -> tuple[Any, FakePdu, Controller]:
+    pdu = FakePdu()
+    controller = Controller(axes, PresetStore(tmp_path / "presets.json"))
+    controller.refresh()
+    panel = PowerPanel(pdu)
+    panel.refresh()
+    app = create_app(controller, None, Layout(rows=12, slots={}), history=TelemetryHistory(),
+                     power=panel)
+    return app.test_client(), pdu, controller
+
+
+def test_power_status_lists_every_outlet(web: tuple[Any, FakePdu, Controller]) -> None:
+    flask_client, _, _ = web
+    outlets = flask_client.get("/api/power").get_json()["outlets"]
+    assert [outlet["name"] for outlet in outlets] == [name for name, _ in OUTLETS]
+    assert [outlet["name"] for outlet in outlets if outlet["switchable"]] == ["ethercat"]
+
+
+def test_drives_switch_needs_control_and_no_bar_enabled(
+    web: tuple[Any, FakePdu, Controller], axes: AxisSet
+) -> None:
+    flask_client, pdu, controller = web
+    assert flask_client.post("/api/power/ethercat", json={"on": False}).status_code == 400
+    assert flask_client.post("/api/control", json={}).status_code == 200
+    axes.axis("CSU-0").enable()
+    controller.refresh()
+    refused = flask_client.post("/api/power/ethercat", json={"on": False})
+    assert "disable every bar" in refused.get_json()["error"]
+    axes.axis("CSU-0").disable()
+    controller.refresh()
+    assert flask_client.post("/api/power/ethercat", json={"on": False}).status_code == 200
+    assert pdu.values["state_ethercat"] is False
+
+
+def test_only_the_drives_outlet_switches(web: tuple[Any, FakePdu, Controller]) -> None:
+    flask_client, pdu, _ = web
+    flask_client.post("/api/control", json={})
+    assert flask_client.post("/api/power/plc", json={"on": False}).status_code == 400
+    assert pdu.values["state_plc"] is True

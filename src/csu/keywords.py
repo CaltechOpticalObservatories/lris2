@@ -49,11 +49,17 @@ class Telemetry:
 # EPOS4 objects; the motors have no temperature sensor, so motor I2t stands in for winding heat
 TELEMETRY: Final = (
     Telemetry("boardtemp", 0x3201, 1, CoeType.INT16, 0.1, "C", "Drive power stage temperature"),
-    Telemetry("i2tmotor", 0x3200, 1, CoeType.UINT16, 1.0, "%", "Drive thermal model of the motor winding"),
-    Telemetry("i2tstage", 0x3200, 2, CoeType.UINT16, 1.0, "%", "Drive thermal model of the power stage"),
+    Telemetry("i2tmotor", 0x3200, 1, CoeType.UINT16, 1.0, "%",
+              "Drive thermal model of the motor winding"),
+    Telemetry("i2tstage", 0x3200, 2, CoeType.UINT16, 1.0, "%",
+              "Drive thermal model of the power stage"),
     Telemetry("current", 0x30D1, 1, CoeType.INT32, 1.0, "mA", "Motor current, averaged"),
     Telemetry("supply", 0x2200, 1, CoeType.UINT16, 0.1, "V", "Drive supply voltage"),
 )
+
+
+# The readings the browser demo charts per bar
+_CHARTED: Final = tuple(item for item in TELEMETRY if item.keyword in ("boardtemp", "current"))
 
 
 def bar_number(axis: Axis) -> int:
@@ -79,6 +85,8 @@ class CsuKeywords:
                          description="Stop every bar, continuing past failures")
         registry.string("status", getter=self._guard(self.status_json),
                         description="Every bar's readbacks as JSON, keyed by bar name")
+        registry.string("telemetry", getter=self._guard(self.telemetry_json),
+                        description="Every bar's board temperature (C) and current (mA) as JSON")
 
     def _register_bar(self, registry: Registry, axis: Axis) -> None:
         n, units = bar_number(axis), axis.config.units.name
@@ -137,6 +145,19 @@ class CsuKeywords:
     def status_json(self) -> str:
         """Return every bar's status snapshot as one JSON object."""
         return json.dumps({axis.name: axis.status() for axis in self._axes})
+
+    def telemetry_json(self) -> str:
+        """Return every bar's board temperature and current, null where a drive fails to answer."""
+        readings: dict[str, dict[str, float | None]] = {}
+        for axis in self._axes:
+            values: dict[str, float | None] = {}
+            for item in _CHARTED:
+                try:
+                    values[item.keyword] = self.read_telemetry(axis, item)
+                except self._errors:
+                    values[item.keyword] = None
+            readings[axis.name] = values
+        return json.dumps(readings)
 
     def any_moving(self) -> bool:
         """Return whether any bar is moving."""

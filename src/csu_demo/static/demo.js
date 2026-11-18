@@ -111,7 +111,78 @@ function chooseBar(name) {
   chosenBar = chosenBar === name ? null : name;
   document.getElementById("velocity").value = "";
   poll();
+  drawCharts();
 }
+
+// Draw one reading as a line scaled to its own range, with the range and age as labels
+function drawChart(svg, times, values) {
+  const points = times.map((t, i) => [t, values[i]]).filter(([, v]) => v !== null);
+  if (points.length < 2) {
+    svg.innerHTML = '<text x="6" y="44">collecting… one sample every 10 s</text>';
+    return;
+  }
+  const [t0, t1] = [points[0][0], points[points.length - 1][0]];
+  let lo = Math.min(...points.map(([, v]) => v));
+  let hi = Math.max(...points.map(([, v]) => v));
+  if (hi - lo < 1e-6) { lo -= 1; hi += 1; }
+  const x = (t) => 2 + ((t - t0) / Math.max(t1 - t0, 1)) * 296;
+  const y = (v) => 74 - ((v - lo) / (hi - lo)) * 66;
+  const line = points.map(([t, v]) => `${x(t).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const minutes = Math.round((t1 - t0) / 60);
+  svg.innerHTML = `<polyline points="${line}"></polyline>` +
+    `<text x="4" y="10">${hi.toFixed(1)}</text><text x="4" y="78">${lo.toFixed(1)}</text>` +
+    `<text x="240" y="78">last ${minutes} min</text>`;
+}
+
+async function drawCharts() {
+  if (!chosenBar) return;
+  try {
+    const series = await api("GET", `/api/axes/${encodeURIComponent(chosenBar)}/history`);
+    for (const key of ["boardtemp", "current"]) {
+      drawChart(document.getElementById(`chart-${key}`), series.time, series[key] || []);
+    }
+  } catch (error) {
+    showError(`history: ${error.message}`);
+  }
+}
+setInterval(drawCharts, 10000);
+
+async function pollPower() {
+  const list = document.getElementById("power-list");
+  if (!list) return;
+  try {
+    const status = await api("GET", "/api/power");
+    list.replaceChildren(...status.outlets.map((outlet) => {
+      const item = document.createElement("span");
+      item.className = `outlet ${outlet.on ? "on" : "off"}`;
+      item.textContent = `${outlet.label}: ${outlet.on ? "on" : "off"}, ${outlet.power.toFixed(1)} W, ${outlet.current.toFixed(2)} A `;
+      if (outlet.switchable) {
+        const button = document.createElement("button");
+        button.textContent = outlet.on ? "Power off" : "Power on";
+        button.disabled = !inControl;
+        button.addEventListener("click", () => switchPower(outlet));
+        item.append(button);
+      }
+      return item;
+    }));
+    if (status.error) showError(`PDU: ${status.error}`);
+  } catch (error) {
+    showError(`PDU: ${error.message}`);
+  }
+}
+
+async function switchPower(outlet) {
+  const on = !outlet.on;
+  if (!on && !confirm(`Switch ${outlet.label} off?`)) return;
+  try {
+    await api("POST", `/api/power/${outlet.name}`, { on });
+    pollPower();
+  } catch (error) {
+    showError(error.message);
+  }
+}
+setInterval(pollPower, 5000);
+pollPower();
 
 // The layout records which way a positive move takes each bar on screen
 function signedStep(name, towards) {

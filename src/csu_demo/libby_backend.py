@@ -45,12 +45,15 @@ class LibbyBackend:
         self._pending: dict[str, dict[str, Any]] = {}
 
     def open(self) -> None:
+        """Drop the cached status so the next read is fresh."""
         self._invalidate()
 
     def close(self) -> None:
+        """Drop the cached status; the client stays with its owner."""
         self._invalidate()
 
     def read_field(self, axis: AxisConfig, field: str) -> Any:
+        """Return one field, from the shared status read where it can."""
         if field == "velocity":
             return self._get(f"velocity{bar_number(axis)}")
         try:
@@ -59,10 +62,12 @@ class LibbyBackend:
             raise AxisError(f"{axis.name}: the CSU daemon does not report {field!r}") from None
 
     def read_fields(self, axis: AxisConfig, fields: Sequence[str]) -> dict[str, Any]:
+        """Return several fields of one bar from one status read."""
         status = self._bar_status(axis)
         return {field: status[field] for field in fields}
 
     def write_field(self, axis: AxisConfig, field: str, value: Any) -> None:
+        """Map a setting onto the daemon keyword that holds it."""
         n = bar_number(axis)
         match field:
             case "enable":
@@ -75,6 +80,7 @@ class LibbyBackend:
                 raise AxisError(f"{axis.name}: {field!r} cannot be set through the CSU daemon")
 
     def fire_trigger(self, axis: AxisConfig, field: str) -> None:
+        """Map an action onto the daemon keyword that performs it."""
         n = bar_number(axis)
         match field:
             case "move":
@@ -87,9 +93,11 @@ class LibbyBackend:
                 raise AxisError(f"{axis.name}: {field!r} is not available through the CSU daemon")
 
     def read_object(self, axis: AxisConfig, index: int, subindex: int, kind: CoeType) -> int:
+        """Refuse: CoE objects are served as telemetry keywords instead."""
         raise AxisError(f"{axis.name}: CoE objects are served as telemetry keywords, not here")
 
     def controller_state(self) -> ControllerState:
+        """Return the PLC runtime mode the daemon reports."""
         return ControllerState(self._get("plcstate"))
 
     def _target(self, axis: AxisConfig) -> float:

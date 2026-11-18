@@ -30,7 +30,7 @@ class _Lease:
     expires: float
 
 
-class Controller:
+class Controller:  # pylint: disable=too-many-instance-attributes
     """Serve cached axis status to many viewers and commands to one operator."""
 
     def __init__(
@@ -193,8 +193,8 @@ class Controller:
             saved = self._presets.get(name)
         except PresetError as error:
             raise ControlError(str(error)) from error
-        return {bar: {"position": entry.position, "enabled": entry.enabled}
-                for bar, entry in saved.items()}
+        return {bar_name: {"position": entry.position, "enabled": entry.enabled}
+                for bar_name, entry in saved.items()}
 
     def delete_preset(self, token: str | None, name: str) -> None:
         """Forget a save point."""
@@ -230,6 +230,15 @@ class Controller:
                 failures.append(f"{axis.name}: {error}")
         if failures:
             raise ControlError("stop failed for " + "; ".join(failures))
+
+    def any_enabled(self) -> bool:
+        """Return whether the last poll saw any bar enabled."""
+        with self._lock:
+            return any(state.get("enabled") for state in self._snapshot.values())
+
+    def require_control(self, token: str | None) -> None:
+        """Refuse unless ``token`` holds control, renewing the lease when it does."""
+        self._require_control(token)
 
     def _require_control(self, token: str | None) -> None:
         with self._lock:

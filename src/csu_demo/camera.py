@@ -50,13 +50,17 @@ class CommandSource:
     """JPEG frames from a capture command's stdout."""
 
     def __init__(self, argv: Sequence[str]) -> None:
-        self._process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        # Lives until close(), so a with block cannot own it
+        self._process = subprocess.Popen(  # pylint: disable=consider-using-with
+            argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         self._stdout = cast(io.BufferedReader, self._process.stdout)
 
     def read(self, size: int) -> bytes:
+        """Return up to ``size`` bytes, or b"" once the command exits."""
         return self._stdout.read1(size)
 
     def close(self) -> None:
+        """Stop the command, killing it if it does not exit."""
         self._process.terminate()
         try:
             self._process.wait(timeout=2.0)
@@ -64,7 +68,7 @@ class CommandSource:
             self._process.kill()
 
 
-class SourceFactory(Protocol):
+class SourceFactory(Protocol):  # pylint: disable=too-few-public-methods
     """Callable that starts a new capture."""
 
     def __call__(self) -> FrameSource:

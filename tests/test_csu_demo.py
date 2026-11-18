@@ -373,7 +373,8 @@ def test_repo_layout_loads() -> None:
     layout = load_layout(REPO_LAYOUT)
     assert layout.slot("CSU-6") == Slot(Side.LEFT, 5, Side.RIGHT)
     assert layout.slot("CSU-18") == Slot(Side.RIGHT, 5, Side.RIGHT)
-    assert layout.slot("CSU-7") is None
+    assert layout.slot("CSU-10") == Slot(Side.LEFT, 1, Side.RIGHT)
+    assert layout.slot("CSU-11") is None
 
 
 @pytest.mark.parametrize(

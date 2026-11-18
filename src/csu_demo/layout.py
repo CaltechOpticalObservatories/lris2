@@ -38,9 +38,9 @@ class Layout:
     rows: int
     slots: Mapping[str, Slot]
 
-    def slot(self, bar: str) -> Slot | None:
+    def slot(self, bar_name: str) -> Slot | None:
         """Return a bar's slot, or None when the bar is not placed."""
-        return self.slots.get(bar)
+        return self.slots.get(bar_name)
 
 
 def load_layout(path: Path) -> Layout:
@@ -48,12 +48,13 @@ def load_layout(path: Path) -> Layout:
     data = yaml.safe_load(path.read_text()) or {}
     _reject_unknown(data, {"rows", "bars"}, str(path))
     rows = int(data.get("rows", 12))
-    slots = {str(bar): _slot(entry, rows, f"{path}: {bar}") for bar, entry in (data.get("bars") or {}).items()}
+    slots = {str(bar_name): _slot(entry, rows, f"{path}: {bar_name}")
+             for bar_name, entry in (data.get("bars") or {}).items()}
     taken: dict[tuple[Side, int], str] = {}
-    for bar, slot in slots.items():
-        other = taken.setdefault((slot.side, slot.row), bar)
-        if other != bar:
-            raise LayoutError(f"{path}: {bar} and {other} both sit {slot.side} row {slot.row}")
+    for bar_name, slot in slots.items():
+        other = taken.setdefault((slot.side, slot.row), bar_name)
+        if other != bar_name:
+            raise LayoutError(f"{path}: {bar_name} and {other} both sit {slot.side} row {slot.row}")
     return Layout(rows, slots)
 
 

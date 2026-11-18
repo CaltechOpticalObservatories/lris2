@@ -10,27 +10,39 @@ from flask import Flask, Response, jsonify, render_template, request
 
 from .camera import SharedCamera
 from .control import LEASE_S, ControlError, Controller
+from .history import TelemetryHistory
 from .layout import Layout
+from .power import PowerError, PowerPanel
 
 TOKEN_COOKIE: Final = "csu_control"
 _BOUNDARY: Final = "frame"
 _NUMBER_PARAMS: Final = ("distance", "target", "velocity")
 
 
-def create_app(controller: Controller, camera: SharedCamera | None, layout: Layout) -> Flask:
+def create_app(  # pylint: disable=too-many-locals,too-many-statements,too-many-arguments
+    controller: Controller,
+    camera: SharedCamera | None,
+    layout: Layout,
+    *,
+    history: TelemetryHistory | None = None,
+    power: PowerPanel | None = None,
+    power_errors: tuple[type[Exception], ...] = (OSError,),
+) -> Flask:
     """Build the demo app around an already started controller."""
     app = Flask(__name__)
+    refusals: tuple[type[Exception], ...] = (ControlError, PowerError, *power_errors)
 
     @app.get("/")
     def index() -> str:
-        return render_template("index.html", has_camera=camera is not None, lease_s=LEASE_S)
+        return render_template("index.html", has_camera=camera is not None, lease_s=LEASE_S,
+                               has_power=power is not None)
 
     @app.get("/api/layout")
     def show_layout() -> Response:
         return jsonify(
             rows=layout.rows,
-            bars={bar: {"side": slot.side, "row": slot.row, "plus": slot.plus}
-                  for bar, slot in layout.slots.items()},
+            bars={bar_name: {"side": slot.side, "row": slot.row, "plus": slot.plus}
+                  for bar_name, slot in layout.slots.items()},
         )
 
     @app.get("/api/status")
@@ -95,6 +107,30 @@ def create_app(controller: Controller, camera: SharedCamera | None, layout: Layo
         try:
             controller.delete_preset(request.cookies.get(TOKEN_COOKIE), name)
         except ControlError as error:
+            return jsonify(error=str(error)), 400
+        return jsonify(ok=True)
+
+    @app.get("/api/axes/<name>/history")
+    def bar_history(name: str) -> Response:
+        return jsonify(history.series(name) if history is not None else {"time": []})
+
+    @app.get("/api/power")
+    def power_status() -> Response | tuple[Response, int]:
+        if power is None:
+            return jsonify(error="no PDU configured"), 404
+        return jsonify(power.status())
+
+    @app.post("/api/power/<outlet>")
+    def switch_power(outlet: str) -> Response | tuple[Response, int]:
+        if power is None:
+            return jsonify(error="no PDU configured"), 404
+        on = bool((request.get_json(silent=True) or {}).get("on"))
+        try:
+            controller.require_control(request.cookies.get(TOKEN_COOKIE))
+            if not on and controller.any_enabled():
+                raise PowerError("disable every bar before switching the drives off")
+            power.switch(outlet, on)
+        except refusals as error:
             return jsonify(error=str(error)), 400
         return jsonify(ok=True)
 
