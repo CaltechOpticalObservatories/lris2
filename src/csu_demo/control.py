@@ -50,6 +50,7 @@ class Controller:  # pylint: disable=too-many-instance-attributes
         self._lease: _Lease | None = None
         self._snapshot: dict[str, dict[str, Any]] = {}
         self._poll_error: str | None = None
+        self._plc_state: str | None = None
         self._shutdown = threading.Event()
         self._poller: threading.Thread | None = None
 
@@ -78,13 +79,14 @@ class Controller:  # pylint: disable=too-many-instance-attributes
         """Read every axis once into the cache."""
         try:
             snapshot = {axis.name: axis.status() for axis in self._axes}
+            plc_state = str(self._axes.backend.controller_state())
         except self._transport_errors as error:
             with self._lock:
                 self._poll_error = str(error)
             self._reconnect()
             return
         with self._lock:
-            self._snapshot, self._poll_error = snapshot, None
+            self._snapshot, self._poll_error, self._plc_state = snapshot, None, plc_state
 
     def _reconnect(self) -> None:
         """Reopen the transport, so a dropped ADS link heals on a later poll."""
@@ -108,6 +110,7 @@ class Controller:  # pylint: disable=too-many-instance-attributes
                 ],
                 "presets": self._presets.names(),
                 "error": self._poll_error,
+                "plc": self._plc_state,
                 "controller": lease.holder if lease else None,
                 "in_control": lease is not None and token == lease.token,
             }

@@ -211,3 +211,9 @@ def test_all_series_keys_by_bar() -> None:
     history = TelemetryHistory()
     history.add(1.0, {"CSU-0": {"current": 3.0}, "CSU-6": {"current": 4.0}})
     assert history.all_series()["CSU-6"] == {"time": [1.0], "current": [4.0]}
+
+
+def test_status_reports_the_plc_mode(axes: AxisSet, tmp_path: Any) -> None:
+    controller = Controller(axes, PresetStore(tmp_path / "presets.json"))
+    controller.refresh()
+    assert controller.status(None)["plc"] == "run"

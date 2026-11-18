@@ -33,25 +33,47 @@ function barElement(name) {
   bar.className = "bar";
   bar.dataset.bar = name;
   bar.innerHTML = `<span class="name">${name}</span><span class="pos"></span>
-                   <span class="state"></span><span class="saved"></span>`;
+                   <span class="state"></span><span class="saved"></span>
+                   <span class="spark temp"><svg viewBox="0 0 70 18" preserveAspectRatio="none"></svg><span class="value"></span></span>
+                   <span class="spark cur"><svg viewBox="0 0 70 18" preserveAspectRatio="none"></svg><span class="value"></span></span>`;
   bar.addEventListener("click", () => chooseBar(name));
   return bar;
 }
 
+// The CSU is built from modules of six bars; a spacer row separates upper and lower modules
+const MODULE_ROWS = 6;
+const gridRow = (row) => row + Math.floor((row - 1) / MODULE_ROWS);
+
 function buildCsu(axes) {
   const csu = document.getElementById("csu");
   const cells = [];
+  for (let first = 1; first <= layout.rows; first += MODULE_ROWS) {
+    const last = Math.min(first + MODULE_ROWS - 1, layout.rows);
+    for (const column of [1, 3]) {
+      const frame = document.createElement("div");
+      frame.className = "module";
+      frame.style.gridColumn = column;
+      frame.style.gridRow = `${gridRow(first)} / ${gridRow(last) + 1}`;
+      cells.push(frame);
+    }
+    if (last < layout.rows) {
+      const gap = document.createElement("div");
+      gap.className = "module-gap";
+      gap.style.gridRow = gridRow(last) + 1;
+      cells.push(gap);
+    }
+  }
   for (let row = 1; row <= layout.rows; row += 1) {
     for (const side of ["left", "right"]) {
       const cell = document.createElement("div");
       cell.className = `slot ${side}`;
-      cell.style.gridRow = row;
+      cell.style.gridRow = gridRow(row);
       cell.id = `slot-${side}-${row}`;
       cells.push(cell);
     }
     const slit = document.createElement("div");
     slit.className = "slit";
-    slit.style.gridRow = row;
+    slit.style.gridRow = gridRow(row);
     slit.textContent = row;
     cells.push(slit);
   }
@@ -94,8 +116,11 @@ function slotLabel(name) {
 
 function renderPanel() {
   const axis = axesByName[chosenBar];
-  panel.hidden = !axis;
-  if (!axis) return;
+  document.getElementById("panel-body").hidden = !axis;
+  if (!axis) {
+    document.getElementById("panel-title").textContent = "Click a bar to control it";
+    return;
+  }
   document.getElementById("panel-title").textContent = `${axis.name}: ${slotLabel(axis.name)}`;
   document.getElementById("panel-status").textContent =
     `${axis.position.toFixed(3)} ${axis.units}, ${STATES[axis.state] ?? "–"}, ` +
@@ -172,6 +197,31 @@ function drawChart(figure, history) {
 let lastHistory = {};
 function redrawCharts() {
   for (const figure of document.querySelectorAll(".chart")) drawChart(figure, lastHistory);
+  drawSparklines(lastHistory);
+}
+
+// Each sparkline scales to its own range, so it shows the trend; the number shows the value
+function sparkline(svg, values) {
+  const points = values.filter((v) => v != null);
+  if (points.length < 2) { svg.innerHTML = ""; return; }
+  let lo = Math.min(...points), hi = Math.max(...points);
+  if (hi - lo < 1e-6) { lo -= 1; hi += 1; }
+  const step = 70 / (points.length - 1);
+  const line = points.map((v, i) => `${(i * step).toFixed(1)},${(17 - ((v - lo) / (hi - lo)) * 16).toFixed(1)}`);
+  svg.innerHTML = `<polyline points="${line.join(" ")}"></polyline>`;
+}
+
+function drawSparklines(history) {
+  for (const bar of document.querySelectorAll(".bar[data-bar]")) {
+    const series = history[bar.dataset.bar];
+    for (const [cls, key, unit] of [["temp", "boardtemp", "°C"], ["cur", "current", "mA"]]) {
+      const spark = bar.querySelector(`.spark.${cls}`);
+      const values = series?.[key] || [];
+      const last = values.length ? values[values.length - 1] : null;
+      sparkline(spark.querySelector("svg"), values);
+      spark.querySelector(".value").textContent = last == null ? "" : `${last.toFixed(1)} ${unit}`;
+    }
+  }
 }
 
 async function drawCharts() {
@@ -193,29 +243,33 @@ document.getElementById("charts").addEventListener("click", (event) => {
 setInterval(drawCharts, 10000);
 drawCharts();
 
+let drivesOutlet = null;
+
 async function pollPower() {
-  const list = document.getElementById("power-list");
-  if (!list) return;
+  const chip = document.getElementById("power-chip");
+  if (!chip) return;
   try {
     const status = await api("GET", "/api/power");
-    list.replaceChildren(...status.outlets.map((outlet) => {
-      const item = document.createElement("span");
-      item.className = `outlet ${outlet.on ? "on" : "off"}`;
-      item.textContent = `${outlet.label}: ${outlet.on ? "on" : "off"}, ${outlet.power.toFixed(1)} W, ${outlet.current.toFixed(2)} A `;
-      if (outlet.switchable) {
-        const button = document.createElement("button");
-        button.textContent = outlet.on ? "Power off" : "Power on";
-        button.disabled = !inControl;
-        button.addEventListener("click", () => switchPower(outlet));
-        item.append(button);
-      }
-      return item;
-    }));
+    drivesOutlet = status.outlets.find((outlet) => outlet.switchable) || null;
+    const others = status.outlets.filter((outlet) => !outlet.switchable);
+    chip.title = others.map((o) => `${o.label}: ${o.on ? "on" : "off"}, ${o.power.toFixed(1)} W`).join("\n");
+    if (drivesOutlet) {
+      document.getElementById("power-text").textContent =
+        `Drives ${drivesOutlet.on ? "on" : "off"}, ${drivesOutlet.power.toFixed(1)} W`;
+      chip.className = `chip ${drivesOutlet.on ? "ok" : "bad"}`;
+      const button = document.getElementById("power-switch");
+      button.textContent = drivesOutlet.on ? "Power off" : "Power on";
+      button.disabled = !inControl;
+    }
     if (status.error) showError(`PDU: ${status.error}`);
   } catch (error) {
     showError(`PDU: ${error.message}`);
   }
 }
+
+document.getElementById("power-switch")?.addEventListener("click", () => {
+  if (drivesOutlet) switchPower(drivesOutlet);
+});
 
 async function switchPower(outlet) {
   const on = !outlet.on;
@@ -263,7 +317,13 @@ function render(status) {
   document.getElementById("password").hidden = inControl;
   document.getElementById("release").hidden = !inControl;
   if (status.error) showError(`PLC: ${status.error}`);
-  if (!document.querySelector(".bar")) buildCsu(status.axes);
+  const plc = document.getElementById("plc-state");
+  plc.textContent = `PLC: ${status.plc ?? "–"}`;
+  plc.className = `chip ${status.plc === "run" ? "ok" : "bad"}`;
+  if (!document.querySelector(".bar")) {
+    buildCsu(status.axes);
+    drawSparklines(lastHistory);
+  }
   axesByName = Object.fromEntries(status.axes.map((axis) => [axis.name, axis]));
   for (const axis of status.axes) renderBar(axis);
   renderPanel();
