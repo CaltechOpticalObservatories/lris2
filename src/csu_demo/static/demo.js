@@ -153,13 +153,17 @@ function niceTicks(lo, hi, count) {
   return ticks;
 }
 
+// Current is signed by torque direction; the charts show its magnitude, which is what heats
+const magnitude = (key, v) => (key === "current" && v != null ? Math.abs(v) : v);
+
 function drawChart(figure, history) {
   const key = figure.dataset.key;
   const unit = figure.dataset.unit;
   const names = Object.keys(history).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   const series = names.map((name, index) => ({
     name, color: PALETTE[index % PALETTE.length],
-    points: history[name].time.map((t, i) => [t, (history[name][key] || [])[i]]).filter(([, v]) => v != null),
+    points: history[name].time.map((t, i) => [t, magnitude(key, (history[name][key] || [])[i])])
+      .filter(([, v]) => v != null),
   }));
   const visible = series.filter((s) => !hiddenBars.has(s.name) && s.points.length);
   const svg = figure.querySelector("svg");
@@ -216,7 +220,7 @@ function drawSparklines(history) {
     const series = history[bar.dataset.bar];
     for (const [cls, key, unit] of [["temp", "boardtemp", "°C"], ["cur", "current", "mA"]]) {
       const spark = bar.querySelector(`.spark.${cls}`);
-      const values = series?.[key] || [];
+      const values = (series?.[key] || []).map((v) => magnitude(key, v));
       const last = values.length ? values[values.length - 1] : null;
       sparkline(spark.querySelector("svg"), values);
       spark.querySelector(".value").textContent = last == null ? "" : `${last.toFixed(1)} ${unit}`;
