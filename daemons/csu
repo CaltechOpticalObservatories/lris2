@@ -3,6 +3,7 @@
 import argparse
 import dataclasses
 import sys
+import threading
 
 import pyads
 from cooethercat import AxisError, AxisSet, ControllerState
@@ -14,6 +15,8 @@ from lris2.csu.keywords import CsuKeywords
 from lris2.daemon import Lris2Daemon
 
 TRANSPORT_ERRORS = (OSError, pyads.ADSError)
+# How often the watchdog checks the PLC link, and so how soon a dropped link heals
+WATCHDOG_S = 5.0
 
 
 class Csu(Lris2Daemon):  # pylint: disable=W0223
@@ -28,8 +31,9 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
         self.keywords: CsuKeywords | None = None
         self.topology = None
         self.sim = False
+        self._stopping = threading.Event()
 
-    def on_start(self, libby=None):
+    def on_start(self, libby=None):  # pylint: disable=W0613
         '''Register keywords, then connect; the daemon stays up if the PLC is unreachable'''
         self.sim = bool(self.get_config("hardware.sim", False))
         self.topology = parse_topology(self.get_config("topology"), source="topology")
@@ -47,9 +51,11 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
                                       description="Stop the daemon; refused while a bar moves")
         self.logger.info("CSU daemon serving %d bars (%s)", len(self.axes),
                          "simulated" if self.sim else self.topology.transport.host)
+        threading.Thread(target=self._watch_link, name="plc link", daemon=True).start()
 
-    def on_stop(self, libby=None):
+    def on_stop(self, libby=None):  # pylint: disable=W0613
         '''Close the PLC connection; the PLC keeps each bar's enable state'''
+        self._stopping.set()
         if self.axes is not None:
             self.axes.backend.close()
 
@@ -81,6 +87,29 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
             raise RuntimeError("the CSU daemon always holds its PLC connection")
         self.axes.backend.close()
         self.axes.backend.open()
+
+    def _watch_link(self) -> None:
+        '''Reopen the PLC link whenever a status read fails, e.g. after a drive power cycle'''
+        failing = False
+        while not self._stopping.wait(WATCHDOG_S):
+            try:
+                next(iter(self.axes)).status()
+            except TRANSPORT_ERRORS as error:
+                if not failing:
+                    self.logger.warning("PLC link lost (%s); reconnecting", error)
+                failing = True
+                self._reopen()
+                continue
+            if failing:
+                self.logger.info("PLC link restored")
+            failing = False
+
+    def _reopen(self) -> None:
+        try:
+            self.axes.backend.close()
+            self.axes.backend.open()
+        except TRANSPORT_ERRORS as error:
+            self.logger.debug("reconnect failed: %s", error)
 
     def shutdown(self) -> None:
         '''Stop the daemon unless a bar is moving'''
