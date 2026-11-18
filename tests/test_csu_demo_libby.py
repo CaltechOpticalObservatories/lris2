@@ -137,10 +137,10 @@ class FakePdu:
             self.values |= {f"state_{name}": True, f"power_{name}": 10.0, f"current_{name}": 0.1}
 
     def get(self, name: str, *, timeout_s: float = 2.0) -> Any:
-        return self.values[name.removeprefix("l2power.csupdu.")]
+        return self.values[name.removeprefix("l2power.pdu-ethercat.")]
 
     def set(self, name: str, value: Any, *, timeout_s: float | None = None) -> Any:
-        self.values[name.removeprefix("l2power.csupdu.")] = value
+        self.values[name.removeprefix("l2power.pdu-ethercat.")] = value
         return value
 
 

@@ -45,8 +45,8 @@ collections:
     timeout_s: 5.0
 
   # One telnet query per keyword, so a batch of 32 takes a couple of seconds
-  pdu1:
-    peer: l2power.pdu1
+  pdu-137:
+    peer: l2power.pdu-137
     keywords: ["state%", "current%", "power%", "energy%"]
     timeout_s: 10.0
   # Drive telemetry and motion state; positions are commanded, so they stay out
@@ -56,8 +56,8 @@ collections:
                "ismoving%", "isenabled%", "error%", "plcstate", "isconnected"]
     interval_s: 10.0
     timeout_s: 5.0
-  csupdu:
-    peer: l2power.csupdu
+  pdu-ethercat:
+    peer: l2power.pdu-ethercat
     keywords: ["state%", "current%", "power%", "energy%"]
     timeout_s: 10.0
 

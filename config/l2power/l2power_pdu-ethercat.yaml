@@ -1,12 +1,12 @@
-# l2power csupdu - Eaton EMAT-08 (epduC5) in the CSU lab
+# l2power pdu-ethercat - Eaton EMAT-08 (epduC5) in the CSU lab
 #
 # Usage:
-#   daemons/l2power/eaton_pdu -c config/l2power/l2power_csupdu.yaml
+#   daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu-ethercat.yaml
 #
-# Addressed as l2power.csupdu, e.g.
-#   libby show l2power.csupdu.power_ethercat
+# Addressed as l2power.pdu-ethercat, e.g.
+#   libby show l2power.pdu-ethercat.power_ethercat
 
-peer_id: csupdu
+peer_id: pdu-ethercat
 group_id: l2power
 
 hardware:
@@ -22,7 +22,7 @@ hardware:
     7: gateway
   # Telnet login from /etc/lris2/secrets.env; the password is the PDU's serial number
   username_env: LRIS2_PDU_USERNAME
-  password_env: LRIS2_CSUPDU_PASSWORD
+  password_env: LRIS2_PDUETHERCAT_PASSWORD
 
 logging:
   level: INFO

@@ -1189,7 +1189,7 @@
         "type": "custom",
         "name": "pdu",
         "label": "PDU",
-        "query": "pdu1,csupdu",
+        "query": "pdu-137,pdu-ethercat",
         "multi": true,
         "includeAll": true,
         "current": {
@@ -1209,13 +1209,13 @@
           },
           {
             "selected": false,
-            "text": "pdu1",
-            "value": "pdu1"
+            "text": "pdu-137",
+            "value": "pdu-137"
           },
           {
             "selected": false,
-            "text": "csupdu",
-            "value": "csupdu"
+            "text": "pdu-ethercat",
+            "value": "pdu-ethercat"
           }
         ]
       }

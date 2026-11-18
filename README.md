@@ -117,8 +117,8 @@ group, `l2power`, one peer per PDU. `daemons/l2power/` holds a shared base
 and one script per PDU family:
 
 ```bash
-uv run daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu1.yaml
-libby modify l2power.pdu1.state3 false
+uv run daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu-137.yaml
+libby modify l2power.pdu-137.state3 false
 ```
 
 A daemon on another host reaches the instrument broker through
@@ -145,7 +145,7 @@ libby modify lris2.csu.positionvalue6 -260.0
 `lris2-csu-demo` is a browser demo with the webcam stream and bar controls,
 laid out as in `config/csu/layout.yaml`, per-bar charts of drive temperature
 and current, and the CSU lab PDU's outlets with a switch for the drives. It
-drives the bars only through `lris2.csu` and the PDU through `l2power.csupdu`,
+drives the bars only through `lris2.csu` and the PDU through `l2power.pdu-ethercat`,
 so it runs anywhere the broker is reachable. On the CSU host,
 `install.sh --extra csu-demo` installs `lris2-csu-demo.service`, which serves it
 on port 8088; taking control needs `LRIS2_CSU_DEMO_PASSWORD` from

@@ -120,7 +120,7 @@ def _parse_args() -> argparse.Namespace:
                         help="CSU daemon config listing the bars, e.g. config/csu/csu.yaml")
     parser.add_argument("--sim", action="store_true", help="simulate the axes, no daemon")
     parser.add_argument("--peer", default="lris2.csu", help="CSU daemon to drive the bars through")
-    parser.add_argument("--pdu", default="l2power.csupdu", help="PDU daemon feeding the CSU")
+    parser.add_argument("--pdu", default="l2power.pdu-ethercat", help="PDU daemon feeding the CSU")
     parser.add_argument("--no-power", action="store_true", help="hide the PDU panel")
     parser.add_argument("--camera", default="/dev/video0", help="V4L2 device")
     parser.add_argument("--camera-host", help="capture on this SSH host instead of locally")

@@ -25,7 +25,7 @@ class PowerError(RuntimeError):
 class PowerPanel:
     """Cache outlet readings and switch the drives outlet."""
 
-    def __init__(self, client: KeywordClient, peer: str = "l2power.csupdu") -> None:
+    def __init__(self, client: KeywordClient, peer: str = "l2power.pdu-ethercat") -> None:
         self._client = client
         self._peer = peer
         self._lock = threading.Lock()
