@@ -200,3 +200,14 @@ def test_only_the_drives_outlet_switches(web: tuple[Any, FakePdu, Controller]) -
     flask_client.post("/api/control", json={})
     assert flask_client.post("/api/power/plc", json={"on": False}).status_code == 400
     assert pdu.values["state_plc"] is True
+
+
+def test_history_route_serves_every_bar(web: tuple[Any, FakePdu, Controller]) -> None:
+    flask_client, _, _ = web
+    assert flask_client.get("/api/history").get_json() == {}
+
+
+def test_all_series_keys_by_bar() -> None:
+    history = TelemetryHistory()
+    history.add(1.0, {"CSU-0": {"current": 3.0}, "CSU-6": {"current": 4.0}})
+    assert history.all_series()["CSU-6"] == {"time": [1.0], "current": [4.0]}

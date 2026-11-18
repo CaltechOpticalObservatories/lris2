@@ -33,6 +33,12 @@ class TelemetryHistory:
                 while samples and samples[0][0] < when - self._window_s:
                     samples.popleft()
 
+    def all_series(self) -> dict[str, dict[str, list[Any]]]:
+        """Return every bar's history, keyed by bar name."""
+        with self._lock:
+            names = list(self._samples)
+        return {bar_name: self.series(bar_name) for bar_name in names}
+
     def series(self, bar_name: str) -> dict[str, list[Any]]:
         """Return one bar's history as parallel lists: time, then one list per reading."""
         with self._lock:

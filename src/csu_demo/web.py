@@ -110,9 +110,9 @@ def create_app(  # pylint: disable=too-many-locals,too-many-statements,too-many-
             return jsonify(error=str(error)), 400
         return jsonify(ok=True)
 
-    @app.get("/api/axes/<name>/history")
-    def bar_history(name: str) -> Response:
-        return jsonify(history.series(name) if history is not None else {"time": []})
+    @app.get("/api/history")
+    def telemetry_history() -> Response:
+        return jsonify(history.all_series() if history is not None else {})
 
     @app.get("/api/power")
     def power_status() -> Response | tuple[Response, int]:

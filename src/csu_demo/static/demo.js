@@ -111,41 +111,87 @@ function chooseBar(name) {
   chosenBar = chosenBar === name ? null : name;
   document.getElementById("velocity").value = "";
   poll();
-  drawCharts();
 }
 
-// Draw one reading as a line scaled to its own range, with the range and age as labels
-function drawChart(svg, times, values) {
-  const points = times.map((t, i) => [t, values[i]]).filter(([, v]) => v !== null);
-  if (points.length < 2) {
-    svg.innerHTML = '<text x="6" y="44">collecting… one sample every 10 s</text>';
-    return;
+// Grafana-style time charts: one line per bar, shared time axis, legend with last and max
+const PALETTE = ["#73bf69", "#f2cc0c", "#8ab8ff", "#ff780a", "#f2495c", "#5794f2", "#b877d9",
+                 "#705da0", "#37872d", "#fade2a", "#3274d9", "#e0b400", "#c4162a", "#1f78c1",
+                 "#ba43a9", "#9ac48a", "#ffb357", "#ff7383", "#a352cc", "#56a64b", "#ca95e5",
+                 "#4ab0ff", "#ffee52"];
+const hiddenBars = new Set();
+
+function niceTicks(lo, hi, count) {
+  const step = 10 ** Math.floor(Math.log10((hi - lo) / count || 1));
+  const best = [1, 2, 5, 10].map((m) => m * step).find((s) => (hi - lo) / s <= count) || step * 10;
+  const ticks = [];
+  for (let v = Math.ceil(lo / best) * best; v <= hi + 1e-9; v += best) ticks.push(v);
+  return ticks;
+}
+
+function drawChart(figure, history) {
+  const key = figure.dataset.key;
+  const unit = figure.dataset.unit;
+  const names = Object.keys(history).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const series = names.map((name, index) => ({
+    name, color: PALETTE[index % PALETTE.length],
+    points: history[name].time.map((t, i) => [t, (history[name][key] || [])[i]]).filter(([, v]) => v != null),
+  }));
+  const visible = series.filter((s) => !hiddenBars.has(s.name) && s.points.length);
+  const svg = figure.querySelector("svg");
+  const all = visible.flatMap((s) => s.points);
+  if (all.length < 2) {
+    svg.innerHTML = '<text x="20" y="100">collecting… one sample every 10 s</text>';
+  } else {
+    const t0 = Math.min(...all.map(([t]) => t)), t1 = Math.max(...all.map(([t]) => t));
+    let lo = Math.min(...all.map(([, v]) => v)), hi = Math.max(...all.map(([, v]) => v));
+    if (hi - lo < 1e-6) { lo -= 1; hi += 1; }
+    const pad = (hi - lo) * 0.05; lo -= pad; hi += pad;
+    const x = (t) => 50 + ((t - t0) / Math.max(t1 - t0, 1)) * 545;
+    const y = (v) => 185 - ((v - lo) / (hi - lo)) * 175;
+    const grid = niceTicks(lo, hi, 5).map((v) =>
+      `<line class="grid" x1="50" x2="595" y1="${y(v)}" y2="${y(v)}"></line>` +
+      `<text x="2" y="${y(v) + 4}">${+v.toFixed(2)} ${unit}</text>`).join("");
+    const times = [0, 0.5, 1].map((f) => t0 + f * (t1 - t0)).map((t) =>
+      `<text x="${Math.min(x(t) - 14, 565)}" y="199">${new Date(t * 1000).toTimeString().slice(0, 5)}</text>`).join("");
+    const lines = visible.map((s) =>
+      `<polyline stroke="${s.color}" points="${s.points.map(([t, v]) => `${x(t).toFixed(1)},${y(v).toFixed(1)}`).join(" ")}"></polyline>`).join("");
+    svg.innerHTML = grid + times + lines;
   }
-  const [t0, t1] = [points[0][0], points[points.length - 1][0]];
-  let lo = Math.min(...points.map(([, v]) => v));
-  let hi = Math.max(...points.map(([, v]) => v));
-  if (hi - lo < 1e-6) { lo -= 1; hi += 1; }
-  const x = (t) => 2 + ((t - t0) / Math.max(t1 - t0, 1)) * 296;
-  const y = (v) => 74 - ((v - lo) / (hi - lo)) * 66;
-  const line = points.map(([t, v]) => `${x(t).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-  const minutes = Math.round((t1 - t0) / 60);
-  svg.innerHTML = `<polyline points="${line}"></polyline>` +
-    `<text x="4" y="10">${hi.toFixed(1)}</text><text x="4" y="78">${lo.toFixed(1)}</text>` +
-    `<text x="240" y="78">last ${minutes} min</text>`;
+  const rows = series.map((s) => {
+    const values = s.points.map(([, v]) => v);
+    const last = values.length ? values[values.length - 1] : null;
+    const max = values.length ? Math.max(...values) : null;
+    const fmt = (v) => (v == null ? "–" : `${+v.toFixed(1)} ${unit}`);
+    return `<tr data-bar="${s.name}" class="${hiddenBars.has(s.name) ? "hidden" : ""}">` +
+      `<td><span class="swatch" style="background:${s.color}"></span>${s.name}</td>` +
+      `<td>${fmt(last)}</td><td>${fmt(max)}</td></tr>`;
+  }).join("");
+  figure.querySelector(".legend").innerHTML = `<tr><th>Name</th><th>Last</th><th>Max</th></tr>${rows}`;
+}
+
+let lastHistory = {};
+function redrawCharts() {
+  for (const figure of document.querySelectorAll(".chart")) drawChart(figure, lastHistory);
 }
 
 async function drawCharts() {
-  if (!chosenBar) return;
   try {
-    const series = await api("GET", `/api/axes/${encodeURIComponent(chosenBar)}/history`);
-    for (const key of ["boardtemp", "current"]) {
-      drawChart(document.getElementById(`chart-${key}`), series.time, series[key] || []);
-    }
+    lastHistory = await api("GET", "/api/history");
+    redrawCharts();
   } catch (error) {
     showError(`history: ${error.message}`);
   }
 }
+
+document.getElementById("charts").addEventListener("click", (event) => {
+  const row = event.target.closest("tr[data-bar]");
+  if (!row) return;
+  const name = row.dataset.bar;
+  if (hiddenBars.has(name)) hiddenBars.delete(name); else hiddenBars.add(name);
+  redrawCharts();
+});
 setInterval(drawCharts, 10000);
+drawCharts();
 
 async function pollPower() {
   const list = document.getElementById("power-list");

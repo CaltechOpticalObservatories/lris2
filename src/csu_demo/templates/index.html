@@ -31,15 +31,17 @@
     </div>
     <div id="csu" aria-label="CSU bars as seen from the webcam"></div>
     <div id="unplaced"><strong>Not placed</strong> <span id="unplaced-list"></span></div>
+    <div id="charts">
+      <figure class="chart" data-key="boardtemp" data-unit="°C"><figcaption>Drive board temperature</figcaption>
+        <svg viewBox="0 0 600 200" preserveAspectRatio="none"></svg><table class="legend"></table></figure>
+      <figure class="chart" data-key="current" data-unit="mA"><figcaption>Motor current</figcaption>
+        <svg viewBox="0 0 600 200" preserveAspectRatio="none"></svg><table class="legend"></table></figure>
+    </div>
     <div id="panel" hidden>
       <div id="panel-title"></div>
       <div id="panel-status"></div>
       <label>Step <input id="step" type="number" value="10" step="1"> <span class="units"></span></label>
       <label>Velocity <input id="velocity" type="number" step="0.1"> <span class="units"></span>/s</label>
-      <div id="panel-charts">
-        <figure><figcaption>Board temperature, °C</figcaption><svg id="chart-boardtemp" viewBox="0 0 300 80"></svg></figure>
-        <figure><figcaption>Motor current, mA</figcaption><svg id="chart-current" viewBox="0 0 300 80"></svg></figure>
-      </div>
       <div id="panel-actions">
         <button data-action="enable">Enable</button>
         <button data-action="move-left" title="Move toward the left of the picture">◀</button>

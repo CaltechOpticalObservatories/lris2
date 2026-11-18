@@ -58,9 +58,18 @@ button.small { padding: 0.3rem 0.4rem; background: #3a3f4a; }
 .outlet { border: 1px solid #444; border-radius: 4px; padding: 0.2em 0.5em; }
 .outlet.on { border-color: #3a3; }
 .outlet.off { opacity: 0.6; }
-#panel-charts { display: flex; gap: 1em; margin: 0.5em 0; }
-#panel-charts figure { margin: 0; flex: 1; }
-#panel-charts figcaption { font-size: 0.8em; opacity: 0.8; }
-#panel-charts svg { width: 100%; height: 80px; background: #1b1d22; border-radius: 4px; }
-#panel-charts polyline { fill: none; stroke: #6cf; stroke-width: 1.5; }
-#panel-charts text { fill: #aaa; font-size: 9px; }
+#charts { display: flex; gap: 1em; flex-wrap: wrap; margin-top: 0.8em; }
+.chart { margin: 0; flex: 1 1 420px; display: grid; grid-template-columns: 1fr 215px; gap: 0.4em;
+         background: #1b1d22; border-radius: 4px; padding: 0.4em; }
+.chart figcaption { grid-column: 1 / -1; font-weight: bold; }
+.chart svg { width: 100%; height: 200px; }
+.chart polyline { fill: none; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.chart .grid { stroke: #333; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.chart text { fill: #999; font-size: 11px; }
+.legend { font-size: 0.8em; border-collapse: collapse; align-self: start; max-height: 200px;
+          overflow-y: auto; display: block; }
+.legend th { color: #6cf; text-align: right; font-weight: normal; padding: 0 0.4em; }
+.legend td { text-align: right; padding: 0 0.4em; cursor: pointer; white-space: nowrap; }
+.legend td:first-child { text-align: left; }
+.legend tr.hidden td { opacity: 0.35; }
+.swatch { display: inline-block; width: 10px; height: 3px; margin-right: 4px; vertical-align: middle; }
