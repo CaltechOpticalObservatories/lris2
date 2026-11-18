@@ -1,25 +1,17 @@
 """Broker URL selection for LRIS2 daemons."""
 
 import pytest
-from lris2 import daemon
+from libby.config_resolve import RABBITMQ_URL_ENV
+from lris2.daemon import Lris2Daemon
 
 
-@pytest.fixture(autouse=True)
-def clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv(daemon.BROKER_HOST_ENV, raising=False)
-
-
-def test_local_broker_by_default() -> None:
-    assert daemon.broker_url() == "amqp://localhost"
-
-
-def test_host_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(daemon.BROKER_HOST_ENV, "lris2-137")
-    assert daemon.broker_url() == "amqp://lris2-137"
-
-
-def test_configured_url_wins(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(daemon.BROKER_HOST_ENV, "lris2-137")
-    instance = daemon.Lris2Daemon()
+def test_environment_wins_over_the_daemon_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(RABBITMQ_URL_ENV, "amqp://lris2-137")
+    instance = Lris2Daemon()
     instance.rabbitmq_url = "amqp://elsewhere"
-    assert instance.config_rabbitmq_url() == "amqp://elsewhere"
+    assert instance.config_rabbitmq_url() == "amqp://lris2-137"
+
+
+def test_local_broker_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv(RABBITMQ_URL_ENV, raising=False)
+    assert Lris2Daemon().config_rabbitmq_url() == "amqp://localhost"
