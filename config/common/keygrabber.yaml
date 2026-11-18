@@ -1,9 +1,10 @@
-# Keyword archiver: polls the LRIS2 daemons and writes to InfluxDB for Grafana
+# Keyword archiver: polls the LRIS2 daemons and writes to InfluxDB and Prometheus for Grafana
 #
 # Usage:
 #   daemons/keygrabber -c config/common/keygrabber.yaml
 #
 # The InfluxDB token comes from the environment variable named in token_env.
+# The prometheus sink exports to OTEL_EXPORTER_OTLP_ENDPOINT from /etc/lris2/otel.env.
 
 peer_id: keygrabber
 group_id: lris2
@@ -15,6 +16,8 @@ sinks:
     org: caltech
     bucket: LRIS2
     token_env: LRIS2_INFLUX_TOKEN
+  prometheus:
+    type: otlp
 
 # Reads run concurrently across peers; a single daemon still answers one at a time
 workers: 4

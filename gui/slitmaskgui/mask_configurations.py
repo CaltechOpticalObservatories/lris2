@@ -40,9 +40,9 @@ class Button(QPushButton):
         # self.setStyleSheet("border: 1px solid; background-color: #ADD8E6")
 
 class TableModel(QAbstractTableModel):
-    def __init__(self, data=[]):
+    def __init__(self, data=None):
         super().__init__()
-        self._data = data
+        self._data = data if data is not None else []
         self.headers = ["Status","Name"]
 
     def headerData(self, section, orientation, role = ...):

@@ -7,3 +7,9 @@ env_prefix = "LRIS2"
 [help]
 example_instance = "rpress"
 example_subsystem = "r"
+
+# The lris2 host role runs the telemetry backend; each host's /etc/lris2/otel.env points there
+[telemetry]
+backend_host = "lris2"
+# Grafana reads Prometheus, Tempo and Loki from another host
+query_bind = "0.0.0.0"
