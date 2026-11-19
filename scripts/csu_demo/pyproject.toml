@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 license = {text = "MIT"}
 readme = "README.md"
 dependencies = [
-    "cooethercat@git+https://github.com/CaltechOpticalObservatories/coo-ethercat.git@twincat-backend",
+    "cooethercat@git+https://github.com/CaltechOpticalObservatories/coo-ethercat.git",
     "libby@git+https://github.com/CaltechOpticalObservatories/libby.git",
     "flask",
     "pyyaml",
@@ -20,7 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 # The tests serve keywords from daemons/csu, which imports lris2 and pyads
 dev = [
-    "cooethercat[twincat]@git+https://github.com/CaltechOpticalObservatories/coo-ethercat.git@twincat-backend",
+    "cooethercat[twincat]@git+https://github.com/CaltechOpticalObservatories/coo-ethercat.git",
     "pytest",
 ]
 
