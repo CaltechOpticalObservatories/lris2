@@ -110,20 +110,26 @@ dependencies.
 `rcam` is optional, like any other daemon a host may not run, so neither its
 dependencies nor its module are installed by default. On the host that runs
 it, the `camera` extra builds `camera_interface` from lris2-camerad-instrument
-into the venv:
+into the venv. rcam reads its camerad config from a clone in `/opt/lris2/extra`,
+`install.sh` builds the module from that clone instead of GitHub, and the
+controller loads the ACF from `/etc/lris2/LRIS2.acf`:
 
 ```bash
 sudo git clone https://github.com/CaltechOpticalObservatories/lris2-camerad-instrument \
-     /opt/lris2/camerad
+     /opt/lris2/extra/lris2-camerad-instrument
+cp /opt/lris2/extra/lris2-camerad-instrument/config/LRIS2.acf /etc/lris2/
 sudo /opt/lris2/app/systemd/install.sh --extra camera
 ```
+
+To change the module or its config, edit the clone, rerun `install.sh` and
+`lris2 restart rcam`; keep a change with a pull request from the clone.
 
 The extra is recorded in `/etc/lris2/extras`, so later runs keep it, and
 `lris2 doctor` reports it if a plain `uv sync` removed it.
 
-`config/r/rcam.yaml` reads the camerad config from the checkout, so a pull
-there moves the ACF the controller is loaded with. Without the module the
-daemon still starts and serves its keywords, reporting `state: nocamera`.
+A new ACF takes effect once copied to `/etc/lris2/LRIS2.acf` and rcam
+restarts. Without the module the daemon still starts and serves its keywords,
+reporting `state: nocamera`.
 
 ## The Galil driver's bindings
 

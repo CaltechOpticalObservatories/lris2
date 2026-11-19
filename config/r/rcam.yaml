@@ -14,7 +14,7 @@ group_id: lris2
 description: LRIS2 Red channel Archon controller
 
 camera:
-  config_file: /opt/lris2/camerad/config/lris2.cfg
+  config_file: /opt/lris2/extra/lris2-camerad-instrument/config/lris2.cfg
   nframes: 1
 
 # Every labelled channel the three bias boards carry, taken from "bias list"
