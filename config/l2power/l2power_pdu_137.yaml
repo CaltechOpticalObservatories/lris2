@@ -1,12 +1,12 @@
 # l2power PDU 1 - Eaton EMAT-08 (epduB2)
 #
 # Usage:
-#   daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu1.yaml
+#   daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu_137.yaml
 #
-# Addressed as l2power.pdu1, e.g.
-#   libby show l2power.pdu1.state1
+# Addressed as l2power.pdu-137, e.g.
+#   libby show l2power.pdu-137.state1
 
-peer_id: pdu1
+peer_id: pdu-137
 group_id: l2power
 
 hardware:
@@ -20,7 +20,7 @@ hardware:
   # Telnet login from /etc/lris2/secrets.env. The password is the PDU's serial
   # number, so each PDU has its own variable
   username_env: LRIS2_PDU_USERNAME
-  password_env: LRIS2_PDU1_PASSWORD
+  password_env: LRIS2_PDU137_PASSWORD
 
 logging:
   level: INFO

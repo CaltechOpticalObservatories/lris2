@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LRIS2 CSU demo</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='demo.css') }}">
+</head>
+<body>
+<header>
+  <h1>LRIS2 CSU prototype</h1>
+  <span id="plc-state" class="chip">PLC: –</span>
+  {% if has_power %}
+  <span id="power-chip" class="chip"><span id="power-text">Drives: –</span>
+    <button id="power-switch" class="small" disabled>–</button></span>
+  {% endif %}
+  <span id="control-state">connecting…</span>
+  <input id="password" type="password" placeholder="password" autocomplete="current-password">
+  <button id="take">Take control</button>
+  <button id="release" hidden>Release</button>
+  <button id="stop-all" class="danger">STOP ALL</button>
+</header>
+<div id="message" hidden></div>
+<main>
+  <section id="act">
+    {% if has_camera %}
+    <div id="camera"><img src="{{ url_for('stream') }}" alt="CSU webcam"></div>
+    {% endif %}
+    <div id="panel">
+      <div id="panel-title">Click a bar to control it</div>
+      <div id="panel-body" hidden>
+        <div id="panel-status"></div>
+        <label>Step <input id="step" type="number" value="10" step="1"> <span class="units"></span></label>
+        <label>Velocity <input id="velocity" type="number" step="0.1"> <span class="units"></span>/s</label>
+        <div id="panel-actions">
+          <button data-action="enable">Enable</button>
+          <button data-action="move-left" title="Move toward the left of the picture">◀</button>
+          <button data-action="move-right" title="Move toward the right of the picture">▶</button>
+          <button data-action="stop">Stop</button>
+          <button data-action="reset">Reset</button>
+          <button data-action="disable">Disable</button>
+        </div>
+      </div>
+    </div>
+    <div id="presets">
+      <strong>Save points</strong>
+      <span id="preset-list"></span>
+      <input id="preset-name" placeholder="name" maxlength="40">
+      <button id="preset-save">Save all bars</button>
+    </div>
+  </section>
+  <section id="bars">
+    <div id="csu" aria-label="CSU bars as seen from the webcam"></div>
+    <div id="unplaced"><strong>Not placed</strong> <span id="unplaced-list"></span></div>
+  </section>
+  <section id="charts">
+    <figure class="chart" data-key="boardtemp" data-unit="°C"><figcaption>Drive board temperature</figcaption>
+      <svg viewBox="0 0 600 200" preserveAspectRatio="none"></svg><table class="legend"></table></figure>
+    <figure class="chart" data-key="current" data-unit="mA"><figcaption>Motor current |I|</figcaption>
+      <svg viewBox="0 0 600 200" preserveAspectRatio="none"></svg><table class="legend"></table></figure>
+  </section>
+</main>
+<script>const LEASE_S = {{ lease_s }};</script>
+<script src="{{ url_for('static', filename='demo.js') }}"></script>
+</body>
+</html>

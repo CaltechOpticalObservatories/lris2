@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN" Id="{fd6fe3bf-b96c-52bb-9557-570e61c747ce}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+    fbAxis : ARRAY [1..24] OF FB_AxisServer;
+    i      : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[FOR i := 1 TO GVL_Axes.nAxisCount DO
+    fbAxis[i](stAxis := GVL_Axes.Axis[i], Ref := GVL_Axes.AxisRef[i]);
+END_FOR
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

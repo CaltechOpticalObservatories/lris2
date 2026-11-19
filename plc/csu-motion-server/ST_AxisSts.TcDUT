@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisSts" Id="{0e366f05-66d4-51d8-8938-8c1eb072f83b}">
+    <Declaration><![CDATA[TYPE ST_AxisSts :
+STRUCT
+    bReady    : BOOL;
+    bEnabled  : BOOL;
+    bMoving   : BOOL;
+    bError    : BOOL;
+    nErrorId  : UDINT;
+    eState    : DINT;      // PLCopen state, see AxisState in interface.py
+    fPosition : LREAL;
+    fVelocity : LREAL;
+    nSeq      : UDINT;     // ++ on each completed command; the client's
+                           // completion handshake, robust to missed polls
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

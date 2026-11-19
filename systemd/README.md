@@ -44,6 +44,20 @@ sudo. It is safe to re-run and reports only what it changes.
 Override `LRIS2_REPO_DIR`, `LRIS2_VENV_DIR` and `LRIS2_ETC_DIR` for other
 paths.
 
+## Secrets
+
+Credentials and per-host settings live in `/etc/lris2/secrets.env`, which every
+unit reads at start; restart a service after changing it.
+
+| Variable | Host | Used by |
+|---|---|---|
+| `LRIS2_INFLUX_TOKEN` | lris2-137 | keygrabber |
+| `LRIS2_PDU_USERNAME` | lris2-137, lris2-ethercat | `l2power` daemons |
+| `LRIS2_PDU137_PASSWORD` | lris2-137 | `l2power_pdu_137`; the PDU's serial number |
+| `LRIS2_PDUETHERCAT_PASSWORD` | lris2-ethercat | `l2power_pdu_ethercat`; the PDU's serial number |
+| `LIBBY_RABBITMQ_URL` | lris2-ethercat | every daemon and the libby CLI on a host without the broker, e.g. `amqp://131.215.193.41` |
+| `LRIS2_CSU_DEMO_PASSWORD` | lris2-ethercat | taking control in the [CSU demo](../scripts/csu_demo/README.md) |
+
 ## Day to day
 
 Nothing below needs root, for anyone in `lris2-ops`:

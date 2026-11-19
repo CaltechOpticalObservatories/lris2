@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="GVL_Axes" Id="{aefaa9e9-7478-5847-b4d6-2eb6e7627670}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL
+    // MAIN only serves 1..nAxisCount; raise the array bounds if more drives are added
+    nAxisCount : INT := 23;
+    Axis       : ARRAY [1..24] OF ST_Axis;
+    AxisRef    : ARRAY [1..24] OF AXIS_REF;   // AxisRef[1] -> NC Axis 1 -> CSU-0
+END_VAR
+]]></Declaration>
+  </GVL>
+</TcPlcObject>

@@ -118,11 +118,38 @@ group, `l2power`, one peer per PDU. `daemons/l2power/` holds a shared base
 and one script per PDU family:
 
 ```bash
-uv run daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu1.yaml
-libby modify l2power.pdu1.state3 false
+uv run daemons/l2power/eaton_pdu -c config/l2power/l2power_pdu_137.yaml
+libby modify l2power.pdu-137.state3 false
 ```
 
+A daemon or libby CLI on another host reaches the instrument broker through
+`LIBBY_RABBITMQ_URL` in `/etc/lris2/secrets.env`, which overrides a
+`rabbitmq_url` in the daemon config; `install.sh` exports it to login shells. The broker admits remote guests with
+`loopback_users = none` in `/etc/rabbitmq/rabbitmq.conf`. Every variable that
+goes in `secrets.env` is listed in [`systemd/README.md`](systemd/README.md#secrets).
+
 For running daemons as services, see [`systemd/README.md`](systemd/README.md).
+
+## The CSU
+
+`daemons/csu` serves the configurable slit unit as `lris2.csu`: each bar's
+position, velocity, enable, halt and fault, plus drive telemetry (board
+temperature, I2t, current, supply). It drives the PLC motion server over ADS
+through coo-ethercat. While the PLC is unreachable, bar keywords fail at once
+and `plcstate` reads `unreachable`.
+
+The PLC program's source is `plc/MotionServer.st`. After editing it, run
+`python plc/gen_tc.py` to regenerate the object files in
+`plc/csu-motion-server/`, then `plc/setup-csu.ps1 -Activate` on the XAE PC to
+install and activate them.
+
+```bash
+uv run daemons/csu -c config/csu/csu.yaml
+libby modify lris2.csu.positionvalue6 -260.0
+```
+
+The browser demo in [`scripts/csu_demo`](scripts/csu_demo/README.md) drives the
+bars through `lris2.csu`.
 
 ## Testing
 

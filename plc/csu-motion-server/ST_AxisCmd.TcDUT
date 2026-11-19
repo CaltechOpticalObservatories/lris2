@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisCmd" Id="{836ff9ce-477b-5e1d-8bdb-6606e28dcfec}">
+    <Declaration><![CDATA[TYPE ST_AxisCmd :
+STRUCT
+    bEnable        : BOOL;      // level: hold TRUE to keep the drive enabled
+    bExecute       : BOOL;      // edge: starts the move described below
+    bStop          : BOOL;      // edge
+    bReset         : BOOL;      // edge: clears a latched fault
+    bHome          : BOOL;      // edge
+    eMode          : E_MoveMode;
+    fTarget        : LREAL;     // absolute position, or distance if eRelative
+    fVelocity      : LREAL;
+    fAcceleration  : LREAL;
+    fDeceleration  : LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

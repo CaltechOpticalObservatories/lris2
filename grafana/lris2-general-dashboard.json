@@ -1,0 +1,1237 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "edy7o8tiy9s00e"
+        },
+        "enable": true,
+        "iconColor": "rgba(80, 140, 255, 0.25)",
+        "name": "CSU motion",
+        "target": {
+          "query": "from(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^ismoving[0-9]+$/ and r._value == true)\n  |> group()\n  |> aggregateWindow(every: 10s, fn: count, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, text: \"moving\"}))",
+          "refId": "Anno"
+        }
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "row",
+      "title": "CSU (lris2.csu)",
+      "collapsed": false,
+      "panels": [],
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "stat",
+      "title": "PLC",
+      "description": "TwinCAT runtime mode; anything but Run means no bar can move",
+      "id": 2,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^plcstate$/)\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "run": {
+                  "color": "green",
+                  "text": "Run"
+                },
+                "config": {
+                  "color": "red",
+                  "text": "Config"
+                },
+                "stop": {
+                  "color": "red",
+                  "text": "Stop"
+                },
+                "other": {
+                  "color": "orange",
+                  "text": "Other"
+                },
+                "unreachable": {
+                  "color": "red",
+                  "text": "Unreachable"
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^_value$/",
+          "values": false
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "stat",
+      "title": "Bars enabled",
+      "description": "",
+      "id": 3,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "from(bucket: \"LRIS2\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^isenabled[0-9]+$/)\n  |> last()\n  |> map(fn: (r) => ({r with _value: if r._value then 1 else 0}))\n  |> group()\n  |> sum()",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "stat",
+      "title": "Bars faulted",
+      "description": "",
+      "id": 4,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "from(bucket: \"LRIS2\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^error[0-9]+$/)\n  |> last()\n  |> map(fn: (r) => ({r with _value: if r._value != 0 then 1 else 0}))\n  |> group()\n  |> sum()",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "stat",
+      "title": "Hottest drive",
+      "description": "",
+      "id": 5,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "from(bucket: \"LRIS2\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^boardtemp[0-9]+$/)\n  |> last()\n  |> group()\n  |> max()",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "stat",
+      "title": "Last CSU sample",
+      "description": "",
+      "id": 6,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "from(bucket: \"LRIS2\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^supply[0-9]+$/)\n  |> last()\n  |> group()\n  |> max(column: \"_time\")\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: int(v: now()) - int(v: r._time)) / 1000000000.0}))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 300
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "stat",
+      "title": "Last PDU sample",
+      "description": "",
+      "id": 7,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "from(bucket: \"LRIS2\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^power(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> last()\n  |> group()\n  |> max(column: \"_time\")\n  |> map(fn: (r) => ({_time: r._time, _value: float(v: int(v: now()) - int(v: r._time)) / 1000000000.0}))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 300
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "state-timeline",
+      "title": "Bars",
+      "description": "Per bar: green while enabled, blue while moving",
+      "id": 8,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^(isenabled|ismoving)[0-9]+$/)\n  |> map(fn: (r) => ({_time: r._time, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\"),\n      _value: if not r._value then 0 else if strings.hasPrefix(v: r._measurement, prefix: \"ismoving\") then 2 else 1}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels._field}",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "off",
+                  "color": "transparent"
+                },
+                "1": {
+                  "text": "enabled",
+                  "color": "green"
+                },
+                "2": {
+                  "text": "moving",
+                  "color": "blue"
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "transparent"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "rowHeight": 0.8,
+        "mergeValues": true,
+        "legend": {
+          "showLegend": false
+        },
+        "alignValue": "left"
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "timeseries",
+      "title": "Drive board temperature",
+      "description": "EPOS4 power stage temperature; motion is shaded",
+      "id": 9,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^boardtemp[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "timeseries",
+      "title": "Motor I2t",
+      "description": "Drive thermal model of the motor winding; 100 % trips the drive",
+      "id": 10,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^i2tmotor[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "timeseries",
+      "title": "Motor current",
+      "description": "",
+      "id": 11,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^current[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "mamp",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "timeseries",
+      "title": "Power stage I2t",
+      "description": "",
+      "id": 12,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 24
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^i2tstage[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "timeseries",
+      "title": "Drive supply",
+      "description": "",
+      "id": 13,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 24
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"csu\" and r._measurement =~ /^supply[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"CSU-\" + (if strings.strlen(v: regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")) == 1 then \"0\" else \"\") + regexp.replaceAllString(r: /^[a-z0-9]*[a-z]/, v: r._measurement, t: \"\")}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "volt",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "row",
+      "title": "Power (${pdu})",
+      "collapsed": false,
+      "panels": [],
+      "id": 14,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "state-timeline",
+      "title": "Outlet state",
+      "description": "",
+      "id": 15,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^state(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> map(fn: (r) => ({_time: r._time, _value: if r._value then 1 else 0, _field: r.peer + \" \" + r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels._field}",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "no",
+                  "color": "transparent"
+                },
+                "1": {
+                  "text": "on",
+                  "color": "green"
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "transparent"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "rowHeight": 0.8,
+        "mergeValues": true,
+        "legend": {
+          "showLegend": false
+        },
+        "alignValue": "left"
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "timeseries",
+      "title": "Power per outlet",
+      "description": "",
+      "id": 16,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^power(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r.peer + \" \" + r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "timeseries",
+      "title": "Current per outlet",
+      "description": "",
+      "id": 17,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^current(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r.peer + \" \" + r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "amp",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "timeseries",
+      "title": "Energy per outlet",
+      "description": "",
+      "id": 18,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 49
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer =~ /^${pdu:regex}$/ and r._measurement =~ /^energy(_[A-Za-z0-9_]+|[0-9]+)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r.peer + \" \" + r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watth",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "row",
+      "title": "Thermovac",
+      "collapsed": false,
+      "panels": [],
+      "id": 19,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 57
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "timeseries",
+      "title": "Pressure",
+      "description": "",
+      "id": 20,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 58
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rpress\" and r._measurement =~ /^pressure[0-9]+$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pressurembar",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true,
+            "scaleDistribution": {
+              "type": "log",
+              "log": 10
+            }
+          },
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.2.0"
+    },
+    {
+      "type": "timeseries",
+      "title": "Cryocooler",
+      "description": "",
+      "id": 21,
+      "datasource": {
+        "type": "influxdb",
+        "uid": "edy7o8tiy9s00e"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 58
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "edy7o8tiy9s00e"
+          },
+          "query": "import \"regexp\"\nimport \"strings\"\nfrom(bucket: \"LRIS2\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.peer == \"rcryo\" and r._measurement =~ /^(coldtemp|rejecttemp|curcmdpower)$/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: r._measurement}))\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "displayName": "${__field.labels._field}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.2.0"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": [
+    "lris2",
+    "telemetry"
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "custom",
+        "name": "pdu",
+        "label": "PDU",
+        "query": "pdu-137,pdu-ethercat",
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          },
+          {
+            "selected": false,
+            "text": "pdu-137",
+            "value": "pdu-137"
+          },
+          {
+            "selected": false,
+            "text": "pdu-ethercat",
+            "value": "pdu-ethercat"
+          }
+        ]
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "LRIS2",
+  "uid": "lris2-general",
+  "weekStart": ""
+}

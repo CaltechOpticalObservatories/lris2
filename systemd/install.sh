@@ -88,4 +88,7 @@ if ((${#EXTRAS[@]})); then
     printf '%s\n' "${EXTRAS[@]}" >"$EXTRAS_FILE"
 fi
 
+# Login shells get the broker the daemons use, so the libby CLI reaches it too
+install -m 644 "$REPO_DIR/systemd/lris2-libby.sh" /etc/profile.d/
+
 exec "$VENV_DIR/bin/lris2" install "${INSTALL_ARGS[@]}"
