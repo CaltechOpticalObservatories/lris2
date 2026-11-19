@@ -131,6 +131,22 @@ A new ACF takes effect once copied to `/etc/lris2/LRIS2.acf` and rcam
 restarts. Without the module the daemon still starts and serves its keywords,
 reporting `state: nocamera`.
 
+## The CSU's EtherCAT master
+
+The csu daemon drives the bars either through the PLC (`master: twincat`) or
+as the EtherCAT master itself (`master: pysoem`), set under `hardware` in
+`/etc/lris2/csu.yaml`. As soft master it owns `enp3s0` outright, cabled to the
+first drive with no switch, and needs raw socket access, granted once:
+
+```bash
+sudo systemctl edit lris2@csu
+#   [Service]
+#   AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+```
+
+To switch, with every bar disabled: move the drive chain's EtherCAT cable
+between the PLC and `enp3s0`, set `master:` to match, then `lris2 restart csu`.
+
 ## The Galil driver's bindings
 
 The `galil` driver imports `gclib`, whose Python bindings come from Galil's

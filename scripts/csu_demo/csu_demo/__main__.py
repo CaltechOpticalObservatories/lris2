@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import os
 import shlex
 import signal
@@ -92,10 +91,10 @@ def _capture_argv(args: argparse.Namespace) -> list[str]:
 
 
 def _topology(args: argparse.Namespace) -> TopologyConfig:
-    # The daemon's own config, so limits and units match what it enforces
+    # The daemon's own bars, limits and units; the demo reaches them through libby or a simulator
     with args.config.open(encoding="utf-8") as handle:
-        topology = parse_topology(yaml.safe_load(handle)["topology"], source=str(args.config))
-    return dataclasses.replace(topology, backend=Backend.SIM) if args.sim else topology
+        bars = yaml.safe_load(handle)["topology"]
+    return parse_topology({**bars, "backend": Backend.SIM.value}, source=str(args.config))
 
 
 def _open_axes(topology: TopologyConfig, args: argparse.Namespace,

@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-'''LRIS2 CSU daemon: the slit bars as libby keywords, driven over ADS through the PLC'''
+'''LRIS2 CSU daemon: the slit bars as libby keywords, through the PLC or as EtherCAT master'''
 import argparse
-import dataclasses
 import json
 import sys
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any, Final, Protocol
 
 import pyads
 from cooethercat import Axis, AxisError, AxisSet, CoeType, ControllerState
 from cooethercat.backends.sim import open_simulated
+from cooethercat.backends.soem import open_soem
 from cooethercat.backends.twincat import open_twincat
-from cooethercat.config import Backend, parse_topology
+from cooethercat.bus import EtherCATError
+from cooethercat.config import Backend, TopologyConfig, parse_topology
 
 from lris2.daemon import Lris2Daemon
 
@@ -196,10 +197,25 @@ class CsuKeywords:
         return guarded
 
 
-TRANSPORT_ERRORS = (OSError, pyads.ADSError)
+TRANSPORT_ERRORS = (OSError, pyads.ADSError, EtherCATError)
+OPENERS: Final[dict[Backend, Callable[[TopologyConfig], AxisSet]]] = {
+    Backend.SIM: open_simulated,
+    Backend.TWINCAT: open_twincat,
+    Backend.PYSOEM: open_soem,
+}
+
 # How often the watchdog checks the PLC link, and so how soon a dropped link heals
 WATCHDOG_S = 5.0
 UNREACHABLE = "unreachable"
+
+
+def csu_topology(topology: Mapping[str, Any], transports: Mapping[str, Any],
+                 master: str, sim: bool) -> TopologyConfig:
+    """Return the bars under the chosen EtherCAT master's transport, or simulated."""
+    if sim:
+        return parse_topology({**topology, "backend": Backend.SIM.value}, source="topology")
+    return parse_topology({**topology, "backend": master, "transport": transports.get(master)},
+                          source=f"topology under {master}")
 
 
 class Csu(Lris2Daemon):  # pylint: disable=W0223
@@ -212,19 +228,17 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
         super().__init__()
         self.axes: AxisSet | None = None
         self.keywords: CsuKeywords | None = None
-        self.topology = None
-        self.sim = False
+        self.topology: TopologyConfig | None = None
         self._stopping = threading.Event()
         self._link_up = threading.Event()
         self._link_up.set()
 
     def on_start(self):
         '''Register keywords, then connect; the daemon stays up if the PLC is unreachable'''
-        self.sim = bool(self.get_config("hardware.sim", False))
-        self.topology = parse_topology(self.get_config("topology"), source="topology")
-        if self.sim:
-            self.topology = dataclasses.replace(self.topology, backend=Backend.SIM)
-        self.axes = self._open_axes()
+        self.topology = csu_topology(self.get_config("topology"), self.get_config("transports", {}),
+                                     self.get_config("hardware.master", Backend.TWINCAT.value),
+                                     bool(self.get_config("hardware.sim", False)))
+        self.axes = OPENERS[self.topology.backend](self.topology)
         self.keywords = CsuKeywords(self.axes, TRANSPORT_ERRORS, self._link_up.is_set)
         self.keywords.register(self.keyword_registry)
         self.keyword_registry.bool("isconnected", getter=self.is_connected,
@@ -234,8 +248,8 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
                                      description="PLC run, stop, config, other or unreachable")
         self.keyword_registry.trigger("shutdown", action=self.shutdown,
                                       description="Stop the daemon; refused while a bar moves")
-        self.logger.info("CSU daemon serving %d bars (%s)", len(self.axes),
-                         "simulated" if self.sim else self.topology.transport.host)
+        self.logger.info("CSU daemon serving %d bars over %s", len(self.axes),
+                         self.topology.backend)
         threading.Thread(target=self._watch_link, name="plc link", daemon=True).start()
 
     def on_stop(self):
@@ -243,11 +257,6 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
         self._stopping.set()
         if self.axes is not None:
             self.axes.backend.close()
-
-    def _open_axes(self) -> AxisSet:
-        if self.sim:
-            return open_simulated(self.topology)
-        return open_twincat(self.topology)
 
     def is_connected(self) -> bool:
         '''Return whether the PLC is in Run and a status read reaches it'''

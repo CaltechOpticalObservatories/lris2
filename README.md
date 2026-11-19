@@ -151,6 +151,10 @@ libby modify lris2.csu.positionvalue6 -260.0
 The browser demo in [`scripts/csu_demo`](scripts/csu_demo/README.md) drives the
 bars through `lris2.csu`.
 
+`hardware.master` in the config picks the EtherCAT master: `twincat`, the PLC
+over ADS, or `pysoem`, this host as soft master on a dedicated NIC. Switching
+is a cable move and a restart; see [`systemd/README.md`](systemd/README.md#the-csus-ethercat-master).
+
 ## Testing
 
 Tests mirror the `src/` layout under `tests/`.

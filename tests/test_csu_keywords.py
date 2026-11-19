@@ -11,9 +11,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 from cooethercat import AxisSet
 from cooethercat.backends.sim import SimBackend, open_simulated
-from cooethercat.config import parse_topology
+from cooethercat.config import Backend, parse_topology
 from libby.keyword import Keyword
 from libby.keyword_registry import KeywordRegistry
 
@@ -162,3 +163,33 @@ def test_link_down_fails_every_bar_keyword_at_once(axes: AxisSet) -> None:
     for name in ("positionvalue0", "boardtemp6", "status", "telemetry"):
         reply = keywords[name].handle({})
         assert reply["ok"] is False and "PLC unreachable" in reply["error"]
+
+
+CSU_CONFIG = Path(__file__).parent.parent / "config" / "csu" / "csu.yaml"
+
+
+def load_csu_config() -> dict[str, Any]:
+    """Return the deployed CSU daemon config."""
+    with CSU_CONFIG.open(encoding="utf-8") as handle:
+        config: dict[str, Any] = yaml.safe_load(handle)
+    return config
+
+
+@pytest.mark.parametrize("master", ["twincat", "pysoem"])
+def test_csu_config_parses_under_either_master(master: str) -> None:
+    config = load_csu_config()
+    topology = csu.csu_topology(config["topology"], config["transports"], master, sim=False)
+    assert topology.backend.value == master
+    assert len(topology.axes) == 23
+    assert all(axis.slave_index == int(axis.name.split("-")[1]) for axis in topology.axes)
+    assert topology.axes[0].units.to_increments(1.0) == 10000
+
+
+def test_sim_ignores_the_master() -> None:
+    config = load_csu_config()
+    topology = csu.csu_topology(config["topology"], config["transports"], "pysoem", sim=True)
+    assert topology.backend is Backend.SIM
+
+
+def test_every_master_has_an_opener() -> None:
+    assert set(csu.OPENERS) == set(Backend)
