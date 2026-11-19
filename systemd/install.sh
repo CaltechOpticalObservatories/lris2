@@ -9,6 +9,10 @@
 # Extras are recorded in /etc/lris2/extras, and every later run syncs them
 # again, so a plain re-run keeps the camera module.
 #
+# A clone in /opt/lris2/extra/ replaces the GitHub build of its extra, for
+# changing that code and its config on this host. Remove the clone and re-run
+# to go back.
+#
 # This builds the virtualenv and hands over to `lris2 install`, which does the
 # rest: the ops group, the daemon account, /etc/lris2, the template unit, the
 # polkit rule and the operator commands. Everything after that needs no root.
@@ -18,6 +22,8 @@ set -euo pipefail
 REPO_DIR="${LRIS2_REPO_DIR:-/opt/lris2/app}"
 VENV_DIR="${LRIS2_VENV_DIR:-/opt/lris2/venv}"
 EXTRAS_FILE="${LRIS2_ETC_DIR:-/etc/lris2}/extras"
+EXTRA_DIR="${LRIS2_EXTRA_DIR:-/opt/lris2/extra}"
+INSTRUMENT_SRC="$EXTRA_DIR/lris2-camerad-instrument"
 UV_VERSION="${LRIS2_UV_VERSION:-0.12.23}"
 # Its own copy rather than whatever uv is on PATH, since a snap refreshes
 # itself and would unpin the resolver
@@ -59,6 +65,10 @@ done
 if ((${#EXTRAS[@]})); then
     mapfile -t EXTRAS < <(printf '%s\n' "${EXTRAS[@]}" | sort -u)
 fi
+if [[ -d $INSTRUMENT_SRC ]] && ! printf '%s\n' "${EXTRAS[@]}" | grep -qx camera; then
+    echo "error: $INSTRUMENT_SRC is for the camera extra, which this host does not install." >&2
+    exit 1
+fi
 EXTRA_FLAGS=()
 for extra in "${EXTRAS[@]}"; do
     EXTRA_FLAGS+=(--extra "$extra")
@@ -81,6 +91,13 @@ fi
     # the root project and leaves their dependencies out
     "$UV_BIN" sync --all-packages "${EXTRA_FLAGS[@]}"
 )
+
+# After the sync, which installs every extra from GitHub
+if [[ -d $INSTRUMENT_SRC ]]; then
+    "$UV_BIN" pip install --python "$VENV_DIR/bin/python" --no-deps --reinstall --no-cache \
+        "$INSTRUMENT_SRC"
+    echo "local source: $INSTRUMENT_SRC"
+fi
 
 # Only once the sync accepted them, so a mistyped extra is not kept
 if ((${#EXTRAS[@]})); then
