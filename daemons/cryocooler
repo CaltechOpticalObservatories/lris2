@@ -42,7 +42,7 @@ class Cryocooler(Lris2Daemon):  # pylint: disable=W0223
             'ctrlmode': 'temp',
         }
 
-    def on_start(self, libby):
+    def on_start(self, libby=None):
         '''Start the daemon, register keywords, connect to the controller'''
         self.host = self.get_config("hardware.ip_address")
         self.port = self.get_config("hardware.tcp_port")

@@ -43,7 +43,7 @@ class Camera(Lris2Daemon):  # pylint: disable=W0223
         self.chassis_service = ChassisService(self)
         self.frame_service = FrameService(self)
 
-    def on_start(self, libby):  # pylint: disable=unused-argument
+    def on_start(self, libby=None):  # pylint: disable=unused-argument
         """Register every keyword, then build the camera."""
         self.logger.info("Starting %s daemon", self.peer_id)
 
@@ -55,7 +55,7 @@ class Camera(Lris2Daemon):  # pylint: disable=W0223
 
         self.camera_service.connect()
 
-    def on_stop(self, libby):  # pylint: disable=unused-argument
+    def on_stop(self, libby=None):  # pylint: disable=unused-argument
         """Release the controller."""
         self.camera_service.on_stop()
 
