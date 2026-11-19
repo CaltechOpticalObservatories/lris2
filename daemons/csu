@@ -218,7 +218,7 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
         self._link_up = threading.Event()
         self._link_up.set()
 
-    def on_start(self, libby=None):  # pylint: disable=W0613
+    def on_start(self):
         '''Register keywords, then connect; the daemon stays up if the PLC is unreachable'''
         self.sim = bool(self.get_config("hardware.sim", False))
         self.topology = parse_topology(self.get_config("topology"), source="topology")
@@ -238,7 +238,7 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
                          "simulated" if self.sim else self.topology.transport.host)
         threading.Thread(target=self._watch_link, name="plc link", daemon=True).start()
 
-    def on_stop(self, libby=None):  # pylint: disable=W0613
+    def on_stop(self):
         '''Close the PLC connection; the PLC keeps each bar's enable state'''
         self._stopping.set()
         if self.axes is not None:

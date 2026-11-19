@@ -34,7 +34,7 @@ class VacuumGauge(Lris2Daemon):  # pylint: disable=W0223
             'connected': False,
         }
 
-    def on_start(self, libby=None):
+    def on_start(self):
         '''Start the daemon, register keywords, connect to the controller'''
         self.host = self.get_config("hardware.ip_address")
         self.port = self.get_config("hardware.tcp_port")
@@ -108,7 +108,7 @@ class VacuumGauge(Lris2Daemon):  # pylint: disable=W0223
             return {"ok": False, "error": str(e)}
         return {"ok": True}
 
-    def on_stop(self, libby=None) -> None:
+    def on_stop(self) -> None:
         '''Stop the daemon and disconnect from the hardware device'''
         try:
             self.connect(False)

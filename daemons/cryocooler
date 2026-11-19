@@ -42,7 +42,7 @@ class Cryocooler(Lris2Daemon):  # pylint: disable=W0223
             'ctrlmode': 'temp',
         }
 
-    def on_start(self, libby=None):
+    def on_start(self):
         '''Start the daemon, register keywords, connect to the controller'''
         self.host = self.get_config("hardware.ip_address")
         self.port = self.get_config("hardware.tcp_port")
@@ -145,7 +145,7 @@ class Cryocooler(Lris2Daemon):  # pylint: disable=W0223
                         getter=self._reader(lambda: str(self.dev.get_version()), "version"),
                         description="Controller firmware version.")
 
-    def on_stop(self, libby=None) -> None:
+    def on_stop(self) -> None:
         '''Stop the daemon and disconnect from the hardware device'''
         try:
             self.connect(False)
