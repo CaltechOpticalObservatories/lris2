@@ -137,6 +137,8 @@ position, velocity, enable, halt and fault, plus drive telemetry (board
 temperature, I2t, current, supply). It drives the PLC motion server over ADS
 through coo-ethercat. While the PLC is unreachable, bar keywords fail at once
 and `plcstate` reads `unreachable`.
+Bar and telemetry readings are cached for 0.5 s, so a dump of every keyword
+reads the PLC and each drive object once; any write clears the cache.
 
 The PLC program's source is `plc/MotionServer.st`. After editing it, run
 `python plc/gen_tc.py` to regenerate the object files in

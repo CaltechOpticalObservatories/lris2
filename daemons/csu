@@ -5,12 +5,13 @@ import dataclasses
 import json
 import sys
 import threading
-from collections.abc import Callable
+import time
+from collections.abc import Callable, Hashable
 from dataclasses import dataclass
 from typing import Any, Final, Protocol
 
 import pyads
-from cooethercat import Axis, AxisError, AxisSet, CoeType, ControllerState
+from cooethercat import STATUS, Axis, AxisError, AxisSet, CoeType, ControllerState
 from cooethercat.backends.sim import open_simulated
 from cooethercat.backends.twincat import open_twincat
 from cooethercat.config import Backend, parse_topology
@@ -69,6 +70,39 @@ TELEMETRY: Final = (
 _CHARTED: Final = tuple(item for item in TELEMETRY if item.keyword in ("boardtemp", "current"))
 
 
+# How long one PLC or drive read answers later keywords, so a dump of every keyword reads each once
+CACHE_TTL_S: Final = 0.5
+# Every bar's PLC readbacks plus its profile velocity, read for all bars in one sum request
+SNAPSHOT_FIELDS: Final = (*STATUS, "velocity")
+_SNAPSHOT: Final = "snapshot"
+
+
+class TtlCache:
+    """Hold each read's value for a fixed time; a failed read is not stored."""
+
+    def __init__(self, ttl_s: float, clock: Callable[[], float] = time.monotonic) -> None:
+        self._ttl_s = ttl_s
+        self._clock = clock
+        self._lock = threading.Lock()
+        self._entries: dict[Hashable, tuple[float, Any]] = {}
+
+    def get(self, key: Hashable, read: Callable[[], Any]) -> Any:
+        """Return the value stored under key, calling read once it is missing or expired."""
+        with self._lock:
+            entry = self._entries.get(key)
+            now = self._clock()
+            if entry is not None and now - entry[0] < self._ttl_s:
+                return entry[1]
+            value = read()
+            self._entries[key] = (now, value)
+            return value
+
+    def clear(self) -> None:
+        """Forget every stored value."""
+        with self._lock:
+            self._entries.clear()
+
+
 def bar_number(axis: Axis) -> int:
     """Return N for a bar named CSU-N, the suffix of its keywords."""
     return int(axis.name.rsplit("-", 1)[1])
@@ -78,9 +112,11 @@ class CsuKeywords:
     """Translate keyword reads and writes into axis commands and drive reads."""
 
     def __init__(self, axes: AxisSet, transport_errors: TransportErrors = (OSError,),
-                 online: Callable[[], bool] = lambda: True) -> None:
+                 online: Callable[[], bool] = lambda: True,
+                 clock: Callable[[], float] = time.monotonic) -> None:
         self._axes = axes
         self._online = online
+        self._cache = TtlCache(CACHE_TTL_S, clock)
         self._errors = (AxisError, *transport_errors)
         self._locks = {axis.name: threading.Lock() for axis in axes}
 
@@ -90,7 +126,7 @@ class CsuKeywords:
             self._register_bar(registry, axis)
         registry.bool("ismoving", getter=self._guard(self.any_moving),
                       description="Any bar is moving")
-        registry.trigger("halt", action=self._guard(self.halt_all),
+        registry.trigger("halt", action=self._write(self.halt_all),
                          description="Stop every bar, continuing past failures")
         registry.string("status", getter=self._guard(self.status_json),
                         description="Every bar's readbacks as JSON, keyed by bar name")
@@ -99,24 +135,28 @@ class CsuKeywords:
 
     def _register_bar(self, registry: Registry, axis: Axis) -> None:
         n, units = bar_number(axis), axis.config.units.name
+        def field(name: str) -> Any:
+            return self.snapshot()[axis.name][name]
+
         registry.float(f"positionvalue{n}", units=units,
-                       getter=self._guard(lambda: round(axis.position, 4)),
-                       setter=self._guard(lambda target: self.move_to(axis, float(target))),
+                       getter=self._guard(lambda: round(float(field("position")), 4)),
+                       setter=self._write(lambda target: self.move_to(axis, float(target))),
                        description=f"{axis.name} position; a write is an absolute move")
         registry.float(f"velocity{n}", units=f"{units}/s",
-                       getter=self._guard(lambda: float(axis.get("velocity"))),
-                       setter=self._guard(lambda value: self.set_velocity(axis, float(value))),
+                       getter=self._guard(lambda: float(field("velocity"))),
+                       setter=self._write(lambda value: self.set_velocity(axis, float(value))),
                        description=f"{axis.name} profile velocity for moves")
-        registry.bool(f"ismoving{n}", getter=self._guard(lambda: axis.moving),
+        registry.bool(f"ismoving{n}", getter=self._guard(lambda: bool(field("moving"))),
                       description=f"{axis.name} is moving")
-        registry.bool(f"isenabled{n}", getter=self._guard(lambda: axis.enabled),
-                      setter=self._guard(lambda on: self.set_enabled(axis, bool(on))),
+        registry.bool(f"isenabled{n}", getter=self._guard(lambda: bool(field("enabled"))),
+                      setter=self._write(lambda on: self.set_enabled(axis, bool(on))),
                       description=f"{axis.name} drive is energised; write to switch")
-        registry.int(f"error{n}", getter=self._guard(lambda: axis.error_id if axis.error else 0),
+        registry.int(f"error{n}",
+                     getter=self._guard(lambda: int(field("error_id")) if field("error") else 0),
                      description=f"{axis.name} latched fault id, 0 when clear")
-        registry.trigger(f"halt{n}", action=self._guard(axis.stop),
+        registry.trigger(f"halt{n}", action=self._write(axis.stop),
                          description=f"Stop {axis.name}")
-        registry.trigger(f"reset{n}", action=self._guard(axis.reset),
+        registry.trigger(f"reset{n}", action=self._write(axis.reset),
                          description=f"Clear a latched fault on {axis.name}")
         for item in TELEMETRY:
             registry.float(f"{item.keyword}{n}", units=item.units,
@@ -147,13 +187,26 @@ class CsuKeywords:
             else:
                 axis.disable()
 
+    def snapshot(self) -> dict[str, dict[str, Any]]:
+        """Return every bar's PLC readbacks, read at most once per cache period."""
+        snapshot: dict[str, dict[str, Any]] = self._cache.get(
+            _SNAPSHOT, lambda: self._axes.read(SNAPSHOT_FIELDS))
+        return snapshot
+
+    def clear_cache(self) -> None:
+        """Forget cached readings, so the next read goes to the PLC."""
+        self._cache.clear()
+
     def read_telemetry(self, axis: Axis, item: Telemetry) -> float:
-        """Read one drive object and scale it to engineering units."""
-        return round(float(axis.read_object(item.index, item.subindex, item.kind)) * item.scale, 2)
+        """Read one drive object, at most once per cache period, scaled to engineering units."""
+        raw = self._cache.get((axis.name, item.keyword),
+                              lambda: axis.read_object(item.index, item.subindex, item.kind))
+        return round(float(raw) * item.scale, 2)
 
     def status_json(self) -> str:
         """Return every bar's status snapshot as one JSON object."""
-        return json.dumps({axis.name: axis.status() for axis in self._axes})
+        return json.dumps({name: {field: fields[field] for field in STATUS}
+                           for name, fields in self.snapshot().items()})
 
     def telemetry_json(self) -> str:
         """Return every bar's board temperature and current, null where a drive fails to answer."""
@@ -169,8 +222,8 @@ class CsuKeywords:
         return json.dumps(readings)
 
     def any_moving(self) -> bool:
-        """Return whether any bar is moving."""
-        return any(axis.moving for axis in self._axes)
+        """Return whether any bar is moving, read fresh since shutdown relies on it."""
+        return any(fields["moving"] for fields in self._axes.read(("moving",)).values())
 
     def halt_all(self) -> None:
         """Stop every bar, raising afterwards if any of them could not be told to."""
@@ -194,6 +247,17 @@ class CsuKeywords:
             except self._errors as error:
                 raise RuntimeError(str(error)) from error
         return guarded
+
+    def _write(self, call: Callable[..., Any]) -> Callable[..., Any]:
+        """Guard a write, then drop cached readings so a read straight after sees its effect."""
+        guarded = self._guard(call)
+
+        def written(*args: Any) -> Any:
+            try:
+                return guarded(*args)
+            finally:
+                self._cache.clear()
+        return written
 
 
 TRANSPORT_ERRORS = (OSError, pyads.ADSError)
@@ -288,6 +352,8 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
                     self.logger.warning("PLC link lost (%s); reconnecting", error)
                 failing = True
                 self._link_up.clear()
+                if self.keywords is not None:
+                    self.keywords.clear_cache()
                 self._reopen()
                 continue
             if failing:

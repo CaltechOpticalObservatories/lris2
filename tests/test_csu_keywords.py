@@ -162,3 +162,77 @@ def test_link_down_fails_every_bar_keyword_at_once(axes: AxisSet) -> None:
     for name in ("positionvalue0", "boardtemp6", "status", "telemetry"):
         reply = keywords[name].handle({})
         assert reply["ok"] is False and "PLC unreachable" in reply["error"]
+
+
+class FakeClock:
+    """A monotonic clock the test advances by hand."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def test_cache_holds_a_value_until_it_expires() -> None:
+    clock = FakeClock()
+    cache = csu.TtlCache(0.5, clock)
+    reads = iter((1, 2))
+    assert cache.get("key", lambda: next(reads)) == 1
+    clock.now = 0.4
+    assert cache.get("key", lambda: next(reads)) == 1
+    clock.now = 0.5
+    assert cache.get("key", lambda: next(reads)) == 2
+
+
+def test_cache_does_not_store_a_failed_read() -> None:
+    cache = csu.TtlCache(0.5, FakeClock())
+
+    def fail() -> int:
+        raise OSError("drive did not answer")
+
+    with pytest.raises(OSError):
+        cache.get("key", fail)
+    assert cache.get("key", lambda: 3) == 3
+
+
+def counted_sum_reads(axes: AxisSet, monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    calls: list[int] = []
+    original = axes.backend.read_axes_fields
+
+    def counted(configs: Any, fields: Any) -> Any:
+        calls.append(len(configs))
+        return original(configs, fields)
+
+    monkeypatch.setattr(axes.backend, "read_axes_fields", counted)
+    return calls
+
+
+def test_bar_keywords_share_one_plc_read(
+    axes: AxisSet, keywords: dict[str, Keyword], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = counted_sum_reads(axes, monkeypatch)
+    for name in ("positionvalue0", "velocity6", "ismoving0", "isenabled6", "error0", "status"):
+        read(keywords, name)
+    assert calls == [2]
+
+
+def test_write_drops_the_cached_snapshot(keywords: dict[str, Keyword]) -> None:
+    assert read(keywords, "velocity0") != pytest.approx(12.0)
+    keywords["velocity0"].handle({"value": 12.0})
+    assert read(keywords, "velocity0") == pytest.approx(12.0)
+
+
+def test_telemetry_is_read_once_per_period(axes: AxisSet) -> None:
+    clock = FakeClock()
+    registry = KeywordRegistry()
+    CsuKeywords(axes, clock=clock).register(registry)
+    keywords = {keyword.name: keyword for keyword in registry.drain()}
+    backend = axes.backend
+    assert isinstance(backend, SimBackend)
+    backend.set_object("CSU-6", 0x3201, 1, 700)
+    assert read(keywords, "boardtemp6") == pytest.approx(70.0)
+    backend.set_object("CSU-6", 0x3201, 1, 710)
+    assert json.loads(read(keywords, "telemetry"))["CSU-6"]["boardtemp"] == pytest.approx(70.0)
+    clock.now = csu.CACHE_TTL_S
+    assert read(keywords, "boardtemp6") == pytest.approx(71.0)
