@@ -136,7 +136,7 @@ class PduDaemon(Lris2Daemon):  # pylint: disable=W0223
                 raise self._error(f"{label}: {e}") from e
         return call
 
-    def on_start(self, libby=None) -> None:  # pylint: disable=W0613
+    def on_start(self) -> None:
         """Read config, register keywords, and connect to the PDU."""
         self.host = self.get_config("hardware.ip_address")
         self.port = int(self.get_config("hardware.tcp_port", self.default_port))
@@ -163,7 +163,7 @@ class PduDaemon(Lris2Daemon):  # pylint: disable=W0223
         except RuntimeError:
             self.logger.warning("Daemon will start but hardware is not available")
 
-    def on_stop(self, libby=None) -> None:  # pylint: disable=W0613
+    def on_stop(self) -> None:
         """Disconnect from the PDU."""
         self.disconnect()
         self.logger.info("Disconnected from PDU")
