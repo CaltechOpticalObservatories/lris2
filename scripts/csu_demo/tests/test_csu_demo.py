@@ -31,7 +31,7 @@ TOPOLOGY: dict[str, Any] = {
 }
 JPEG = b"\xff\xd8fake-frame\xff\xd9"
 LAYOUT = Layout(rows=12, slots={"CSU-0": Slot(Side.LEFT, 7, Side.LEFT)})
-REPO_LAYOUT = Path(__file__).parent.parent / "layout.yaml"
+REPO_LAYOUT = Path(__file__).parents[3] / "config" / "csu" / "csu.yaml"
 
 
 class FakeSource:
@@ -388,7 +388,7 @@ def test_repo_layout_loads() -> None:
     ],
 )
 def test_layout_rejects_ambiguous_files(tmp_path: Path, bars: str, message: str) -> None:
-    path = tmp_path / "layout.yaml"
-    path.write_text(f"rows: 12\nbars: {bars}\n")
+    path = tmp_path / "csu.yaml"
+    path.write_text(f"placement:\n  rows: 12\n  bars: {bars}\n")
     with pytest.raises(LayoutError, match=message):
         load_layout(path)

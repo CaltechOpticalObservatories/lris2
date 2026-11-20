@@ -17,7 +17,7 @@ SupplementaryGroups=video
 # Broker host and the control password; systemd reads it as root
 EnvironmentFile=-/etc/lris2/secrets.env
 ExecStart=/opt/lris2/csu-demo-venv/bin/lris2-csu-demo --config /opt/lris2/app/config/csu/csu.yaml \
-    --layout /opt/lris2/app/scripts/csu_demo/layout.yaml --host 0.0.0.0 --port 8088
+    --host 0.0.0.0 --port 8088
 Environment=PYTHONUNBUFFERED=1
 # Save points live in /var/lib/lris2-csu-demo
 StateDirectory=lris2-csu-demo

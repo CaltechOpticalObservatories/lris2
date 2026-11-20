@@ -1,8 +1,8 @@
 # CSU browser demo
 
 An AIT tool, not shipped with the instrument: the webcam stream and bar
-controls, laid out as in `layout.yaml`, per-bar charts of drive temperature and
-current, and the CSU lab PDU's outlets with a switch for the drives. It drives
+controls, laid out as in the daemon config's `placement`, per-bar charts of
+drive temperature and current, and the CSU lab PDU's outlets with a switch for the drives. It drives
 the bars only through `lris2.csu` and the PDU through `l2power.pdu-ethercat`, so
 it runs anywhere the broker is reachable (`LIBBY_RABBITMQ_URL`).
 
@@ -25,5 +25,5 @@ It serves port 8088. Taking control needs `LRIS2_CSU_DEMO_PASSWORD` in
 ```bash
 uv venv && uv pip install -e ".[dev]" -e ../..
 uv run pytest tests/
-uv run lris2-csu-demo --sim --config ../../config/csu/csu.yaml --layout layout.yaml
+uv run lris2-csu-demo --sim --config ../../config/csu/csu.yaml
 ```

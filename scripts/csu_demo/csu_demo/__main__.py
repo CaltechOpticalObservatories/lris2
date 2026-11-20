@@ -22,7 +22,7 @@ from libby.errors import LibbyError
 from .camera import CommandSource, SharedCamera, StreamFormat, gstreamer_argv
 from .control import Controller
 from .history import POLL_S, Poller, TelemetryHistory, record_telemetry
-from .layout import Layout, load_layout
+from .layout import load_layout
 from .libby_backend import LibbyBackend
 from .power import PowerPanel
 from .presets import PresetStore
@@ -41,7 +41,7 @@ def main() -> None:
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     args = _parse_args()
     topology = _topology(args)
-    layout = load_layout(args.layout) if args.layout else Layout(rows=12, slots={})
+    layout = load_layout(args.config)
     camera = None if args.no_camera else SharedCamera(lambda: CommandSource(_capture_argv(args)))
     client = None if args.sim else Client.rabbitmq(self_id="csu-demo",
                                                    rabbitmq_url=resolve_rabbitmq_url(None, {}))
@@ -117,7 +117,8 @@ def _default_presets_path() -> Path:
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True,
-                        help="CSU daemon config listing the bars, e.g. config/csu/csu.yaml")
+                        help="CSU daemon config listing the bars and their placement, "
+                             "e.g. config/csu/csu.yaml")
     parser.add_argument("--sim", action="store_true", help="simulate the axes, no daemon")
     parser.add_argument("--peer", default="lris2.csu", help="CSU daemon to drive the bars through")
     parser.add_argument("--pdu", default="l2power.pdu-ethercat", help="PDU daemon feeding the CSU")
@@ -130,8 +131,6 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--quality", type=int, default=StreamFormat.quality,
                         help="JPEG quality 1-100")
     parser.add_argument("--no-camera", action="store_true")
-    parser.add_argument("--layout", type=Path,
-                        help="bar slots on the CSU, e.g. scripts/csu_demo/layout.yaml")
     parser.add_argument("--presets", type=Path, default=_default_presets_path(),
                         help="JSON file holding the save points")
     parser.add_argument("--host", default="127.0.0.1")

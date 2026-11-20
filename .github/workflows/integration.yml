@@ -33,6 +33,9 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libegl1 xvfb
         if [ -f gui/slitmaskgui/requirements.txt ]; then pip install -r gui/slitmaskgui/requirements.txt; fi
+        # pip ignores uv sources, so lris2csu comes from the submodule before the csu extra needs it
+        git submodule update --init src/driver/lris2_csu
+        pip install --no-deps -e src/driver/lris2_csu
         pip install -e ".[csu]" -e "scripts/csu_demo[dev]"
 
     - name: Lint with flake8
