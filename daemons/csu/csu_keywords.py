@@ -2,6 +2,7 @@
 import json
 import threading
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Final, Protocol
 
@@ -164,17 +165,22 @@ class CsuKeywords:
                            for name, fields in self.snapshot().items()})
 
     def telemetry_json(self) -> str:
-        """Return every bar's board temperature and current, null where a drive fails to answer."""
-        readings: dict[str, dict[str, float | None]] = {}
-        for axis in self._axes:
-            values: dict[str, float | None] = {}
-            for item in _CHARTED:
-                try:
-                    values[item.keyword] = self.read_telemetry(axis, item)
-                except self._errors:
-                    values[item.keyword] = None
-            readings[axis.name] = values
+        """Return every bar's board temperature and current, null where a drive fails to answer.
+
+        Drives are read in parallel, since each has its own connection to the master.
+        """
+        with ThreadPoolExecutor(max_workers=len(self._axes)) as pool:
+            readings = dict(zip(self._axes.names, pool.map(self._charted, self._axes)))
         return json.dumps(readings)
+
+    def _charted(self, axis: Axis) -> dict[str, float | None]:
+        values: dict[str, float | None] = {}
+        for item in _CHARTED:
+            try:
+                values[item.keyword] = self.read_telemetry(axis, item)
+            except self._errors:
+                values[item.keyword] = None
+        return values
 
     def any_moving(self) -> bool:
         """Return whether any bar is moving, read fresh since shutdown relies on it."""
