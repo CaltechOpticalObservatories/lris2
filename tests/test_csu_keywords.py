@@ -5,23 +5,27 @@ from __future__ import annotations
 import importlib.machinery
 import importlib.util
 import json
+import sys
 import time
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 from cooethercat import AxisSet
 from cooethercat.backends.sim import SimBackend, open_simulated
-from cooethercat.config import parse_topology
+from cooethercat.config import Backend, parse_topology
 from libby.keyword import Keyword
 from libby.keyword_registry import KeywordRegistry
 
 
 
 def load_daemon() -> Any:
-    """Import the extensionless daemons/csu script as a module."""
-    path = Path(__file__).parent.parent / "daemons" / "csu"
+    """Import the extensionless daemons/csu/csu script as a module, beside its own modules."""
+    folder = Path(__file__).parent.parent / "daemons" / "csu"
+    sys.path.insert(0, str(folder))
+    path = folder / "csu"
     loader = importlib.machinery.SourceFileLoader("csu_daemon", str(path))
     module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
     loader.exec_module(module)
@@ -29,7 +33,7 @@ def load_daemon() -> Any:
 
 
 csu = load_daemon()
-TELEMETRY, CsuKeywords = csu.TELEMETRY, csu.CsuKeywords
+TELEMETRY, CsuKeywords = sys.modules["csu_keywords"].TELEMETRY, csu.CsuKeywords
 
 TOPOLOGY: dict[str, Any] = {
     "name": "csu-sim",
@@ -164,75 +168,31 @@ def test_link_down_fails_every_bar_keyword_at_once(axes: AxisSet) -> None:
         assert reply["ok"] is False and "PLC unreachable" in reply["error"]
 
 
-class FakeClock:
-    """A monotonic clock the test advances by hand."""
-
-    def __init__(self) -> None:
-        self.now = 0.0
-
-    def __call__(self) -> float:
-        return self.now
+CSU_CONFIG = Path(__file__).parent.parent / "config" / "csu" / "csu.yaml"
 
 
-def test_cache_holds_a_value_until_it_expires() -> None:
-    clock = FakeClock()
-    cache = csu.TtlCache(0.5, clock)
-    reads = iter((1, 2))
-    assert cache.get("key", lambda: next(reads)) == 1
-    clock.now = 0.4
-    assert cache.get("key", lambda: next(reads)) == 1
-    clock.now = 0.5
-    assert cache.get("key", lambda: next(reads)) == 2
+def load_csu_config() -> dict[str, Any]:
+    """Return the deployed CSU daemon config."""
+    with CSU_CONFIG.open(encoding="utf-8") as handle:
+        config: dict[str, Any] = yaml.safe_load(handle)
+    return config
 
 
-def test_cache_does_not_store_a_failed_read() -> None:
-    cache = csu.TtlCache(0.5, FakeClock())
-
-    def fail() -> int:
-        raise OSError("drive did not answer")
-
-    with pytest.raises(OSError):
-        cache.get("key", fail)
-    assert cache.get("key", lambda: 3) == 3
-
-
-def counted_sum_reads(axes: AxisSet, monkeypatch: pytest.MonkeyPatch) -> list[int]:
-    calls: list[int] = []
-    original = axes.backend.read_axes_fields
-
-    def counted(configs: Any, fields: Any) -> Any:
-        calls.append(len(configs))
-        return original(configs, fields)
-
-    monkeypatch.setattr(axes.backend, "read_axes_fields", counted)
-    return calls
+@pytest.mark.parametrize("master", ["twincat", "pysoem"])
+def test_csu_config_parses_under_either_master(master: str) -> None:
+    config = load_csu_config()
+    topology = csu.csu_topology(config["topology"], config["transports"], master, sim=False)
+    assert topology.backend.value == master
+    assert len(topology.axes) == 23
+    assert all(axis.slave_index == int(axis.name.split("-")[1]) for axis in topology.axes)
+    assert topology.axes[0].units.to_increments(1.0) == 10000
 
 
-def test_bar_keywords_share_one_plc_read(
-    axes: AxisSet, keywords: dict[str, Keyword], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    calls = counted_sum_reads(axes, monkeypatch)
-    for name in ("positionvalue0", "velocity6", "ismoving0", "isenabled6", "error0", "status"):
-        read(keywords, name)
-    assert calls == [2]
+def test_sim_ignores_the_master() -> None:
+    config = load_csu_config()
+    topology = csu.csu_topology(config["topology"], config["transports"], "pysoem", sim=True)
+    assert topology.backend is Backend.SIM
 
 
-def test_write_drops_the_cached_snapshot(keywords: dict[str, Keyword]) -> None:
-    assert read(keywords, "velocity0") != pytest.approx(12.0)
-    keywords["velocity0"].handle({"value": 12.0})
-    assert read(keywords, "velocity0") == pytest.approx(12.0)
-
-
-def test_telemetry_is_read_once_per_period(axes: AxisSet) -> None:
-    clock = FakeClock()
-    registry = KeywordRegistry()
-    CsuKeywords(axes, clock=clock).register(registry)
-    keywords = {keyword.name: keyword for keyword in registry.drain()}
-    backend = axes.backend
-    assert isinstance(backend, SimBackend)
-    backend.set_object("CSU-6", 0x3201, 1, 700)
-    assert read(keywords, "boardtemp6") == pytest.approx(70.0)
-    backend.set_object("CSU-6", 0x3201, 1, 710)
-    assert json.loads(read(keywords, "telemetry"))["CSU-6"]["boardtemp"] == pytest.approx(70.0)
-    clock.now = csu.CACHE_TTL_S
-    assert read(keywords, "boardtemp6") == pytest.approx(71.0)
+def test_every_master_has_an_opener() -> None:
+    assert set(csu.OPENERS) == set(Backend)
