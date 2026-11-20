@@ -5,7 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Final, Protocol
 
-from cooethercat import Axis, AxisError, AxisSet, CoeType
+from cooethercat import STATUS, Axis, AxisError, AxisSet, CoeType
 
 # Errors a keyword turns into a libby error reply instead of crashing the daemon
 TransportErrors = tuple[type[Exception], ...]
@@ -59,6 +59,13 @@ TELEMETRY: Final = (
 _CHARTED: Final = tuple(item for item in TELEMETRY if item.keyword in ("boardtemp", "current"))
 
 
+# How old a reading a keyword may answer with, so a dump of every keyword reads the PLC and
+# each drive object once; coo-ethercat drops cached readings on any write
+MAX_AGE_S: Final = 0.5
+# Every bar's PLC readbacks plus its profile velocity, read for all bars in one sum request
+SNAPSHOT_FIELDS: Final = (*STATUS, "velocity")
+
+
 def bar_number(axis: Axis) -> int:
     """Return N for a bar named CSU-N, the suffix of its keywords."""
     return int(axis.name.rsplit("-", 1)[1])
@@ -89,20 +96,25 @@ class CsuKeywords:
 
     def _register_bar(self, registry: Registry, axis: Axis) -> None:
         n, units = bar_number(axis), axis.config.units.name
+
+        def field(name: str) -> Any:
+            return self.snapshot()[axis.name][name]
+
         registry.float(f"positionvalue{n}", units=units,
-                       getter=self._guard(lambda: round(axis.position, 4)),
+                       getter=self._guard(lambda: round(float(field("position")), 4)),
                        setter=self._guard(lambda target: self.move_to(axis, float(target))),
                        description=f"{axis.name} position; a write is an absolute move")
         registry.float(f"velocity{n}", units=f"{units}/s",
-                       getter=self._guard(lambda: float(axis.get("velocity"))),
+                       getter=self._guard(lambda: float(field("velocity"))),
                        setter=self._guard(lambda value: self.set_velocity(axis, float(value))),
                        description=f"{axis.name} profile velocity for moves")
-        registry.bool(f"ismoving{n}", getter=self._guard(lambda: axis.moving),
+        registry.bool(f"ismoving{n}", getter=self._guard(lambda: bool(field("moving"))),
                       description=f"{axis.name} is moving")
-        registry.bool(f"isenabled{n}", getter=self._guard(lambda: axis.enabled),
+        registry.bool(f"isenabled{n}", getter=self._guard(lambda: bool(field("enabled"))),
                       setter=self._guard(lambda on: self.set_enabled(axis, bool(on))),
                       description=f"{axis.name} drive is energised; write to switch")
-        registry.int(f"error{n}", getter=self._guard(lambda: axis.error_id if axis.error else 0),
+        registry.int(f"error{n}",
+                     getter=self._guard(lambda: int(field("error_id")) if field("error") else 0),
                      description=f"{axis.name} latched fault id, 0 when clear")
         registry.trigger(f"halt{n}", action=self._guard(axis.stop),
                          description=f"Stop {axis.name}")
@@ -137,13 +149,19 @@ class CsuKeywords:
             else:
                 axis.disable()
 
+    def snapshot(self) -> dict[str, dict[str, Any]]:
+        """Return every bar's PLC readbacks, reading the PLC at most once per MAX_AGE_S."""
+        return self._axes.read(SNAPSHOT_FIELDS, max_age=MAX_AGE_S)
+
     def read_telemetry(self, axis: Axis, item: Telemetry) -> float:
-        """Read one drive object and scale it to engineering units."""
-        return round(float(axis.read_object(item.index, item.subindex, item.kind)) * item.scale, 2)
+        """Read one drive object, at most once per MAX_AGE_S, scaled to engineering units."""
+        raw = axis.read_object(item.index, item.subindex, item.kind, max_age=MAX_AGE_S)
+        return round(float(raw) * item.scale, 2)
 
     def status_json(self) -> str:
         """Return every bar's status snapshot as one JSON object."""
-        return json.dumps({axis.name: axis.status() for axis in self._axes})
+        return json.dumps({name: {field: fields[field] for field in STATUS}
+                           for name, fields in self.snapshot().items()})
 
     def telemetry_json(self) -> str:
         """Return every bar's board temperature and current, null where a drive fails to answer."""
@@ -159,8 +177,8 @@ class CsuKeywords:
         return json.dumps(readings)
 
     def any_moving(self) -> bool:
-        """Return whether any bar is moving."""
-        return any(axis.moving for axis in self._axes)
+        """Return whether any bar is moving, read fresh since shutdown relies on it."""
+        return any(fields["moving"] for fields in self._axes.read(("moving",)).values())
 
     def halt_all(self) -> None:
         """Stop every bar, raising afterwards if any of them could not be told to."""

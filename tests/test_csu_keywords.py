@@ -196,3 +196,55 @@ def test_sim_ignores_the_master() -> None:
 
 def test_every_master_has_an_opener() -> None:
     assert set(csu.OPENERS) == set(Backend)
+
+
+def counted_sum_reads(axes: AxisSet, monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """Count the backend's every-axis reads, recording how many axes each covered."""
+    calls: list[int] = []
+    original = axes.backend.read_axes_fields
+
+    def counted(configs: Any, fields: Any) -> Any:
+        calls.append(len(configs))
+        return original(configs, fields)
+
+    monkeypatch.setattr(axes.backend, "read_axes_fields", counted)
+    return calls
+
+
+def test_bar_keywords_share_one_plc_read(
+    axes: AxisSet, keywords: dict[str, Keyword], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every bar getter and status answer from one read of all bars."""
+    calls = counted_sum_reads(axes, monkeypatch)
+    for name in ("positionvalue0", "velocity6", "ismoving0", "isenabled6", "error0", "status"):
+        read(keywords, name)
+    assert calls == [2]
+
+
+def test_write_drops_the_cached_snapshot(keywords: dict[str, Keyword]) -> None:
+    """A read straight after a write sees it."""
+    assert read(keywords, "velocity0") != pytest.approx(12.0)
+    keywords["velocity0"].handle({"value": 12.0})
+    assert read(keywords, "velocity0") == pytest.approx(12.0)
+
+
+def test_telemetry_is_read_once_until_a_write(axes: AxisSet, keywords: dict[str, Keyword]) -> None:
+    """A drive object read answers the bar keyword and telemetry until a write clears it."""
+    backend = axes.backend
+    assert isinstance(backend, SimBackend)
+    backend.set_object("CSU-6", 0x3201, 1, 700)
+    assert read(keywords, "boardtemp6") == pytest.approx(70.0)
+    backend.set_object("CSU-6", 0x3201, 1, 710)
+    assert json.loads(read(keywords, "telemetry"))["CSU-6"]["boardtemp"] == pytest.approx(70.0)
+    keywords["velocity6"].handle({"value": 2.0})
+    assert read(keywords, "boardtemp6") == pytest.approx(71.0)
+
+
+def test_ismoving_reads_fresh(axes: AxisSet, keywords: dict[str, Keyword],
+                             monkeypatch: pytest.MonkeyPatch) -> None:
+    """The CSU-wide ismoving, which shutdown relies on, never answers from the cache."""
+    read(keywords, "ismoving0")
+    calls = counted_sum_reads(axes, monkeypatch)
+    read(keywords, "ismoving")
+    read(keywords, "ismoving")
+    assert calls == [2, 2]
