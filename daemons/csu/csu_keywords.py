@@ -78,39 +78,39 @@ class CsuKeywords:
         """Register every bar's keywords plus the CSU-wide ones."""
         for axis in self._axes:
             self._register_bar(registry, axis)
-        registry.bool("ismoving", getter=self._guard(self.any_moving),
+        registry.bool("ismoving", getter=self.guard(self.any_moving),
                       description="Any bar is moving")
-        registry.trigger("halt", action=self._guard(self.halt_all),
+        registry.trigger("halt", action=self.guard(self.halt_all),
                          description="Stop every bar, continuing past failures")
-        registry.string("status", getter=self._guard(self.status_json),
+        registry.string("status", getter=self.guard(self.status_json),
                         description="Every bar's readbacks as JSON, keyed by bar name")
-        registry.string("telemetry", getter=self._guard(self.telemetry_json),
+        registry.string("telemetry", getter=self.guard(self.telemetry_json),
                         description="Every bar's board temperature (C) and current (mA) as JSON")
 
     def _register_bar(self, registry: Registry, axis: Axis) -> None:
         n, units = bar_number(axis), axis.config.units.name
         registry.float(f"positionvalue{n}", units=units,
-                       getter=self._guard(lambda: round(axis.position, 4)),
-                       setter=self._guard(lambda target: self.move_to(axis, float(target))),
+                       getter=self.guard(lambda: round(axis.position, 4)),
+                       setter=self.guard(lambda target: self.move_to(axis, float(target))),
                        description=f"{axis.name} position; a write is an absolute move")
         registry.float(f"velocity{n}", units=f"{units}/s",
-                       getter=self._guard(lambda: float(axis.get("velocity"))),
-                       setter=self._guard(lambda value: self.set_velocity(axis, float(value))),
+                       getter=self.guard(lambda: float(axis.get("velocity"))),
+                       setter=self.guard(lambda value: self.set_velocity(axis, float(value))),
                        description=f"{axis.name} profile velocity for moves")
-        registry.bool(f"ismoving{n}", getter=self._guard(lambda: axis.moving),
+        registry.bool(f"ismoving{n}", getter=self.guard(lambda: axis.moving),
                       description=f"{axis.name} is moving")
-        registry.bool(f"isenabled{n}", getter=self._guard(lambda: axis.enabled),
-                      setter=self._guard(lambda on: self.set_enabled(axis, bool(on))),
+        registry.bool(f"isenabled{n}", getter=self.guard(lambda: axis.enabled),
+                      setter=self.guard(lambda on: self.set_enabled(axis, bool(on))),
                       description=f"{axis.name} drive is energised; write to switch")
-        registry.int(f"error{n}", getter=self._guard(lambda: axis.error_id if axis.error else 0),
+        registry.int(f"error{n}", getter=self.guard(lambda: axis.error_id if axis.error else 0),
                      description=f"{axis.name} latched fault id, 0 when clear")
-        registry.trigger(f"halt{n}", action=self._guard(axis.stop),
+        registry.trigger(f"halt{n}", action=self.guard(axis.stop),
                          description=f"Stop {axis.name}")
-        registry.trigger(f"reset{n}", action=self._guard(axis.reset),
+        registry.trigger(f"reset{n}", action=self.guard(axis.reset),
                          description=f"Clear a latched fault on {axis.name}")
         for item in TELEMETRY:
             registry.float(f"{item.keyword}{n}", units=item.units,
-                           getter=self._guard(lambda item=item: self.read_telemetry(axis, item)),
+                           getter=self.guard(lambda item=item: self.read_telemetry(axis, item)),
                            description=f"{axis.name}: {item.description}")
 
     def move_to(self, axis: Axis, target: float) -> None:
@@ -173,7 +173,7 @@ class CsuKeywords:
         if failures:
             raise RuntimeError("halt failed for " + "; ".join(failures))
 
-    def _guard(self, call: Callable[..., Any]) -> Callable[..., Any]:
+    def guard(self, call: Callable[..., Any]) -> Callable[..., Any]:
         """Report axis and transport failures as RuntimeError, which libby replies with."""
         def guarded(*args: Any) -> Any:
             # Fail fast while the link is down, so a reader of every keyword is not held up

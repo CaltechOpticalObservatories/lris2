@@ -45,6 +45,30 @@ topology:
     - {name: CSU-21, plc_index: 22, station_address: 1022, slave_index: 21}
     - {name: CSU-22, plc_index: 23, station_address: 1023, slave_index: 22}
 
+# Where each bar sits: side of the slit, row from the top (1-12), and which way
+# a positive move takes it as seen from the webcam. The left and right bar of a
+# row form a slit's bar pair; a row with one bar placed still forms a slit, open
+# to the far side. Bars not listed are not in service.
+placement:
+  rows: 12
+  bars:
+    CSU-0:  {side: left,  row: 7,  plus: left}
+    CSU-1:  {side: left,  row: 8,  plus: left}
+    CSU-2:  {side: left,  row: 9,  plus: left}
+    CSU-3:  {side: left,  row: 10, plus: left}
+    CSU-4:  {side: left,  row: 11, plus: left}
+    CSU-5:  {side: left,  row: 12, plus: left}
+    CSU-6:  {side: left,  row: 5,  plus: right}
+    CSU-7:  {side: left,  row: 4,  plus: right}
+    CSU-8:  {side: left,  row: 3,  plus: right}
+    CSU-9:  {side: left,  row: 2,  plus: right}
+    CSU-10: {side: left,  row: 1,  plus: right}
+    CSU-13: {side: right, row: 9,  plus: left}
+    CSU-14: {side: right, row: 10, plus: left}
+    CSU-15: {side: right, row: 11, plus: left}
+    CSU-16: {side: right, row: 12, plus: left}
+    CSU-18: {side: right, row: 5,  plus: right}
+
 # The transport for each master; hardware.master picks one
 transports:
   twincat:

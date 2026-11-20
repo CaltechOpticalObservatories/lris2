@@ -15,6 +15,7 @@ from cooethercat.bus import EtherCATError
 from cooethercat.config import Backend, TopologyConfig, parse_topology
 
 from csu_keywords import CsuKeywords
+from csu_slits import SlitKeywords, slit_geometry
 from lris2.daemon import Lris2Daemon
 
 
@@ -62,6 +63,10 @@ class Csu(Lris2Daemon):  # pylint: disable=W0223
         self.axes = OPENERS[self.topology.backend](self.topology)
         self.keywords = CsuKeywords(self.axes, TRANSPORT_ERRORS, self._link_up.is_set)
         self.keywords.register(self.keyword_registry)
+        placement = self.get_config("placement", {})
+        if placement:
+            geometry = slit_geometry(placement, {axis.name for axis in self.axes})
+            SlitKeywords(self.axes, geometry, self.keywords).register(self.keyword_registry)
         self.keyword_registry.bool("isconnected", getter=self.is_connected,
                                    setter=self.set_connected,
                                    description="PLC reachable; write true to reconnect")

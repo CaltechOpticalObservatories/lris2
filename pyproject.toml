@@ -31,6 +31,7 @@ dev = [
 # The CSU daemon, on the host that reaches the CSU PLC: install.sh --extra csu
 csu = [
     "cooethercat[twincat]@git+https://github.com/CaltechOpticalObservatories/coo-ethercat.git",
+    "lris2csu",
 ]
 # The camera daemon only, on the host that runs it: install.sh --extra camera.
 # The camera_interface module it drives is built from lris2-camerad-instrument
@@ -55,7 +56,7 @@ packages = ["lris2", "lris2.cli", "lris2.driver"]
 
 # The vendor drivers are vendored as submodules so they can be fixed in place,
 # but their own dependencies still have to reach the environment.
-# coo_ethercat does not build as a package yet, and lris2_csu depends on it
+# coo_ethercat and lris2_csu come in through the csu extra instead
 [tool.uv.workspace]
 members = [
     "src/driver/galil",
@@ -72,6 +73,8 @@ override-dependencies = [
 
 [tool.uv.sources]
 gclib = { index = "galil" }
+# The CSU's slit and bar pair model, from the submodule
+lris2csu = { path = "src/driver/lris2_csu", editable = true }
 
 [[tool.uv.index]]
 name = "galil"

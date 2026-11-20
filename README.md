@@ -71,7 +71,7 @@ This repo uses submodules under `src/driver/`:
 |-----------|------|--------|
 | coo-ethercat | `src/driver/coo_ethercat` | `lris2.driver.coo_ethercat` |
 | galil | `src/driver/galil` | `galil` (needs the `galil` extra) |
-| lris2-csu | `src/driver/lris2_csu` | `lris2.driver.lris2_csu` |
+| lris2-csu | `src/driver/lris2_csu` | `lris2csu` (needs the `csu` extra) |
 | pdu | `src/driver/pdu` | `lris2.driver.pdu.src` |
 | sunpower | `src/driver/sunpower` | `lris2.driver.sunpower` |
 
@@ -148,8 +148,19 @@ uv run daemons/csu/csu -c config/csu/csu.yaml
 libby modify lris2.csu.positionvalue6 -260.0
 ```
 
+It also serves the bars as slits, using lris2-csu's slit and bar pair model.
+The left and right bar of a row form a pair, from `placement` in the config; a
+row with only one bar placed still makes a slit, open to the far side.
+`maskconfig` reads and sets every slit as `{pair: [center mm, width mm]}`, and
+`slitcenterN` and `slitwidthN` read row N. A mask is checked before any bar
+moves: the slit must lie inside the 260 mm opening and need only placed bars.
+
+```bash
+libby modify lris2.csu.maskconfig '{"5": [130.0, 20.0], "1": [135.0, 250.0]}'
+```
+
 The browser demo in [`scripts/csu_demo`](scripts/csu_demo/README.md) drives the
-bars through `lris2.csu`.
+bars through `lris2.csu` and lays them out from the same `placement`.
 
 `hardware.master` in the config picks the EtherCAT master: `twincat`, the PLC
 over ADS, or `pysoem`, this host as soft master on a dedicated NIC. Switching
