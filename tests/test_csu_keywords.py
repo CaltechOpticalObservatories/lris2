@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.machinery
 import importlib.util
 import json
+import sys
 import time
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -21,8 +22,10 @@ from libby.keyword_registry import KeywordRegistry
 
 
 def load_daemon() -> Any:
-    """Import the extensionless daemons/csu script as a module."""
-    path = Path(__file__).parent.parent / "daemons" / "csu"
+    """Import the extensionless daemons/csu/csu script as a module, beside its own modules."""
+    folder = Path(__file__).parent.parent / "daemons" / "csu"
+    sys.path.insert(0, str(folder))
+    path = folder / "csu"
     loader = importlib.machinery.SourceFileLoader("csu_daemon", str(path))
     module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
     loader.exec_module(module)
@@ -30,7 +33,7 @@ def load_daemon() -> Any:
 
 
 csu = load_daemon()
-TELEMETRY, CsuKeywords = csu.TELEMETRY, csu.CsuKeywords
+TELEMETRY, CsuKeywords = sys.modules["csu_keywords"].TELEMETRY, csu.CsuKeywords
 
 TOPOLOGY: dict[str, Any] = {
     "name": "csu-sim",

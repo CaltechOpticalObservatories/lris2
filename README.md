@@ -132,7 +132,7 @@ For running daemons as services, see [`systemd/README.md`](systemd/README.md).
 
 ## The CSU
 
-`daemons/csu` serves the configurable slit unit as `lris2.csu`: each bar's
+`daemons/csu/csu` serves the configurable slit unit as `lris2.csu`: each bar's
 position, velocity, enable, halt and fault, plus drive telemetry (board
 temperature, I2t, current, supply). It drives the PLC motion server over ADS
 through coo-ethercat. While the PLC is unreachable, bar keywords fail at once
@@ -144,7 +144,7 @@ The PLC program's source is `plc/MotionServer.st`. After editing it, run
 install and activate them.
 
 ```bash
-uv run daemons/csu -c config/csu/csu.yaml
+uv run daemons/csu/csu -c config/csu/csu.yaml
 libby modify lris2.csu.positionvalue6 -260.0
 ```
 

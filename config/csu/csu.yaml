@@ -1,6 +1,6 @@
 #
 # Usage:
-#   daemons/csu -c config/csu/csu.yaml
+#   daemons/csu/csu -c config/csu/csu.yaml
 #
 # The CSU bars behind the CX-LAB01 PLC motion server. Bar CSU-N sits in PLC slot
 # N+1, which is linked to NC axis N+1 and EPOS4 drive N+1 (station 1001+N).
