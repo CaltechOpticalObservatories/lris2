@@ -1,0 +1,11 @@
+## Configuration file for CSU parameters for LRIS2 (currently same as MOSFIRE)
+
+instrument: LRIS2
+num_bar_pairs: 46
+arcsec_per_mm: 1.38028
+single_slit_height_mm: 5.082
+overlap_mm: 0.698
+csu_fp_radius: 207.0
+csu_slit_tilt_angle: 4.0
+csu_zero_pt: 137.4
+star_edge_distance: 20.0
